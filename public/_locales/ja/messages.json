@@ -1,0 +1,11 @@
+{
+  "extDescription": {
+    "message": "PDF を見出し・リスト・表のある HTML に組み直し、スクリーンリーダーで読めるようにします。解析はブラウザ内で完結し、文書を外部に送信しません。"
+  },
+  "actionTitle": {
+    "message": "この PDF を Accessible PDF View で開く"
+  },
+  "contextMenuTitle": {
+    "message": "Accessible PDF View で開く"
+  }
+}

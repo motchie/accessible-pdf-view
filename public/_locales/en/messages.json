@@ -1,0 +1,14 @@
+{
+  "extDescription": {
+    "message": "Rebuilds PDFs as HTML with real headings, lists and tables — readable with a screen reader. Nothing leaves your browser.",
+    "description": "The store listing description. English is the base language."
+  },
+  "actionTitle": {
+    "message": "Open this PDF in Accessible PDF View",
+    "description": "The toolbar button's tooltip and accessible name."
+  },
+  "contextMenuTitle": {
+    "message": "Open in Accessible PDF View",
+    "description": "The right-click menu entry on a PDF link."
+  }
+}

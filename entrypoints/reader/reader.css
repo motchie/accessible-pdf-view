@@ -1,0 +1,844 @@
+/*
+ * Reader styles.
+ *
+ * Ground rules, all of them from the accessibility requirements rather than
+ * taste:
+ *   - Sizes are in rem/ch/em, never px, so browser zoom and a user's own
+ *     default font size both work. The layout is usable at 200% zoom because
+ *     nothing is sized against the viewport.
+ *   - The content column is capped in `ch`, which scales with the font, and the
+ *     cap is generous rather than a fixed narrow measure.
+ *   - Colours follow the OS theme by default and the reader's own choice when
+ *     they made one — see the palette below for why that is three blocks, and
+ *     every state that uses colour also uses a second cue (weight, border,
+ *     text).
+ *   - `forced-colors` is handled by leaning on system colour keywords instead
+ *     of fighting the mode.
+ *   - The stylesheet sets no `!important` and does not restyle text nodes
+ *     beyond spacing, so a user stylesheet can override it.
+ */
+
+/**
+ * Atkinson Hyperlegible Next, shipped inside the extension.
+ *
+ * The typeface setting used to be a control that could do nothing: the stacks
+ * named faces and hoped the reader had them, because nothing may be fetched
+ * over the network — the privacy promise forbids the request and the CSP
+ * forbids a font host. A packaged file is neither: it is read from disk, like
+ * every other asset here.
+ *
+ * The reason to package this one and not the Japanese faces is size. The two
+ * variable fonts below are 233 KB together, against the several megabytes a
+ * Japanese face costs; BIZ UDPGothic stays a face the reader has to have.
+ *
+ * `local()` comes first so a reader who already has it installed uses their own
+ * copy and the packaged file is never touched. The italic is packaged too,
+ * rather than left to be slanted by the browser: a synthesised oblique of a
+ * low-vision face is exactly the kind of distortion the face exists to avoid.
+ *
+ * Latin and Latin-Extended only — the subsets the upstream font ships. Japanese
+ * text is drawn by the system stack beside it either way, which is what the
+ * settings panel says.
+ *
+ * The files are Google Fonts' own, byte for byte (verified against the blob
+ * hashes in google/fonts); only the file names lost their square brackets,
+ * which a URL would have had to escape. No format hint: the browser sniffs it,
+ * and a hint a browser does not recognise makes it skip the source entirely.
+ * Licence: SIL OFL 1.1, `fonts/OFL.txt` in the build output.
+ */
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
+  src:
+    local('Atkinson Hyperlegible Next'),
+    url('/fonts/AtkinsonHyperlegibleNext-Variable.ttf');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
+  src:
+    local('Atkinson Hyperlegible Next Italic'),
+    url('/fonts/AtkinsonHyperlegibleNext-Italic-Variable.ttf');
+  font-weight: 200 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+/*
+ * The palette, three times over, and the repetition is the point.
+ *
+ * This used to be one set of `light-dark()` values with `color-scheme` switched
+ * on the root element to force a theme — one declaration instead of a second
+ * palette, which was the tidier design and did not work. With
+ * `color-scheme: light` computed on `<html>` over a dark OS setting, Chrome
+ * still resolved every `light-dark()` to its dark branch: `colorScheme` read
+ * back as `"light"` while `body`'s background stayed `rgb(22, 24, 28)`.
+ * Whatever the cause, a theme control that silently does nothing is worse than
+ * an inelegant stylesheet, and plain values in an attribute-selected block
+ * depend on nothing subtle.
+ *
+ * So: the light palette is the base, a guarded media query supplies dark for
+ * readers who chose neither, and an explicit attribute wins over both. The
+ * dark values are named once and referenced twice, so the two dark blocks
+ * cannot drift apart.
+ *
+ * `color-scheme` is still set — by `applySettings`, not here — because it is
+ * what tells the browser how to paint scrollbars, form controls and the canvas
+ * behind the page. It is simply no longer what selects the colours.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Defaults for the reader's own display settings. The side panel overwrites
+     these on the root element; stating them here means the Reader is complete
+     before storage has been read, and stays complete if it never is. */
+  --apv-font-scale: 100%;
+  --apv-line-height: 1.75;
+  --apv-measure: 78ch;
+  --apv-font-family: system-ui, -apple-system, 'Hiragino Kaku Gothic ProN',
+    'Noto Sans JP', 'Yu Gothic', Meiryo, sans-serif;
+
+  /* The dark values, named once. Referenced by both dark blocks below. */
+  --apv-d-bg: #16181c;
+  --apv-d-fg: #e8eaed;
+  --apv-d-muted: #a9b0ba;
+  --apv-d-border: #3a3f47;
+  --apv-d-surface: #22262c;
+  --apv-d-accent: #a8c7fa;
+  --apv-d-error-border: #f2b8b5;
+  --apv-d-toolbar-bg: #0f1114;
+  --apv-d-control-bg: #000000;
+  --apv-d-menu-fg: #e8eaed;
+  --apv-d-menu-bg: #22262c;
+
+  /* Light is the base. */
+  --apv-bg: #ffffff;
+  --apv-fg: #1b1d21;
+  --apv-muted: #4b5058;
+  --apv-border: #c9cdd4;
+  --apv-surface: #f4f6f8;
+  --apv-accent: #0b57d0;
+  --apv-info-border: #0b57d0;
+  --apv-error-border: #b3261e;
+  /* The toolbar is dark under both themes — it sits where Chrome's PDF toolbar
+     sits and reads as browser furniture rather than as part of the document —
+     so its light values are dark too. */
+  --apv-toolbar-bg: #2b2f36;
+  --apv-control-bg: #1b1e23;
+  --apv-menu-fg: #1b1d21;
+  --apv-menu-bg: #ffffff;
+}
+
+/* Nobody chose, and the OS says dark. Guarded so an explicit "light" wins. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-apv-theme='light']) {
+    --apv-bg: var(--apv-d-bg);
+    --apv-fg: var(--apv-d-fg);
+    --apv-muted: var(--apv-d-muted);
+    --apv-border: var(--apv-d-border);
+    --apv-surface: var(--apv-d-surface);
+    --apv-accent: var(--apv-d-accent);
+    --apv-info-border: var(--apv-d-accent);
+    --apv-error-border: var(--apv-d-error-border);
+    --apv-toolbar-bg: var(--apv-d-toolbar-bg);
+    --apv-control-bg: var(--apv-d-control-bg);
+    --apv-menu-fg: var(--apv-d-menu-fg);
+    --apv-menu-bg: var(--apv-d-menu-bg);
+  }
+}
+
+/* The reader chose dark, whatever the OS says. */
+:root[data-apv-theme='dark'] {
+  --apv-bg: var(--apv-d-bg);
+  --apv-fg: var(--apv-d-fg);
+  --apv-muted: var(--apv-d-muted);
+  --apv-border: var(--apv-d-border);
+  --apv-surface: var(--apv-d-surface);
+  --apv-accent: var(--apv-d-accent);
+  --apv-info-border: var(--apv-d-accent);
+  --apv-error-border: var(--apv-d-error-border);
+  --apv-toolbar-bg: var(--apv-d-toolbar-bg);
+  --apv-control-bg: var(--apv-d-control-bg);
+  --apv-menu-fg: var(--apv-d-menu-fg);
+  --apv-menu-bg: var(--apv-d-menu-bg);
+}
+
+/* A percentage, so it multiplies the reader's own browser default rather than
+   replacing it — and every `rem` below follows from here. */
+:root {
+  font-size: var(--apv-font-scale);
+}
+
+body {
+  margin: 0;
+  background: var(--apv-bg);
+  color: var(--apv-fg);
+  font-family: var(--apv-font-family);
+  /* A comfortable reading size that still respects the user's browser default. */
+  font-size: 1rem;
+  line-height: var(--apv-line-height);
+}
+
+/* ---------------------------------------------------------------- utilities */
+
+.apv-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.apv-skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -100vh;
+  z-index: 10;
+  padding: 0.5rem 1rem;
+  background: var(--apv-bg);
+  border: 2px solid currentColor;
+  border-radius: 0.25rem;
+}
+
+.apv-skip-link:focus {
+  top: 0.5rem;
+}
+
+/* A single, strong focus indicator everywhere. Never removed. */
+:focus-visible {
+  outline: 3px solid var(--apv-accent);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+/* --------------------------------------------------------------- structure */
+
+.apv-header,
+.apv-main,
+.apv-footer {
+  /* `ch` keeps the measure tied to the font, so zooming widens the column
+     instead of squeezing the text. */
+  max-width: var(--apv-measure);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.apv-header {
+  padding-top: 1.5rem;
+  border-bottom: 1px solid var(--apv-border);
+  margin-bottom: 1.5rem;
+}
+
+.apv-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  line-height: 1.3;
+  /* Long PDF titles and URLs must wrap rather than force a horizontal
+     scrollbar on the whole page. */
+  overflow-wrap: anywhere;
+}
+
+.apv-main {
+  padding-bottom: 3rem;
+}
+
+.apv-footer {
+  border-top: 1px solid var(--apv-border);
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+  font-size: 0.875rem;
+  color: var(--apv-muted);
+}
+
+/* ----------------------------------------------------------------- toolbar */
+
+/*
+ * Sits where Chrome's PDF toolbar sits, and carries only what this view can
+ * actually act on. Not sticky: a bar pinned to the top eats vertical space, and
+ * at 200% zoom that is space the document needs more than the controls do.
+ */
+.apv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.4rem 1rem;
+  background: var(--apv-toolbar-bg);
+  color: #e8eaed;
+  font-size: 0.875rem;
+}
+
+.apv-toolbar__brand {
+  margin: 0;
+  font-weight: 700;
+}
+
+.apv-toolbar__view {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The view switch is a real <select>, and it is deliberately *outside* the
+   element that carries role="toolbar" — see the note in ReaderToolbar.tsx.
+   Styling stops at the box: the option list is the platform's, which is what
+   makes it work with every assistive technology and on touch without a line of
+   key handling here. */
+.apv-toolbar select {
+  font: inherit;
+  padding: 0.25rem 0.4rem;
+  color: inherit;
+  background: var(--apv-control-bg);
+  border: 1px solid #5a616b;
+  border-radius: 0.25rem;
+  /* Long option text must not push the bar wider than the window. */
+  max-width: 26ch;
+}
+
+.apv-toolbar select option {
+  /* Some platforms render the popup with the page's colours rather than the
+     control's; state both so the list is never dark-on-dark. */
+  color: var(--apv-menu-fg);
+  background: var(--apv-menu-bg);
+}
+
+.apv-toolbar__error {
+  flex-basis: 100%;
+  margin: 0.35rem 0 0;
+  color: #f2b8b5;
+}
+
+.apv-toolbar__file {
+  color: #a9b0ba;
+  overflow-wrap: anywhere;
+}
+
+.apv-toolbar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* Pushed to the far end when there is room, wrapping under when there is
+     not. */
+  margin-inline-start: auto;
+}
+
+.apv-toolbar button,
+.apv-toolbar a {
+  font: inherit;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.25rem;
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  cursor: pointer;
+  text-underline-offset: 0.15em;
+}
+
+.apv-toolbar button:hover,
+.apv-toolbar a:hover {
+  border-color: #5a616b;
+}
+
+/* The toolbar paints its own dark ground in both themes, so its focus ring
+   cannot use the page accent — that accent is chosen against the page. */
+.apv-toolbar :focus-visible {
+  outline: 3px solid #a8c7fa;
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .apv-toolbar {
+    border-bottom: 1px solid CanvasText;
+  }
+  .apv-toolbar :focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+/* ---------------------------------------------------------------- statuses */
+
+.apv-status {
+  min-height: 1.5rem;
+  font-size: 0.9375rem;
+  color: var(--apv-muted);
+}
+
+.apv-notice {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--apv-surface);
+  border-left: 4px solid var(--apv-border);
+  border-radius: 0.25rem;
+}
+
+.apv-notice__title {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.apv-notice p {
+  margin: 0.5rem 0;
+}
+
+.apv-notice--info {
+  border-left-color: var(--apv-info-border);
+}
+
+.apv-notice--error {
+  border-left-color: var(--apv-error-border);
+}
+
+.apv-notice--page {
+  font-style: normal;
+  color: var(--apv-muted);
+}
+
+@media (forced-colors: active) {
+  .apv-notice {
+    border: 1px solid CanvasText;
+    border-left-width: 4px;
+  }
+}
+
+/* --------------------------------------------------------- document info */
+
+.apv-docinfo {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+}
+
+.apv-docinfo > summary {
+  cursor: pointer;
+  padding: 0.25rem 0;
+  color: var(--apv-muted);
+}
+
+.apv-docinfo__list {
+  margin: 0.5rem 0 0;
+  padding: 0.75rem 1rem;
+  background: var(--apv-surface);
+  border-radius: 0.25rem;
+}
+
+.apv-docinfo__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.75rem;
+  padding: 0.15rem 0;
+}
+
+.apv-docinfo__row dt {
+  /* `ch` rather than a pixel column, so the labels stay aligned when the user
+     changes their font size. */
+  flex: 0 0 12ch;
+  font-weight: 600;
+}
+
+.apv-docinfo__row dd {
+  flex: 1 1 20ch;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.apv-docinfo__note {
+  margin: 0.5rem 0 0;
+  color: var(--apv-muted);
+}
+
+/* ------------------------------------------------- describe / OCR panels */
+
+/*
+ * One look for both action panels.
+ *
+ * They answer the same kind of question — "a machine can add something here, if
+ * you ask it to" — and they sit next to each other, so a visual difference
+ * between them would imply a difference that is not there. They used to be two
+ * near-identical blocks of CSS under different prefixes, which is how they
+ * drifted.
+ */
+.apv-panel {
+  margin: 1rem 0 1.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--apv-surface);
+  border-left: 4px solid var(--apv-info-border);
+  border-radius: 0.25rem;
+  font-size: 0.9375rem;
+}
+
+.apv-panel__heading {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.apv-panel__subheading {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.apv-panel p {
+  margin: 0.5rem 0;
+}
+
+/* The caveat, the per-page reason and the progress line are all secondary to
+   the action itself. */
+.apv-panel__caveat,
+.apv-panel__note,
+.apv-panel__status {
+  color: var(--apv-muted);
+}
+
+.apv-panel__status {
+  /* Reserved even when empty, so the panel does not jump as progress starts. */
+  min-height: 1.5rem;
+}
+
+.apv-panel button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--apv-border);
+  border-radius: 0.25rem;
+  background: var(--apv-bg);
+  color: inherit;
+  cursor: pointer;
+}
+
+/**
+ * A control that is refusing, rather than one that cannot be reached.
+ *
+ * The buttons that start a long run are `aria-disabled` and not `disabled`,
+ * because a disabled element cannot hold focus — pressing one would throw the
+ * user to the top of the document at the moment the run began. They still have
+ * to *look* unavailable, which is what this is for.
+ */
+.apv-panel button:disabled,
+.apv-panel button[aria-disabled='true'] {
+  color: var(--apv-muted);
+  cursor: default;
+}
+
+@media (forced-colors: active) {
+  .apv-panel {
+    border: 1px solid CanvasText;
+    border-left-width: 4px;
+  }
+  .apv-panel button:disabled,
+  .apv-panel button[aria-disabled='true'] {
+    color: GrayText;
+  }
+}
+
+.apv-panel__details {
+  margin-top: 0.5rem;
+}
+
+.apv-panel__details > summary {
+  cursor: pointer;
+  color: var(--apv-muted);
+}
+
+.apv-panel__details ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.5rem;
+}
+
+.apv-panel__details li {
+  margin: 0.25rem 0;
+  overflow-wrap: anywhere;
+}
+
+/* One page per row, and the reason stays with its button so the pairing
+   survives both a narrow window and a screen reader reading straight through. */
+.apv-panel__rows {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.apv-panel__rows li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin: 0.5rem 0;
+}
+
+.apv-panel__rows button {
+  flex: none;
+}
+
+.apv-panel__rows .apv-panel__note {
+  flex: 1 1 20ch;
+  font-size: 0.875rem;
+}
+
+/* --------------------------------------------------------------- article */
+
+.apv-article h2,
+.apv-article h3,
+.apv-article h4,
+.apv-article h5,
+.apv-article h6 {
+  line-height: 1.4;
+  margin: 2rem 0 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.apv-article p,
+.apv-article li {
+  overflow-wrap: anywhere;
+}
+
+.apv-article a {
+  color: var(--apv-accent);
+  /* Links are underlined, not just coloured. */
+  text-underline-offset: 0.15em;
+}
+
+.apv-page-break {
+  margin: 2.5rem 0 1.5rem;
+  border-top: 1px dashed var(--apv-border);
+  padding-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--apv-muted);
+  text-align: right;
+}
+
+.apv-table-scroll {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+
+.apv-article table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.apv-article th,
+.apv-article td {
+  border: 1px solid var(--apv-border);
+  padding: 0.5rem 0.75rem;
+  text-align: start;
+  vertical-align: top;
+}
+
+.apv-article thead th {
+  background: var(--apv-surface);
+}
+
+.apv-article caption {
+  caption-side: top;
+  text-align: start;
+  font-weight: 700;
+  padding-bottom: 0.5rem;
+}
+
+.apv-figure {
+  margin: 1.5rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--apv-border);
+  border-radius: 0.25rem;
+}
+
+.apv-figure img {
+  max-width: 100%;
+  height: auto;
+}
+
+.apv-figure__placeholder {
+  margin: 0;
+  /* Muted, because this is the tool talking rather than the document. It is
+     still ordinary body text — selectable, findable, and it scales with the
+     user's font size. */
+  color: var(--apv-muted);
+  font-size: 0.9375rem;
+}
+
+.apv-figure img + .apv-figure__placeholder {
+  margin-top: 0.5rem;
+}
+
+.apv-article blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 4px solid var(--apv-border);
+}
+
+.apv-article pre {
+  overflow-x: auto;
+  padding: 0.75rem;
+  background: var(--apv-surface);
+  border-radius: 0.25rem;
+}
+
+/* -------------------------------------------------------------- markdown */
+
+.apv-markdown__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.apv-markdown__toolbar button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--apv-border);
+  border-radius: 0.25rem;
+  background: var(--apv-surface);
+  color: inherit;
+  cursor: pointer;
+}
+
+.apv-markdown__status {
+  font-size: 0.9375rem;
+  color: var(--apv-muted);
+}
+
+.apv-markdown__source {
+  max-height: 70vh;
+  overflow: auto;
+  padding: 1rem;
+  background: var(--apv-surface);
+  border: 1px solid var(--apv-border);
+  border-radius: 0.25rem;
+  /* Wrap rather than scroll horizontally: the text is meant to be read. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* -------------------------------------------------------------- original */
+
+.apv-original__page {
+  margin-bottom: 2.5rem;
+}
+
+.apv-original__heading {
+  font-size: 1.125rem;
+  margin: 0 0 0.25rem;
+}
+
+.apv-original__description {
+  margin: 0 0 0.75rem;
+  color: var(--apv-muted);
+  font-size: 0.9375rem;
+}
+
+.apv-original canvas {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--apv-border);
+  background: #ffffff;
+}
+
+/* ------------------------------------------------------------- motion */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
+}
+
+/*
+ * Which reading of the PDF the Reader is showing. First thing in the panel,
+ * because it changes the meaning of everything under it — including the OCR and
+ * figure notices, which are about the reading, not about the file.
+ */
+.apv-picker {
+  /* In the header, under the document's own information and above the rule:
+     these say what the whole document currently is, not what it contains. */
+  margin: 1rem 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--apv-border);
+  border-radius: 0.5rem;
+  background: var(--apv-surface);
+}
+
+.apv-picker + .apv-picker {
+  margin-top: -0.75rem;
+}
+
+.apv-picker__choices {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.apv-picker__choices legend {
+  padding: 0;
+  font-weight: 700;
+}
+
+.apv-picker__option {
+  display: grid;
+  /* The radio keeps its own column so the detail line hangs under the label
+     rather than under the control. */
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.apv-picker__option input {
+  grid-row: 1;
+  margin: 0.15rem 0 0;
+}
+
+.apv-picker__detail {
+  grid-column: 2;
+  font-size: 0.9em;
+  color: var(--apv-muted);
+}
+
+.apv-picker__note:empty {
+  display: none;
+}
+
+/**
+ * Collapsed, never `display: none`.
+ *
+ * This element is a live region, and the component keeps it mounted at all
+ * times on purpose: a region that arrives together with its first message is a
+ * region a screen reader may never announce. `display: none` takes it out of
+ * the accessibility tree and hands that failure back — the region is absent
+ * while empty and appears, already full, the moment there is something to say.
+ *
+ * An empty block with no margin occupies nothing, so this looks the same and is
+ * still there to be spoken into.
+ */
+.apv-picker__status:empty {
+  margin: 0;
+}
+
+.apv-picker__status {
+  margin: 0.5rem 0 0;
+  font-weight: 700;
+}
+
+.apv-picker__error {
+  margin: 0.5rem 0 0;
+  color: var(--apv-error-border);
+}
+
+.apv-picker__note {
+  margin: 0.75rem 0 0;
+  font-size: 0.9em;
+  color: var(--apv-muted);
+}

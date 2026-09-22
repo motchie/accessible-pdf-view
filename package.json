@@ -1,0 +1,46 @@
+{
+  "name": "accessible-pdf-view",
+  "version": "0.1.0",
+  "description": "Read PDFs as accessible, structured HTML.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://accessiblepdfview.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/motchie/accessible-pdf-view"
+  },
+  "scripts": {
+    "copy-assets": "node scripts/copy-assets.mjs",
+    "dev": "npm run copy-assets && wxt",
+    "dev:firefox": "npm run copy-assets && wxt -b firefox",
+    "build": "npm run copy-assets && wxt build",
+    "build:firefox": "npm run copy-assets && wxt build -b firefox",
+    "zip": "npm run copy-assets && wxt zip",
+    "compile": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "node scripts/copy-assets.mjs && wxt prepare"
+  },
+  "dependencies": {
+    "@firecrawl/pdf-inspector-wasm": "^1.17.0",
+    "mdast-util-from-markdown": "^2.0.2",
+    "mdast-util-gfm-table": "^2.0.0",
+    "micromark-extension-gfm-table": "^2.1.1",
+    "pdfjs-dist": "^6.2.108",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@wxt-dev/module-react": "^1.2.2",
+    "jsdom": "^30.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1",
+    "wxt": "^0.21.3"
+  }
+}

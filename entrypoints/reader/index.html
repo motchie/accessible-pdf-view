@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- The base language. `main.tsx` rewrites it to the resolved UI locale as
+     soon as the setting is known: a page that says `lang="en"` while showing
+     Japanese is read aloud by an English voice. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- No `user-scalable=no` and no `maximum-scale`: pinch zoom and browser
+         zoom must both keep working. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Accessible PDF View</title>
+    <meta name="description" content="Read PDFs as accessible, structured HTML." />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

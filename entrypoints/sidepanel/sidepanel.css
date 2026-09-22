@@ -1,0 +1,112 @@
+/*
+ * Side-panel layout.
+ *
+ * Chrome's side panel is narrow (around 320px by default, and the reader can
+ * drag it wider). Everything here has to work at that width *and* at 200%
+ * browser zoom on top of it, so nothing is laid out in columns and nothing is
+ * sized against the viewport.
+ *
+ * The Reader's own stylesheet is loaded first, which is what makes the panel
+ * share its palette, focus ring and forced-colors handling rather than
+ * restating them.
+ */
+.apv-sidepanel {
+  max-width: none;
+  padding: 0.85rem;
+}
+
+.apv-settings__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+.apv-settings fieldset {
+  border: 0;
+  border-top: 1px solid var(--apv-border);
+  margin: 0 0 1rem;
+  padding: 0.75rem 0 0;
+  min-width: 0;
+}
+
+.apv-settings fieldset:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.apv-settings legend {
+  padding: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.apv-settings__hint,
+.apv-settings__note {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--apv-muted);
+}
+
+.apv-settings__group {
+  margin-top: 0.6rem;
+}
+
+.apv-settings__label {
+  margin: 0 0 0.3rem;
+  font-size: 0.875rem;
+}
+
+/* One choice per row. At this width a wrapping row of radios puts the label of
+   one option next to the input of the next, which is exactly the ambiguity a
+   settings panel cannot afford. */
+.apv-settings__choice {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.2rem 0;
+  font-size: 0.875rem;
+}
+
+.apv-settings__choice input {
+  flex: none;
+}
+
+.apv-settings__choice-note {
+  color: var(--apv-muted);
+}
+
+.apv-settings button {
+  font: inherit;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--apv-border);
+  border-radius: 0.25rem;
+  background: var(--apv-surface);
+  color: inherit;
+  cursor: pointer;
+}
+
+/* `aria-disabled` as well as `disabled`: the button that starts the model
+   download keeps its focus on purpose — see `SettingsPanel` — and still has to
+   look unavailable while it refuses. */
+.apv-settings button:disabled,
+.apv-settings button[aria-disabled='true'] {
+  color: var(--apv-muted);
+  cursor: default;
+}
+
+/* The same for a radio group waiting on the browser's permission prompt. The
+   input keeps its focus, so the label says what the input cannot. */
+.apv-settings__choice:has(input[aria-disabled='true']) {
+  color: var(--apv-muted);
+  cursor: default;
+}
+
+@media (forced-colors: active) {
+  .apv-settings button:disabled,
+  .apv-settings button[aria-disabled='true'] {
+    color: GrayText;
+  }
+  .apv-settings__choice:has(input[aria-disabled='true']) {
+    color: GrayText;
+  }
+}
