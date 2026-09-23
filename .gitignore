@@ -17,3 +17,7 @@ public/pdfjs/
 # it records where the file came from (`ReferrerUrl=`), so a stray one would
 # publish the source of a document this project deliberately does not name.
 *:Zone.Identifier
+
+# Written by `wxt submit init`. Store credentials; the CI copies live in the
+# `chrome-web-store` environment on GitHub.
+.env.submit

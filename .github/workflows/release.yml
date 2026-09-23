@@ -1,0 +1,131 @@
+# Builds, tests and submits the extension to the Chrome Web Store.
+#
+# A release is a tag. The version lives in package.json, which is where WXT
+# reads the manifest's `version` from, so the tag is made from it rather than
+# typed by hand:
+#
+#     npm version patch        # or minor / major — commits and tags vX.Y.Z
+#     git push --follow-tags
+#
+# The tag has to match package.json, and the first job refuses it if not: the
+# store would accept whatever version the manifest says, and the tag would then
+# name a release that is not the one that shipped.
+#
+# Running it by hand (Actions → Release → Run workflow) never submits. It builds
+# and tests the current ref and asks the store to check the credentials
+# (`--dry-run`), which is how to find out a secret is wrong without spending a
+# version number on it.
+#
+# Chrome only, for now. Firefox is Manifest V3 and builds, but it has no AMO
+# listing yet; when it does, it needs `wxt zip -b firefox`, which also produces
+# the sources zip AMO requires, and its own credentials below.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  # Never interrupt an upload halfway; the next tag waits instead.
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: npm
+
+      - id: version
+        name: Check the tag against package.json
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $version"
+            exit 1
+          fi
+
+      # `postinstall` copies PDF.js's worker, CMaps and decoders into public/,
+      # so the zip below contains them without a separate step.
+      - run: npm ci
+      - run: npm run compile
+      - run: npm test
+      - run: npm run zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chrome-zip
+          path: .output/*-chrome.zip
+          if-no-files-found: error
+
+  submit:
+    needs: build
+    runs-on: ubuntu-latest
+    # The credentials live on this environment, not on the repository, so only
+    # this job can read them. Adding a required reviewer to the environment
+    # makes every submission wait for a click.
+    environment: chrome-web-store
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: npm
+
+      # Only for the `wxt` binary; nothing is built here.
+      - run: npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: chrome-zip
+          path: dist
+
+      - name: Submit to the Chrome Web Store
+        run: |
+          zip="$(ls dist/*-chrome.zip)"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            npx wxt submit --chrome-zip "$zip"
+          else
+            npx wxt submit --chrome-zip "$zip" --dry-run
+          fi
+        env:
+          CHROME_API_VERSION: v2
+          CHROME_EXTENSION_ID: gcoebmifedejfelponipkphjndofofil
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+          CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          CHROME_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}
+          # If a review is already in progress, fail rather than cancel it:
+          # a cancelled review is a version the store was about to publish.
+          CHROME_CANCEL_PENDING: false
+
+  release:
+    needs: [build, submit]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: chrome-zip
+          path: dist
+
+      # The same zip the store was given, so what is attached here is what is
+      # under review — not a rebuild of it.
+      - name: Create the GitHub release
+        run: gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
