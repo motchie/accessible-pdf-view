@@ -16,11 +16,12 @@ yet said they matter.
 
 ## Known gaps, in rough order of how often they would bite
 
-- **A tagged PDF whose tags carry no headings** is the common case in this
-  project's corpus, not the exception: business documents hand-format their
-  headings, so the tag tree has paragraphs where a reader expects sections. The
-  combined reading recovers those where it can verify them against the page.
-  What it cannot do is invent a level, so the outline is flat.
+- **A tagged PDF whose tags carry no headings** is the common case in the
+  business documents this was built against, not the exception: they
+  hand-format their headings, so the tag tree has paragraphs where a reader
+  expects sections. The combined reading recovers those where it can verify
+  them against the page. What it cannot do is invent a level, so the outline is
+  flat.
 - **Ordinary content trapped inside a malformed table.** A parser that reads a
   page as one enormous table hides its text inside cells. Detecting that
   reliably needs a measurement nobody has made yet; detecting it *unreliably*

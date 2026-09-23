@@ -56,11 +56,11 @@ Both structure producers run on every document:
   extraction is usable, it wins.
 
 Tagged structure wins because inference is a guess and tagging is a statement.
-The difference is not academic — on the news-release fixture the tags recover a
-table with column *and* row headers, and the numbered sections as a properly
-numbered list, neither of which inference produced. `structureSource` records
-the choice, and the Reader surfaces it in the document information panel so a
-reader knows how much to trust what they are navigating.
+The difference is not academic: where inference produced neither, the tags have
+recovered a table with column *and* row headers, and numbered sections as a
+properly numbered list. `structureSource` records the choice, and the Reader
+surfaces it in the document information panel so a reader knows how much to
+trust what they are navigating.
 
 ### Text PDF
 
@@ -115,11 +115,13 @@ click time.
 ordinary cross-origin request and comes back `TypeError: NetworkError`
 (measured, 2026-09-22). The Reader then falls back to `UrlPdfSource` and is
 refused by CORS. Nothing recovers this from the inside: the answer is
-`lib/browser/site-access.ts`, which asks the reader for that one site. Extension messages are JSON-serialised, which would force a
-multi-megabyte PDF through base64, and MV3 service workers cannot create blob
-URLs. The Cache API is available in both contexts and stores a `Response`
-verbatim, so the background puts the response in and the Reader takes it out and
-deletes it (`lib/browser/handoff.ts`).
+`lib/browser/site-access.ts`, which asks the reader for that one site.
+
+**How the bytes reach the Reader.** Extension messages are JSON-serialised,
+which would force a multi-megabyte PDF through base64, and MV3 service workers
+cannot create blob URLs. The Cache API is available in both contexts and stores
+a `Response` verbatim, so the background puts the response in and the Reader
+takes it out and deletes it (`lib/browser/handoff.ts`).
 
 ### 3. Analysis — `lib/pdf/inspector/`
 
@@ -419,8 +421,8 @@ document at all. It now does several jobs, one module each:
   `info` as `Object`, so every field is validated rather than trusted.
 - `tagged-adapter.ts` + `page-text-index.ts` — the structure tree.
 - `page-lines.ts` — a page's text as lines with positions, rebuilt from
-  baselines. `hasEOL` is not used: measured on the fixtures it is set before
-  some lines, on the last run of others, and not at all elsewhere.
+  baselines. `hasEOL` is not used: measured across real documents it is set
+  before some lines, on the last run of others, and not at all elsewhere.
 - `page-content.ts` — why a page yielded no text: raster images (`image`), paths
   only (`vector`, i.e. text converted to outlines), or neither (`blank`). One
   sentence of wording depends on it, and the sentence it replaced — "this page
@@ -497,8 +499,8 @@ to pixels).
   figure covers, and the walker attributes every painted operation to the
   section it sits in. The figure's region is the union of its own sections. No
   order matching, and it works for a figure drawn with **vector paths**, which
-  paints no image operator at all — one prospectus in the fixtures has a scheme
-  diagram that nothing image-based could ever have found.
+  paints no image operator at all: a scheme diagram drawn entirely in paths is
+  invisible to anything image-based.
 - **Untagged PDFs — heuristic.** Images are matched to figures by draw order,
   with nearby ones merged when a page paints more images than it declares
   figures.

@@ -115,9 +115,11 @@ viewer still opens every PDF you click. **Opening PDFs** in the settings panel
 changes it — an address ending in `.pdf` then opens in the Reader instead, and
 switching the setting back restores the browser's viewer. It asks for host
 access when you turn it on and hands it back when you turn it off;
-[Permissions](#permissions) explains why it cannot work without it. Chromium
-only, and it does not catch a local file or a PDF served from an address that
-does not end in `.pdf` — the toolbar button still opens both.
+[Permissions](#permissions) explains why it cannot work without it. It appears
+only where the browser offers the API, and reports the rule the browser has
+rather than the one it was asked for. It does not catch a local file or a PDF
+served from an address that does not end in `.pdf` — the toolbar button still
+opens both.
 
 While it is on, the toolbar's **Original PDF** link opens the Reader as well:
 that link is a navigation to a `.pdf` address like any other, and the rule does
@@ -126,8 +128,8 @@ the same Reader is indistinguishable from a link that did nothing if you cannot
 see it. The Original view already shows the pages as they are, and switching the
 setting off gives the link back.
 
-A toolbar across the top carries the view switch, the file name, print, and a
-link to the original. Three views:
+A toolbar across the top carries the view switch, the file name, print, a link
+to the original, and settings. Three views:
 
 | View | What it shows |
 | --- | --- |
@@ -279,9 +281,13 @@ npm run test         # Vitest
 entrypoints/
   background.ts          action click -> Reader tab
   reader/                the Reader page (React)
+  sidepanel/             the settings panel
 lib/
   ai/                    Chrome built-in model session lifecycle (shared)
-  browser/               extension-facing glue (tab, handoff)
+  browser/               extension-facing glue: the tab, the handoff, the
+                         per-site grant, the redirect, the side panel
+  i18n/                  the interface catalogue — en.ts is the type, ja.ts
+                         is declared as it
   pdf/
     source/              PdfSource implementations
     inspector/           pdf-inspector worker, protocol, adapter
@@ -298,56 +304,24 @@ tests/
 See [ARCHITECTURE.md](ARCHITECTURE.md) for how the pieces fit together and
 where future features attach.
 
-### Kept outside this repository
-
-Some of the material this project was built with is deliberately not here, and
-paths like `design/…`, `docs/…` and `fixtures/…` elsewhere in these documents
-refer to it:
-
-- **Design working files** — the canvases the mark, the icons, the banner and
-  the Reader's layout options were worked out on, the scripts that render the
-  icon PNGs and the sample document's figure, the store promo tiles, and the
-  sample document itself. The icons they produce *are* committed, at
-  `public/icon/`.
-- **`prompt.md`** — the brief this was built from, kept unedited as the record
-  of what was asked for, pre-rename name and all. Code comments citing a
-  section number (`§15`) mean that document.
-- **The test PDFs, the suites written around them, and the write-up of what
-  they taught the code.** The documents are third-party; a suite named after a
-  document says which document it was; and the write-up quoted them directly.
-  All three say the same thing about the same documents, so all three are out.
-- **`docs/`** — the design brief, the store listing copy, and the writing
-  guide. Working documents about the product rather than documentation of it.
-- **Parked notes** — open questions about what the extension might promise.
-  A public repository is a poor place to think out loud about those.
-
-They are working material rather than product, and the two categories want
-different things from a repository: one is worth publishing complete, the other
-is worth keeping unedited.
-
 ### Tests
 
-`npm test` needs nothing that is not in this repository: 28 suites, 332 tests,
-all passing and none skipped. Where a suite needs a PDF it builds a small valid
-one in memory (`tests/helpers/minimal-pdf.ts`) and runs the real pdf-inspector
-WebAssembly module against it.
+`npm test` needs nothing that is not in this repository. Where a suite needs a
+PDF it builds a small valid one in memory (`tests/helpers/minimal-pdf.ts`) and
+runs the real pdf-inspector WebAssembly module against it.
 
-**What is published is the promises.** That a generated description is never
+What the suite pins down is the promises: that a generated description is never
 readable as the author's own words; that "we could not read this page" is never
 written as "there is nothing here"; that a link is never split through; that
 every message exists in both languages. Those are what a contributor needs in
 order to change the code safely, and what a reader is owed.
 
-**What is not published is the calibration.** Ten suites live outside this
-repository: nine that run the whole pipeline against real documents, and one
-that fixes the measurements the layout heuristics were tuned to — how far short
-of the right margin a heading line stops, how far a raised footnote marker sits
-above its line. Those numbers came from documents that cannot be published and
-will move when the corpus grows; a test that fails because a threshold was
-re-tuned on better evidence is not reporting a regression.
-`vitest.config.ts` picks them up from `../private/tests` when they are there
-and matches nothing when they are not, so the published suite is complete
-either way.
+### The brief
+
+`prompt.md`, the brief this was written from, is not in the repository. Code
+comments citing a section number (`§15`) mean that document. The design files
+the mark, the icons and the Reader's layout were worked out on are not here
+either; the icons they produce *are*, at `public/icon/`.
 
 ## Image descriptions (Chrome only, optional)
 
@@ -366,17 +340,16 @@ automatically.
 - It is a **guess made by a model**, not the author's description. It may be
   wrong. The Reader labels every generated description as
   "Image (description generated by AI)" — 「画像（AIによる自動生成の説明）」 —
-  wherever it is read: in the placeholder
-  and in the `alt` attribute — because someone relying on it cannot check it
-  against the picture.
+  wherever it is read, because someone relying on it cannot check it against
+  the picture.
 - A description **never replaces** the author's own alternative text. Their
   words always win.
 - **One exception**, because it is not the author's: Word and PowerPoint can
   generate alternative text and write it into the PDF, disclaimer and all. That
   is detected, read as "Image (description generated by the word processor)"
-  rather than
-  as the author's, and offered for description again — it is usually a bare
-  shape inventory ("タイムラインが含まれている画像") rather than a description.
+  rather than as the author's, and offered for description again — it is
+  usually a bare shape inventory ("タイムラインが含まれている画像") rather than
+  a description.
 - Nothing is uploaded. Chrome's model runs locally, so the privacy model above
   is unchanged.
 
@@ -429,13 +402,11 @@ They answer different questions, so both are available:
 
 - **The same as the Reader** — the document as rendered: the author's tag
   structure when the PDF is tagged, plus any figure descriptions that were
-  generated. Generated descriptions keep their "generated by AI" label here
-  too,
+  generated. Generated descriptions keep their "generated by AI" label here too,
   so text copied out of the extension cannot be mistaken for the author's own
   words once it is somewhere this tool can no longer annotate it.
 - **pdf-inspector's raw output** — the parser's output, untouched. Still the
-  right
-  answer for "what did the parser make of this file".
+  right answer for "what did the parser make of this file".
 
 GFM cannot express everything the Document Model holds — there is no syntax for
 a row header (`<th scope="row">`) — so the Reader, not the Markdown, is the
@@ -537,14 +508,14 @@ For those pages:
 ### When a producer drops a page
 
 "Empty parser output means OCR is needed, never that analysis failed" was a rule
-from the first day. An untagged prospectus showed the half that was missing:
+from the first day. One untagged document showed the half that was missing:
 **"this page is empty" is a claim too, and it can be just as false.**
 
-On that document pdf-inspector emits nothing at all for pages 4 and 5 — no
-Markdown, not even their page markers — while the same result reports that both
-pages contain tables, and neither is flagged as needing OCR. PDF.js reads about
-900 characters of ordinary Japanese from each. The Reader was telling readers
-those pages were empty.
+pdf-inspector emitted nothing at all for two of its pages — no Markdown, not
+even their page markers — while the same result reported that both pages
+contain tables, and neither was flagged as needing OCR. PDF.js reads about 900
+characters of ordinary Japanese from each. The Reader was telling readers those
+pages were empty.
 
 So before a page may be called empty, PDF.js is asked. It is a decidable
 question — there is text or there is not — and it costs one `getTextContent`
@@ -577,7 +548,8 @@ The fourth is why the two are kept apart. `suspected_garbled_text` is a page
 whose text is *present* and undecodable — a font with no usable ToUnicode map.
 Such a page is neither a picture nor outlines, so wording drawn from what it
 paints would send a reader looking for something that is not there. It gets its
-own sentence, and the first two pages of that prospectus are exactly this case.
+own sentence, and the first two pages of that same document are exactly this
+case.
 
 The vocabulary is the producer's and may grow, so a code this build does not
 recognise is dropped rather than guessed at: the page falls back to being looked
@@ -649,8 +621,8 @@ never that they could not be read, which would be a claim about pages nothing
 finished looking at.
 
 It carries the same two rules as figure description: it never runs by itself,
-and a page it read is labelled "The text on this page was read by OCR
-(machine text recognition)" wherever that page is read. A machine's reading of a picture
+and a page it read is labelled "The text on this page was read by OCR (machine
+text recognition)" wherever that page is read. A machine's reading of a picture
 of text is not the document's text, and the person relying on it is the one who
 cannot check it.
 
@@ -664,9 +636,8 @@ any description already generated for it — would otherwise be deleted by the
 act of reading the page. Those figures are kept at the end of the page, and the
 page says so: "The 2 images on this page have been collected after the text.
 Recognised text carries no position information, so where they sat on the
-original page is not reflected here."
-Recognised text carries no coordinates, so their original position is not
-something this tool knows, and it does not pretend otherwise.
+original page is not reflected here." Where they sat is not something this tool
+knows, and it does not pretend otherwise.
 
 Requirements are the same as for figure description (Chrome desktop, ~22 GB free
 storage, 16 GB RAM or 4 GB VRAM). Where the model is unavailable the panel says
@@ -710,14 +681,14 @@ switch.
 
 **Tagged PDF (preferred).** If the author tagged the document, PDF.js reads
 their structure tree and it is used as-is. This is the author's own answer, not
-a guess, and the difference is large — on the news-release fixture the tags
-yield a table with both column *and* row headers, and the numbered sections as
+a guess, and the difference is large: where inference sees a grid of text, the
+tags give a table with both column *and* row headers, and numbered sections as
 a properly numbered list.
 
 **Layout inference (fallback).** For untagged documents, pdf-inspector infers
 structure from where the glyphs sit. It works well on straightforward documents,
-but it is a guess, and these are its observed limits — re-checked against
-pdf-inspector 1.17.0 on every fixture, and all still true:
+but it is a guess, and these are its observed limits, re-checked against
+pdf-inspector 1.17.0:
 
 - **Numbered sections stay in the body.** `１. 背景および目的` is run together
   with the paragraph after it, so it does not appear in heading navigation.
@@ -730,39 +701,38 @@ pdf-inspector 1.17.0 on every fixture, and all still true:
 - **The title may be read twice** — once as the page's `<h1>`, and again in the
   body if the PDF repeats it in a form that was not recognised as a heading.
 
-When inference is in use, the Document information panel says so explicitly,
-so a reader
-knows how much to trust the headings and tables they are navigating.
+When inference is in use, the Document information panel says so explicitly, so
+a reader knows how much to trust the headings and tables they are navigating.
 
 ### Reading the same PDF both ways
 
 A tagged PDF is read twice — once from the tag tree, once by inference — and
-**How the structure was read** switches between them. It sits in the header, under the
-document's own information and above the rule: which reading is on screen is a
+**How the structure was read** switches between them. It sits in the header,
+under the document's own information and above the rule: which reading is on
+screen is a
 fact about the whole document, like its title and page count, not part of the
 text it changes. Which one a document *opens* with is a setting in the side
 panel, named with the same words as the control. It appears
 only when there really is more than one reading; an untagged file has one, and
 a control offering a choice that does not exist would be worse than no control.
 
-A third reading, **Structure tags + inferred headings**, exists for one kind
-of document
-and is the default there: a tagged PDF whose tags carry no headings at all —
-which is every business document in this project's corpus, because their
-authors formatted headings by hand and Word had nothing to tag. It is the tag
-tree's reading with the headings the inferred reading can prove are there:
-an inferred heading is placed only where its text is a whole tagged paragraph
-or the start of one, and the words stay the author's. Each placed heading
-records that the claim was inferred, the picker says how many were placed, and
-the Document information panel says the rest is the author's structure. Where the author
-used heading styles at all, their outline stands and this reading is not
-offered.
+A third reading, **Structure tags + inferred headings**, exists for one kind of
+document and is the default there: a tagged PDF whose tags carry no headings at
+all — which is what every tagged business document this was built against
+turned out to be, because their authors formatted headings by hand and Word had
+nothing to tag. It is the tag tree's reading with the headings the inferred
+reading can prove are there: an inferred heading is placed only where its text
+is a whole tagged paragraph or the start of one, and the words stay the
+author's. Each placed heading records that the claim was inferred, the picker
+says how many were placed, and the Document information panel says the rest is
+the author's structure. Where the author used heading styles at all, their
+outline stands and this reading is not offered.
 
 It exists because the tag tree is the better answer and not always the right
 one. Tags can be stale, or applied by a tool that guessed; the way to find out
 is to read the document both ways. Switching changes every view at once — the
-Markdown view's "The same as the Reader" follows it, so the two never disagree about
-what the Reader is showing.
+Markdown view's "The same as the Reader" follows it, so the two never disagree
+about what the Reader is showing.
 
 Two things about it are consequences of the design rather than choices:
 
@@ -792,8 +762,6 @@ document would leave undescribed if its tags were lost.
   available, but its accuracy on Japanese scans is unmeasured — treat it as
   experimental. Elsewhere, image-only PDFs can be viewed (Original) but not read
   as text.
-- Images inside the PDF are detected and announced but not extracted, so the
-  Reader shows a placeholder rather than the picture.
 - Tagged PDF links inside the Reader are resolved by matching structure
   elements to link annotations by position. A link whose annotation rectangle
   does not overlap its text will fall back to plain text.
@@ -841,18 +809,17 @@ document would leave undescribed if its tags were lost.
 
 ## Future direction
 
-- **Comparing real and inferred structure** — both producers now run on every
-  document, so the two structures can be diffed and disagreements surfaced
-  (e.g. "PDF tag: P, inferred: H1"). That comparison is what the planned
-  Structure view would show.
-- **Better figure/image association** — pairing is positional today; Tagged PDF
-  `/BBox` on structure elements would make it exact where producers supply it.
-- **Replacing the browser's PDF viewer** — Chrome's `application/pdf` MIME
-  handler could launch this extension directly. Launch is already separated from
-  the Reader, so this becomes a new entrypoint constructing a different
-  `PdfSource`. `mime_types_handler` is deliberately not implemented here.
-- **A Structure view** — a fourth mode showing actual Tagged PDF structure,
-  inferred structure and OCR-derived structure side by side.
+[ROADMAP.md](ROADMAP.md) is the plan of record, and it is short on purpose: the
+next version of it should come from people who have used the extension rather
+than from the person who wrote it.
+
+What is sketched in the code rather than promised there is in
+[ARCHITECTURE.md](ARCHITECTURE.md), under *Where future work attaches*: a
+Structure view showing the readings side by side, a diff that says what they
+disagree about instead of leaving a reader to switch and compare, exact figure
+positions from `/BBox`, and the `application/pdf` MIME handler — the route that
+would catch a PDF served from an address not ending in `.pdf`, and that would
+need no host permission at all.
 
 ## License
 
