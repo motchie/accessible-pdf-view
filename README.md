@@ -72,6 +72,10 @@ Additional behaviour worth knowing:
 
 ## Installation
 
+[**Accessible PDF View on the Chrome Web Store**](https://chromewebstore.google.com/detail/accessible-pdf-view/gcoebmifedejfelponipkphjndofofil)
+is the built extension for Chrome. Firefox is not listed yet — its build is
+below, and a listing on the add-on site is still to come.
+
 To run it from source:
 
 ```bash
