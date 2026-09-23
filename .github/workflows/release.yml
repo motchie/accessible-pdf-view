@@ -64,10 +64,15 @@ jobs:
       - run: npm test
       - run: npm run zip
 
+      # `include-hidden-files` because WXT writes to `.output`, and a path
+      # component beginning with a dot is hidden: without this the action
+      # matches nothing and reports "No files were found with the provided
+      # path", with the build itself having succeeded.
       - uses: actions/upload-artifact@v4
         with:
           name: chrome-zip
           path: .output/*-chrome.zip
+          include-hidden-files: true
           if-no-files-found: error
 
   submit:
