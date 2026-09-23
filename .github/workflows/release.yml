@@ -40,9 +40,9 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: npm
@@ -68,7 +68,7 @@ jobs:
       # component beginning with a dot is hidden: without this the action
       # matches nothing and reports "No files were found with the provided
       # path", with the build itself having succeeded.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: chrome-zip
           path: .output/*-chrome.zip
@@ -83,9 +83,9 @@ jobs:
     # makes every submission wait for a click.
     environment: chrome-web-store
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: npm
@@ -93,7 +93,7 @@ jobs:
       # Only for the `wxt` binary; nothing is built here.
       - run: npm ci --ignore-scripts
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: chrome-zip
           path: dist
@@ -123,7 +123,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: chrome-zip
           path: dist
