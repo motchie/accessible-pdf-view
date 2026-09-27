@@ -138,8 +138,8 @@ announces progress. For now the package is a patched build of 1.23.0 in
 
 - `worker.ts` — the worker. Imports the WASM with `?url` so the bundler emits it
   once and its final path is explicit.
-- `protocol.ts` — the messages, plus TypeScript mirrors of pdf-inspector 0.1.3's
-  result types.
+- `protocol.ts` — the messages, plus TypeScript mirrors of pdf-inspector
+  1.23.0's result types.
 - `client.ts` — main-thread handle; owns the worker, correlates requests,
   supports cancellation. Contains no extension API.
 - `markdown-to-document.ts` — Markdown → Document Model, via mdast.

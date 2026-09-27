@@ -2,10 +2,20 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
-import init, { processPdf } from '@firecrawl/pdf-inspector-wasm';
+import init, { processPdf, type PdfProcessResult } from '@firecrawl/pdf-inspector-wasm';
 import { adaptInspectorResult } from '../lib/pdf/inspector/adapter';
 import type { InspectorRawResult } from '../lib/pdf/inspector/protocol';
 import { buildMinimalPdf } from './helpers/minimal-pdf';
+
+/**
+ * The mirror in protocol.ts and the package's own declaration, held together by
+ * the compiler. Each direction fails `tsc` on a different drift: the package
+ * gaining a field the mirror lacks, or the mirror claiming one the package
+ * never sends. Checked at compile time only; nothing here runs.
+ */
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+const mirrorMatchesPackage: Same<InspectorRawResult, PdfProcessResult> = true;
+void mirrorMatchesPackage;
 
 /**
  * Runs the real pdf-inspector WebAssembly module.

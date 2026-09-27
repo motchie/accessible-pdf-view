@@ -14,6 +14,7 @@ export function inspectorResult(
     confidence: 1,
     layout: { isComplex: false, pagesWithTables: [], pagesWithColumns: [] },
     hasEncodingIssues: false,
+    cmapGaps: [],
     ...overrides,
   };
 }
