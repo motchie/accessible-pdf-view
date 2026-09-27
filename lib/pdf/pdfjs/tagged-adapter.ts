@@ -8,13 +8,14 @@ import type {
   TableCell,
   TableRow,
 } from '../document-model';
-import { inlineToPlainText } from '../document-model';
+import { documentToPlainText, inlineToPlainText } from '../document-model';
 import { normalizeCjkSpacing } from '../inspector/markdown-to-document';
 import { sanitizeHref } from '../sanitize-url';
 import { classifyAlternativeText } from './generated-alt';
 import {
   buildPageTextIndex,
   findLinkFor,
+  nonWhitespaceLength,
   type BoundingBox,
   type PageTextIndex,
 } from './page-text-index';
@@ -53,6 +54,11 @@ export interface TaggedExtraction {
   document: AccessibleDocument;
   /** Roles seen, for diagnostics and the future Structure view. */
   roles: Record<string, number>;
+  /**
+   * Non-whitespace characters of the text PDF.js finds on the pages with a
+   * tree, tagged or not. See `coversPageText`.
+   */
+  pageTextLength: number;
 }
 
 export async function extractTaggedDocument(
@@ -61,6 +67,7 @@ export async function extractTaggedDocument(
 ): Promise<TaggedExtraction | null> {
   const pages: DocumentPage[] = [];
   const roles: Record<string, number> = {};
+  let pageTextLength = 0;
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     if (options.signal?.aborted) return null;
@@ -79,6 +86,7 @@ export async function extractTaggedDocument(
     }
 
     const index = await buildPageTextIndex(page);
+    pageTextLength += index.textLength;
     const context: Context = { index, roles };
     const nodes = blocksFrom(tree, context);
 
@@ -95,6 +103,7 @@ export async function extractTaggedDocument(
 
   return {
     roles,
+    pageTextLength,
     document: {
       metadata: {
         ...(options.info?.title ? { title: options.info.title } : {}),
@@ -123,6 +132,27 @@ export function isUsable(extraction: TaggedExtraction | null): boolean {
 
   const text = nodes.map(plainTextOf).join('');
   return text.trim().length > 0;
+}
+
+/**
+ * Whether a tagged extraction carries at least half of the page text.
+ *
+ * `isUsable` is enough for a document that declares itself Tagged PDF: the
+ * declaration is the author's statement that the tree is the document. A tree
+ * without it makes no such statement, and some producers write one only for
+ * what they must — link annotations, form fields — leaving the body untagged.
+ * Preferred on `isUsable` alone, such a tree would replace a reading of the
+ * whole document with a handful of fragments.
+ *
+ * Complete trees are nowhere near the line. On the fixtures this was measured
+ * against, declared and undeclared alike, the tagged reading's text was 98% to
+ * 121% of PDF.js's — over 100% where alternative text is added — so half
+ * leaves a wide margin and still refuses a tree that tags a corner of the page.
+ */
+export function coversPageText(extraction: TaggedExtraction): boolean {
+  if (extraction.pageTextLength === 0) return true;
+  const tagged = nonWhitespaceLength(documentToPlainText(extraction.document));
+  return tagged >= extraction.pageTextLength / 2;
 }
 
 function plainTextOf(node: DocumentNode): string {

@@ -6,7 +6,7 @@ import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { nodeToPlainText } from '../lib/pdf/document-model';
 import { readPdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
-import { extractTaggedDocument, isUsable } from '../lib/pdf/pdfjs/tagged-adapter';
+import { coversPageText, extractTaggedDocument, isUsable } from '../lib/pdf/pdfjs/tagged-adapter';
 import { buildMinimalPdf, type MinimalPdfOptions } from './helpers/minimal-pdf';
 
 /**
@@ -61,5 +61,30 @@ describe('extractTaggedDocument, on an undeclared tree', () => {
     const undeclared = await readTags('undeclared');
     expect(undeclared).toEqual(LINES);
     expect(undeclared).toEqual(await readTags('declared'));
+  });
+});
+
+describe('coversPageText', () => {
+  const extract = async (options: MinimalPdfOptions) => {
+    const pdf = await open(options);
+    const extraction = await extractTaggedDocument(pdf, { info: await readPdfDocumentInfo(pdf) });
+    expect(isUsable(extraction)).toBe(true);
+    return extraction!;
+  };
+
+  it('accepts a tree that tags the whole page', async () => {
+    const extraction = await extract({ pages: [LINES], tagged: 'undeclared' });
+    expect(extraction.pageTextLength).toBe(LINES.join('').replace(/\s/g, '').length);
+    expect(coversPageText(extraction)).toBe(true);
+  });
+
+  it('refuses a tree that tags a corner of it', async () => {
+    // A usable tree — it has text — that holds a line of five.
+    const extraction = await extract({
+      pages: [['Link', 'The body of the document, which no tag reaches.', 'More of it.', 'And more.', 'The end.']],
+      tagged: 'undeclared',
+      taggedLines: 1,
+    });
+    expect(coversPageText(extraction)).toBe(false);
   });
 });

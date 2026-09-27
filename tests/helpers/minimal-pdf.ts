@@ -16,6 +16,11 @@ export interface MinimalPdfOptions {
    * producers do.
    */
   tagged?: 'declared' | 'undeclared';
+  /**
+   * With `tagged`, tag only each page's first this-many lines and draw the
+   * rest as untagged content — a tree that covers part of the page.
+   */
+  taggedLines?: number;
 }
 
 export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
@@ -58,6 +63,7 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
         const y = 720 - lineIndex * 30;
         const text = `BT /F1 ${size} Tf 72 ${y} Td (${escapePdfString(line)}) Tj ET`;
         if (!options.tagged) return text;
+        if (options.taggedLines !== undefined && lineIndex >= options.taggedLines) return text;
 
         const elementObj = nextElementObj++;
         objects[elementObj] =
