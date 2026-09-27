@@ -57,7 +57,7 @@ describe('an undeclared structure tree', () => {
     mount(UNDECLARED, 'tagged-pdf');
     expect(row('構造タグ')).toBe('あり（Tagged PDF の宣言なし）');
     expect(notes()).toEqual([
-      'この PDF には構造タグがありますが、Tagged PDF であるという宣言（/MarkInfo の /Marked true）がありません。規格（ISO 32000、PDF/UA）が求める宣言がないため、ほかのビューアや支援技術ではタグが使われないことがあります。',
+      'この PDF には構造タグがありますが、Tagged PDF であるという宣言（/MarkInfo の /Marked true）がありません。規格（ISO 32000、PDF/UA）が求める宣言がないため、ほかのビューアーや支援技術ではタグが使われないことがあります。',
     ]);
   });
 
