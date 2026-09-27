@@ -7,6 +7,10 @@
 #     npm version patch        # or minor / major — commits and tags vX.Y.Z
 #     git push --follow-tags
 #
+# Write the release notes first, as `releases/vX.Y.Z.md` on main: the release
+# job publishes that file as the GitHub release's text. `npm version` refuses a
+# dirty tree, so the notes are committed — ideally reviewed — before it runs.
+#
 # The tag has to match package.json, and the first job refuses it if not: the
 # store would accept whatever version the manifest says, and the tag would then
 # name a release that is not the one that shipped.
@@ -123,6 +127,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Only for the release notes; nothing is built here. First, because
+      # checkout cleans the workspace and would take the zip with it.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: releases
+
       - uses: actions/download-artifact@v8
         with:
           name: chrome-zip
@@ -130,7 +140,18 @@ jobs:
 
       # The same zip the store was given, so what is attached here is what is
       # under review — not a rebuild of it.
+      #
+      # The notes are `releases/<tag>.md`, written and reviewed with the change
+      # that bumps the version. Without one, GitHub's list of merged pull
+      # requests stands in, and the run says so rather than passing quietly.
       - name: Create the GitHub release
-        run: gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+        run: |
+          notes="releases/$GITHUB_REF_NAME.md"
+          if [ -f "$notes" ]; then
+            gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes-file "$notes"
+          else
+            echo "::warning::No $notes; the release notes are GitHub's generated list."
+            gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+          fi
         env:
           GH_TOKEN: ${{ github.token }}
