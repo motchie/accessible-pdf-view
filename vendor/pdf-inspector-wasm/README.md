@@ -36,8 +36,9 @@ Until a release carries it, the extension ships this build.
   `6e4d24da75a4b637a1030eda0b939f0481d50f56c1e6d1b01a1a959eca700850`.
   The JavaScript glue and the type declarations are byte-identical to npm's
   1.23.0.
-- **`package.json`** is the generated one, with the version marked
-  `1.23.0-apv.1` and this README and the licence added to `files`.
+- **`package.json`** is the generated one with three fields changed: the
+  version, marked `1.23.0-apv.1`; the description, which says what this build
+  is; and `files`, which gains this README and the licence.
 
 ## What it changes
 

@@ -21,6 +21,14 @@ const assets = [
   // NOTE: pdf-inspector's WASM module is NOT copied here. The worker imports
   // it with `?url`, so the bundler emits it once into `assets/`. Copying it
   // would ship a second 4.8 MB copy of the same file.
+  //
+  // Its licence is. The binary is MIT, and embeds Adobe's CMaps under
+  // BSD-3-Clause, which requires the notice to travel with a binary
+  // redistribution; upstream's LICENSE carries both.
+  {
+    from: join(modules, '@firecrawl/pdf-inspector-wasm/LICENSE'),
+    to: join(publicDir, 'pdf-inspector/LICENSE'),
+  },
 
   // PDF.js worker. Referenced via GlobalWorkerOptions.workerSrc so that the
   // large worker bundle is not pulled through Vite.
@@ -56,6 +64,7 @@ async function exists(path) {
 
 await rm(join(publicDir, 'wasm'), { recursive: true, force: true });
 await rm(join(publicDir, 'pdfjs'), { recursive: true, force: true });
+await rm(join(publicDir, 'pdf-inspector'), { recursive: true, force: true });
 
 for (const asset of assets) {
   if (!(await exists(asset.from))) {
@@ -68,4 +77,4 @@ for (const asset of assets) {
   await cp(asset.from, asset.to, { recursive: true });
 }
 
-console.log('copy-assets: public/pdfjs is up to date.');
+console.log('copy-assets: public/pdfjs and public/pdf-inspector are up to date.');

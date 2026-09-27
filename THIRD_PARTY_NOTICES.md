@@ -45,9 +45,10 @@ and it lives in `vendor/pdf-inspector-wasm/` with its source, build command and
 hash in the README there. It returns to the npm package when a release carries
 the fix.
 
-The binary embeds Adobe's CMap resources, under the BSD-3-Clause licence;
-upstream's `LICENSE`, beside the binary in `vendor/pdf-inspector-wasm/`, carries
-that notice as well as pdf-inspector's own MIT licence.
+The binary embeds Adobe's CMap resources, under the BSD-3-Clause licence.
+Upstream's `LICENSE` carries that notice as well as pdf-inspector's own MIT
+licence, and `scripts/copy-assets.mjs` copies it into every build as
+`pdf-inspector/LICENSE`.
 
 ### PDF.js bundled assets
 
