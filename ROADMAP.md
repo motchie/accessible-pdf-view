@@ -64,7 +64,7 @@ yet said they matter.
   broken, which turned the text of some Japanese PDFs into noise, and the fix
   is waiting upstream
   ([firecrawl/pdf-inspector#594](https://github.com/firecrawl/pdf-inspector/pull/594)).
-  Until a release carries it the extension ships its own build of 1.23.0 with
+  Until a release carries it the extension ships its own build of 1.25.0 with
   that fix (`vendor/pdf-inspector-wasm/`); when one does, it goes back to
   the npm package, and to whatever else that release changes.
 
