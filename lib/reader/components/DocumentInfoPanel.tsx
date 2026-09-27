@@ -72,7 +72,15 @@ export function DocumentInfoPanel({
           </div>
         ))}
       </dl>
-      {structureSource === 'pdf-inspector' ? (
+      {/* Said whatever reading is on screen: it is a fact about the file, and
+          the one a reader checking the PDF itself most needs. */}
+      {!info.isTagged && info.hasStructureTree ? (
+        <p className="apv-docinfo__note">{m.documentInfo.undeclaredNote}</p>
+      ) : null}
+      {/* Only for a PDF with no tags at all. Keyed on the reading alone, this
+          told a reader who had switched a tagged PDF to the inferred reading
+          that it had no tags. */}
+      {structureSource === 'pdf-inspector' && !info.isTagged && !info.hasStructureTree ? (
         <p className="apv-docinfo__note">{m.documentInfo.untaggedNote}</p>
       ) : null}
       {structureSource === 'combined' ? (

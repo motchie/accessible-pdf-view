@@ -161,6 +161,8 @@ export const en = {
       'pdf-inspector': 'Inferred from the layout',
       ocr: 'Recognised by OCR',
     },
+    undeclaredNote:
+      'This PDF has structure tags, but does not declare itself Tagged PDF (/MarkInfo with /Marked true), as ISO 32000 and PDF/UA require. Other viewers and assistive technology may not use its tags.',
     untaggedNote:
       'This PDF carries no structure tags, so headings and tables are inferred from where the text sits. They may differ from the document’s real structure.',
     combinedNote:
