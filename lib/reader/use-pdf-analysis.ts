@@ -223,7 +223,9 @@ export function usePdfAnalysis(
         // a preference the document cannot honour falls to the first.
         const entries = new Map<DocumentOrigin, SourceEntry>();
 
-        if (info.isTagged) {
+        // Either is enough: a tree without the `/Marked` declaration is still
+        // the author's structure, and `isUsable` below rejects an empty one.
+        if (info.isTagged || info.hasStructureTree) {
           const tagged = await extractTaggedDocument(pdfDocument.document, {
             sourceUrl,
             info,

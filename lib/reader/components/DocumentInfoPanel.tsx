@@ -47,7 +47,12 @@ export function DocumentInfoPanel({
   add(m.documentInfo.creator, info.creator);
   add(m.documentInfo.producer, info.producer);
   add(m.documentInfo.pdfVersion, info.pdfVersion);
-  add(m.documentInfo.tagged, info.isTagged ? m.documentInfo.taggedYes : m.documentInfo.taggedNo);
+  add(
+    m.documentInfo.tagged,
+    info.isTagged ? m.documentInfo.taggedYes
+    : info.hasStructureTree ? m.documentInfo.taggedUndeclared
+    : m.documentInfo.taggedNo,
+  );
   add(m.documentInfo.thisView, structureLabel(structureSource, m));
 
   if (rows.length === 0) return null;
