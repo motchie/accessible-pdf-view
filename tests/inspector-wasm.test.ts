@@ -9,15 +9,30 @@ import { buildMinimalPdf } from './helpers/minimal-pdf';
 
 /**
  * The mirror in protocol.ts and the package's own declaration, held together by
- * the compiler: the same keys, and each assignable to the other. Assignability
- * alone is not enough — an optional field the package adds leaves both
- * directions assignable, which is how 1.24's document-information fields went
- * unnoticed until the keys were compared too. Checked at compile time only;
+ * the compiler: the same keys at every level — the result, the objects inside
+ * it, the elements of its arrays — and each side assignable to the other.
+ * Assignability alone is not enough: an optional field the package adds leaves
+ * both directions assignable, which is how 1.24's document-information fields
+ * went unnoticed until keys were compared, and comparing only the top level
+ * would miss the same thing one object down. Checked at compile time only;
  * nothing here runs.
  */
 type SameKeys<A, B> = [keyof A] extends [keyof B] ? ([keyof B] extends [keyof A] ? true : false) : false;
 type Assignable<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
-type Same<A, B> = SameKeys<A, B> extends true ? Assignable<A, B> : false;
+type AllTrue<T> = [T] extends [true] ? true : false;
+type DeepSame<A, B> = [A] extends [readonly (infer EA)[]]
+  ? [B] extends [readonly (infer EB)[]]
+    ? DeepSame<EA, EB>
+    : false
+  : [A] extends [object]
+    ? [B] extends [object]
+      ? SameKeys<A, B> extends true
+        ? AllTrue<{ [K in keyof A & keyof B]-?: DeepSame<A[K], B[K]> }[keyof A & keyof B]>
+        : false
+      : false
+    : Assignable<A, B>;
+// Assignability of the whole also settles which fields are optional.
+type Same<A, B> = DeepSame<A, B> extends true ? Assignable<A, B> : false;
 const mirrorMatchesPackage: Same<InspectorRawResult, PdfProcessResult> = true;
 void mirrorMatchesPackage;
 
