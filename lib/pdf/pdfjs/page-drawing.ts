@@ -4,7 +4,7 @@ import type { BoundingBox } from '../document-model';
 import {
   IDENTITY,
   MIN_FIGURE_SIZE_PT,
-  intersectsPage,
+  intersect,
   multiply,
   transformedBounds,
   touches,
@@ -66,9 +66,31 @@ export async function findPageDrawing(page: PDFPageProxy): Promise<PageDrawing> 
 
   const regions: PageImageRegion[] = [];
   const byContentId = new Map<string, BoundingBox>();
-  const stack: Matrix[] = [];
   const openContent: Array<string | null> = [];
+
+  // The clip travels with the matrix: `q` saves both and `Q` restores both.
+  // It starts as the page, which is also what keeps a region off the page from
+  // becoming a figure — cropping one produces a blank image. `null` means the
+  // clips so far share no area, so nothing drawn from here on is visible.
+  const pageClip: BoundingBox = { x: 0, y: 0, width: pageBox.width, height: pageBox.height };
+  const stack: Array<{ ctm: Matrix; clip: BoundingBox | null }> = [];
   let ctm: Matrix = [...IDENTITY] as Matrix;
+  let clip: BoundingBox | null = pageClip;
+  let clipPending = false;
+
+  const save = () => stack.push({ ctm: [...ctm] as Matrix, clip });
+  const restore = () => {
+    const state = stack.pop();
+    ctm = state?.ctm ?? ([...IDENTITY] as Matrix);
+    clip = state ? state.clip : pageClip;
+  };
+
+  // Only the part inside the clip is drawn, so only that part counts.
+  // InDesign routinely places a frame's content larger than the frame: the
+  // NaviLens code in the iPDF flyer (issue #12) fills a 144pt square cut down
+  // to 36pt, and counting the whole square put the figure's region 80pt below
+  // the bottom of the page.
+  const visible = (bbox: BoundingBox) => (clip ? intersect(bbox, clip) : null);
 
   const attribute = (bbox: BoundingBox) => {
     for (const id of openContent) {
@@ -92,11 +114,17 @@ export async function findPageDrawing(page: PDFPageProxy): Promise<PageDrawing> 
       continue;
     }
     if (fn === OPS.save) {
-      stack.push([...ctm] as Matrix);
+      save();
       continue;
     }
     if (fn === OPS.restore) {
-      ctm = stack.pop() ?? ([...IDENTITY] as Matrix);
+      restore();
+      continue;
+    }
+    // PDF.js emits `clip` before the path it applies to, in content-stream
+    // order (`W n`): the next path narrows the clip.
+    if (fn === OPS.clip || fn === OPS.eoClip) {
+      clipPending = true;
       continue;
     }
     if (fn === OPS.transform) {
@@ -105,20 +133,28 @@ export async function findPageDrawing(page: PDFPageProxy): Promise<PageDrawing> 
       continue;
     }
     if (fn === OPS.constructPath) {
-      // A clip path bounds what follows rather than drawing anything, and is
-      // routinely the whole page — counting it would swallow the figure it was
-      // meant to constrain.
-      const next = operators.fnArray[index + 1];
-      if (next === OPS.clip || next === OPS.eoClip) continue;
+      // PDF.js hands over the painting operator as the first argument. A path
+      // ended with `n` paints nothing: usually a clip path (`W n`), which
+      // bounds what follows and is routinely the whole page — counting it
+      // would swallow the figure it was meant to constrain. PDF.js 6 emits the
+      // `clip` *before* this operator; looking for one after it missed every
+      // clip, and six of the fourteen figures in the iPDF flyer were cropped
+      // as the whole page (GitHub issue #12).
+      const args = operators.argsArray[index] as [unknown, unknown, ArrayLike<number>?];
+      const isClip = clipPending;
+      clipPending = false;
 
       // PDF.js precomputes the path's extent, so no geometry is re-derived
       // here. It is in path space, so the current matrix still applies.
-      const args = operators.argsArray[index] as [unknown, unknown, ArrayLike<number>?];
       const extent = args?.[2];
       if (!extent || extent.length < 4) continue;
-
       const bbox = transformedBounds(ctm, extent[0]!, extent[1]!, extent[2]!, extent[3]!);
-      if (intersectsPage(bbox, pageBox.width, pageBox.height)) attribute(bbox);
+
+      // A path that clips also paints when it is ended with `f` or `S` rather
+      // than `n`; the clip still applies only to what follows it.
+      const painted = args?.[0] === OPS.endPath ? null : visible(bbox);
+      if (isClip) clip = clip ? intersect(clip, bbox) : null;
+      if (painted) attribute(painted);
       continue;
     }
     // A form XObject is a nested content stream with its own matrix. PDF.js
@@ -127,24 +163,23 @@ export async function findPageDrawing(page: PDFPageProxy): Promise<PageDrawing> 
     // real document scaled its forms by 0.09, which put figures roughly ten
     // times too large and far off the page.
     if (fn === OPS.paintFormXObjectBegin) {
-      stack.push([...ctm] as Matrix);
+      save();
       const args = operators.argsArray[index] as [number[] | undefined, unknown];
       const matrix = args?.[0];
       if (matrix && matrix.length >= 6) ctm = multiply(matrix.slice(0, 6) as Matrix, ctm);
       continue;
     }
     if (fn === OPS.paintFormXObjectEnd) {
-      ctm = stack.pop() ?? ([...IDENTITY] as Matrix);
+      restore();
       continue;
     }
     if (!IMAGE_OPS.has(fn)) continue;
 
-    const bbox = unitSquareBounds(ctm);
-
-    // A region off the page cannot be a visible figure. Cropping one produces
-    // a blank image, so this is also the backstop for any transform this
+    // A region off the page cannot be a visible figure, and the page is the
+    // outermost clip, so this is also the backstop for any transform this
     // walker still does not model.
-    if (!intersectsPage(bbox, pageBox.width, pageBox.height)) continue;
+    const bbox = visible(unitSquareBounds(ctm));
+    if (!bbox) continue;
 
     attribute(bbox);
 

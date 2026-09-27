@@ -74,14 +74,21 @@ export function reconcileToCount(
 }
 
 /**
- * The extent of a figure's own marked content.
+ * What a figure's own marked content drew, and whether it can be cropped.
  *
- * Returns nothing when the tags name no content, or when nothing was painted
- * under it — an empty `Figure` element exists in real documents, and inventing
- * a region for one would crop a blank rectangle.
+ * `none` when the tags name no content or nothing was painted under it — an
+ * empty `Figure` element exists in real documents, and some producers tag only
+ * a caption's text, so draw order is still worth trying. `too-small` when the
+ * tags did locate the drawing but it is a hairline or an icon: that is an
+ * answer, and falling back to draw order would hand the figure someone else's
+ * picture. In the iPDF flyer (issue #12) three 10pt "i" icons were shown as the
+ * Nippon Lighthouse and iPDF logos.
  */
-function boundsFor(contentIds: string[] | undefined, drawing: PageDrawing): BoundingBox | null {
-  if (!contentIds?.length) return null;
+function boundsFor(
+  contentIds: string[] | undefined,
+  drawing: PageDrawing,
+): BoundingBox | 'none' | 'too-small' {
+  if (!contentIds?.length) return 'none';
 
   let bounds: BoundingBox | null = null;
   for (const id of contentIds) {
@@ -89,11 +96,10 @@ function boundsFor(contentIds: string[] | undefined, drawing: PageDrawing): Boun
     if (bbox) bounds = bounds ? union(bounds, bbox) : bbox;
   }
 
-  if (!bounds) return null;
-  // A hairline or a stray point is not a figure worth cropping.
+  if (!bounds) return 'none';
   return bounds.width >= MIN_FIGURE_SIZE_PT && bounds.height >= MIN_FIGURE_SIZE_PT
     ? bounds
-    : null;
+    : 'too-small';
 }
 
 /**
@@ -126,10 +132,10 @@ export async function attachFigureRegions(
         return page;
       }
 
-      // Figures whose tags name their marked content are placed exactly; only
-      // the rest fall back to draw order, and only they consume image regions.
+      // Figures whose tags locate their drawing are placed exactly; only the
+      // rest fall back to draw order, and only they consume image regions.
       const unresolved = figures.filter(
-        ({ figure }) => !figure.region && !boundsFor(figure.contentIds, drawing),
+        ({ figure }) => !figure.region && boundsFor(figure.contentIds, drawing) === 'none',
       );
       const reconciled = reconcileToCount(drawing.images, unresolved.length);
 
@@ -138,7 +144,8 @@ export async function attachFigureRegions(
         if (figure.region) return figure;
 
         const exact = boundsFor(figure.contentIds, drawing);
-        if (exact) {
+        if (exact === 'too-small') return figure;
+        if (exact !== 'none') {
           return { ...figure, region: { pageNumber: page.pageNumber, bbox: exact } };
         }
 
