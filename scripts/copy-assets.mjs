@@ -20,7 +20,7 @@ const publicDir = join(root, 'public');
 const assets = [
   // NOTE: pdf-inspector's WASM module is NOT copied here. The worker imports
   // it with `?url`, so the bundler emits it once into `assets/`. Copying it
-  // would ship a second 4.8 MB copy of the same file.
+  // would ship a second copy of the same file, which is about 6 MB.
   //
   // Its licence is. The binary is MIT, and embeds Adobe's CMaps under
   // BSD-3-Clause, which requires the notice to travel with a binary

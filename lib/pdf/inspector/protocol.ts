@@ -36,7 +36,7 @@ export interface InspectorRequest {
   sourceUrl?: string | null;
 }
 
-/** Mirrors `PdfProcessResult` from @firecrawl/pdf-inspector-wasm 0.1.3. */
+/** Mirrors `PdfProcessResult` from @firecrawl/pdf-inspector-wasm 1.23.0. */
 export interface InspectorRawResult {
   pdfType: 'TextBased' | 'Scanned' | 'ImageBased' | 'Mixed';
   markdown?: string;
@@ -53,6 +53,22 @@ export interface InspectorRawResult {
     pagesWithColumns: number[];
   };
   hasEncodingIssues: boolean;
+  /**
+   * Fonts whose ToUnicode CMap — or, without one, the embedded program's cmap
+   * table — had no entry for some of the codes shown through them. Empty when
+   * every code had an entry. Not read yet; carried so that a notice about
+   * unreadable text can say which font it was.
+   */
+  cmapGaps: Array<{
+    /** The font's /BaseFont name, or its resource name when it has none. */
+    font: string;
+    /** Codes shown through the font, repeats included. */
+    codes: number;
+    /** Codes without an entry that were read from the mapped codes around them. */
+    interpolated: number;
+    /** Codes without an entry that could not be read; each is a U+FFFD. */
+    unmapped: number;
+  }>;
 }
 
 /**
