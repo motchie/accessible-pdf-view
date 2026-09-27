@@ -58,7 +58,6 @@ const IMAGE_OPS = new Set<number>([
 
 export async function findPageDrawing(page: PDFPageProxy): Promise<PageDrawing> {
   const operators = await page.getOperatorList();
-  const pageBox = page.getViewport({ scale: 1 });
   // PDF.js names marked content `p<pageRefNum>R_mc<mcid>`, and the structure
   // tree refers to figures by exactly those strings.
   const pageRef = (page as unknown as { ref?: { num: number } }).ref;
@@ -72,7 +71,18 @@ export async function findPageDrawing(page: PDFPageProxy): Promise<PageDrawing> 
   // It starts as the page, which is also what keeps a region off the page from
   // becoming a figure — cropping one produces a blank image. `null` means the
   // clips so far share no area, so nothing drawn from here on is visible.
-  const pageClip: BoundingBox = { x: 0, y: 0, width: pageBox.width, height: pageBox.height };
+  //
+  // The page is `view`, in the same user space as everything drawn: not the
+  // viewport, whose width and height swap on a page with `/Rotate 90` and
+  // which starts at zero whatever the crop box's origin. Built from the
+  // viewport, a rotated portrait page cut every figure off above y = 595.
+  const [x0, y0, x1, y1] = page.view;
+  const pageClip: BoundingBox = {
+    x: Math.min(x0!, x1!),
+    y: Math.min(y0!, y1!),
+    width: Math.abs(x1! - x0!),
+    height: Math.abs(y1! - y0!),
+  };
   const stack: Array<{ ctm: Matrix; clip: BoundingBox | null }> = [];
   let ctm: Matrix = [...IDENTITY] as Matrix;
   let clip: BoundingBox | null = pageClip;

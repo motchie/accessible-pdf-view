@@ -21,6 +21,12 @@ export interface MinimalPdfOptions {
    * rest as untagged content — a tree that covers part of the page.
    */
   taggedLines?: number;
+  /** Raw content-stream operators drawn after each page's text. */
+  drawing?: string;
+  /** The page's `/Rotate`. */
+  rotate?: number;
+  /** The page's `/CropBox`; the media box stays [0 0 612 792]. */
+  cropBox?: [number, number, number, number];
 }
 
 export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
@@ -71,12 +77,15 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
         pageElements.push(elementObj);
         return `/P << /MCID ${lineIndex} >> BDC ${text} EMC`;
       })
-      .join('\n');
+      .join('\n')
+      .concat(options.drawing ? `\n${options.drawing}` : '');
     elements.push(...pageElements);
     parentTreeNums.push(`${index} [${pageElements.map((obj) => `${obj} 0 R`).join(' ')}]`);
 
     objects[pageObj] =
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] ` +
+      (options.rotate ? `/Rotate ${options.rotate} ` : '') +
+      (options.cropBox ? `/CropBox [${options.cropBox.join(' ')}] ` : '') +
       `/Resources << /Font << /F1 ${fontObj} 0 R >> >> /Contents ${contentObj} 0 R` +
       (options.tagged ? ` /StructParents ${index}` : '') +
       ` >>`;

@@ -1,6 +1,12 @@
+// @vitest-environment node
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { OPS } from 'pdfjs-dist';
 import { describe, expect, it } from 'vitest';
 import { findPageDrawing } from '../lib/pdf/pdfjs/page-drawing';
+import { buildMinimalPdf, type MinimalPdfOptions } from './helpers/minimal-pdf';
 
 /**
  * A clip path draws nothing — GitHub issue #12.
@@ -23,7 +29,7 @@ function fakePage(ops: Array<[number, unknown]>) {
   return {
     ref: { num: 6 },
     pageNumber: 1,
-    getViewport: () => ({ width: PAGE_WIDTH, height: PAGE_HEIGHT }),
+    view: [0, 0, PAGE_WIDTH, PAGE_HEIGHT],
     getOperatorList: async () => ({
       fnArray: ops.map(([fn]) => fn),
       argsArray: ops.map(([, args]) => args),
@@ -119,5 +125,39 @@ describe('findPageDrawing', () => {
     expect(drawing.images[0]!.bbox.y).toBe(0);
     expect(drawing.images[0]!.bbox.width).toBeCloseTo(PAGE_WIDTH - 550);
     expect(drawing.images[0]!.bbox.height).toBe(60);
+  });
+});
+
+/**
+ * The page clip is the page in user space, where everything drawn is measured.
+ * Built from the viewport instead, it was wrong on two kinds of real page: one
+ * turned with `/Rotate 90`, whose viewport swaps width and height, and one
+ * whose crop box does not start at the origin.
+ */
+describe('findPageDrawing, on a real page', () => {
+  async function drawingOf(options: Omit<MinimalPdfOptions, 'pages'>) {
+    (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
+      pathToFileURL(resolve('node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')).href;
+    const pdf = await (
+      pdfjs as unknown as { getDocument: (o: unknown) => { promise: Promise<PDFDocumentProxy> } }
+    ).getDocument({ data: buildMinimalPdf({ pages: [[]], tagged: 'declared', ...options }) }).promise;
+    return findPageDrawing(await pdf.getPage(1));
+  }
+
+  // A 100pt square high on a 612 x 792 page, marked as MCID 0.
+  const square = '/Figure << /MCID 0 >> BDC 0 0 1 rg 400 600 100 100 re f EMC';
+
+  it('keeps a figure above y = 612 on a page turned with /Rotate 90', async () => {
+    const drawing = await drawingOf({ drawing: square, rotate: 90 });
+    expect([...drawing.byContentId.values()]).toEqual([
+      { x: 400, y: 600, width: 100, height: 100 },
+    ]);
+  });
+
+  it('crops to a crop box that does not start at the origin', async () => {
+    const drawing = await drawingOf({ drawing: square, cropBox: [50, 50, 450, 750] });
+    expect([...drawing.byContentId.values()]).toEqual([
+      { x: 400, y: 600, width: 50, height: 100 },
+    ]);
   });
 });
