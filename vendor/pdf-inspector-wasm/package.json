@@ -1,0 +1,27 @@
+{
+  "name": "@firecrawl/pdf-inspector-wasm",
+  "type": "module",
+  "collaborators": [
+    "Firecrawl Team"
+  ],
+  "description": "Browser WebAssembly bindings for pdf-inspector \u2014 1.23.0 with the bcmap decoding fix (firecrawl/pdf-inspector#594), built for Accessible PDF View",
+  "version": "1.23.0-apv.1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/firecrawl/pdf-inspector"
+  },
+  "files": [
+    "pdf_inspector_wasm_bg.wasm",
+    "pdf_inspector_wasm.js",
+    "pdf_inspector_wasm.d.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "main": "pdf_inspector_wasm.js",
+  "homepage": "https://github.com/firecrawl/pdf-inspector",
+  "types": "pdf_inspector_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

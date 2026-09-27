@@ -60,6 +60,13 @@ yet said they matter.
   characters a document might contain, which fails silently and in the one
   script this project exists for. So it stays a control that does nothing for a
   reader who has not installed it.
+- **pdf-inspector is a patched build.** Its reader for the CMaps it embeds was
+  broken, which turned the text of some Japanese PDFs into noise, and the fix
+  is waiting upstream
+  ([firecrawl/pdf-inspector#594](https://github.com/firecrawl/pdf-inspector/pull/594)).
+  Until a release carries it the extension ships its own build of 1.23.0 with
+  that one fix (`vendor/pdf-inspector-wasm/`); when one does, it goes back to
+  the npm package, and to whatever else that release changes.
 
 ## What would change this file
 

@@ -23,7 +23,7 @@
     "postinstall": "node scripts/copy-assets.mjs && wxt prepare"
   },
   "dependencies": {
-    "@firecrawl/pdf-inspector-wasm": "^1.17.0",
+    "@firecrawl/pdf-inspector-wasm": "file:vendor/pdf-inspector-wasm",
     "mdast-util-from-markdown": "^2.0.2",
     "mdast-util-gfm-table": "^2.0.0",
     "micromark-extension-gfm-table": "^2.1.1",

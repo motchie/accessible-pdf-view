@@ -9,7 +9,7 @@ These are packaged into the built extension and distributed to users.
 
 | Component | Version | License | Notes |
 | --- | --- | --- | --- |
-| [pdf-inspector](https://github.com/firecrawl/pdf-inspector) (`@firecrawl/pdf-inspector-wasm`) | 1.17.0 | MIT | The Rust core compiled to WebAssembly. `pdf_inspector_wasm_bg.wasm` is shipped verbatim. |
+| [pdf-inspector](https://github.com/firecrawl/pdf-inspector) (`@firecrawl/pdf-inspector-wasm`) | 1.23.0, **modified** | MIT | The Rust core compiled to WebAssembly. Built from 1.23.0 plus one fix, not taken from npm; see below. |
 | [PDF.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) | 6.2.108 | Apache-2.0 | Library, worker, CMaps, standard fonts, and the image-decoder WebAssembly modules are shipped. |
 | [React](https://github.com/facebook/react) | 19.2 | MIT | |
 | [mdast-util-from-markdown](https://github.com/syntax-tree/mdast-util-from-markdown) | 2.0 | MIT | |
@@ -35,6 +35,19 @@ font names, `ATKINSON` and `HYPERLEGIBLE`: a modified version could not have
 carried either.
 
 Copyright 2020–2024 The Atkinson Hyperlegible Next Project Authors.
+
+### pdf-inspector
+
+`pdf_inspector_wasm_bg.wasm` is not npm's. It is built from the `v1.23.0` tag
+plus one commit, which fixes the decoding of the CMaps the binary embeds
+([firecrawl/pdf-inspector#594](https://github.com/firecrawl/pdf-inspector/pull/594)),
+and it lives in `vendor/pdf-inspector-wasm/` with its source, build command and
+hash in the README there. It returns to the npm package when a release carries
+the fix.
+
+The binary embeds Adobe's CMap resources, under the BSD-3-Clause licence;
+upstream's `LICENSE`, beside the binary in `vendor/pdf-inspector-wasm/`, carries
+that notice as well as pdf-inspector's own MIT licence.
 
 ### PDF.js bundled assets
 

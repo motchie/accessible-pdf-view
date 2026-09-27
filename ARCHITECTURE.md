@@ -128,7 +128,8 @@ takes it out and deletes it (`lib/browser/handoff.ts`).
 `@firecrawl/pdf-inspector-wasm` runs in a dedicated module worker. Its
 `processPdf` is synchronous once initialised and can take seconds, so running it
 on the Reader's thread would freeze the UI — including the live region that
-announces progress.
+announces progress. For now the package is a patched build of 1.23.0 in
+`vendor/pdf-inspector-wasm/`, whose README says why and when it goes.
 
 - `worker.ts` — the worker. Imports the WASM with `?url` so the bundler emits it
   once and its final path is explicit.
