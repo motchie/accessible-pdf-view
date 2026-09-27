@@ -218,6 +218,9 @@ export const en = {
     describeFailed:
       'There is an image here. Its content was analysed, but no description could be generated.',
     noAlt: 'There is an image here. No alternative text could be obtained.',
+    noAuthorAlt: 'There is an image here. The author gave no alternative text.',
+    tooSmallNoAuthorAlt:
+      'Tagged as a figure, but too small to show as an image. The author gave no alternative text.',
     table: 'Table',
     tableWithCaption: (caption: string) => `Table: ${caption}`,
     pageLabel: (pageNumber: number) => `Page ${pageNumber}`,

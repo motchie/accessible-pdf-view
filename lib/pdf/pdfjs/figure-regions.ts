@@ -144,7 +144,7 @@ export async function attachFigureRegions(
         if (figure.region) return figure;
 
         const exact = boundsFor(figure.contentIds, drawing);
-        if (exact === 'too-small') return figure;
+        if (exact === 'too-small') return { ...figure, tooSmallToShow: true };
         if (exact !== 'none') {
           return { ...figure, region: { pageNumber: page.pageNumber, bbox: exact } };
         }

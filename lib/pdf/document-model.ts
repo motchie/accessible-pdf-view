@@ -310,6 +310,23 @@ export interface FigureNode extends NodeProvenance {
    * failed, or was never asked.
    */
   descriptionAttempted?: boolean;
+  /**
+   * Set when the reading could see the document's own alternative-text field:
+   * a Tagged PDF `Figure` and its `/Alt`.
+   *
+   * With it, a figure without alternative text is a fact about the PDF: the
+   * author gave none. Without it, the reading may simply have had no way to see
+   * one, and "none could be obtained" is all that can truthfully be said.
+   */
+  altTextFieldRead?: boolean;
+  /**
+   * Set when the figure has no image because its drawing is too small to crop.
+   *
+   * The tags located the drawing, so this is not a failure to find it. The
+   * Reader says that nothing is shown and why, rather than announcing an image
+   * the reader will not find (GitHub issue #14).
+   */
+  tooSmallToShow?: boolean;
   status: FigureStatus;
 }
 

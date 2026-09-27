@@ -328,6 +328,10 @@ export function figurePlaceholderText(
     return m.figures.decorativeGuess;
   }
 
+  // Too small to crop: nothing is shown, so the notice must not open by
+  // announcing an image. The tags located the drawing, so the reason is known.
+  if (node.tooSmallToShow && node.altTextFieldRead) return m.figures.tooSmallNoAuthorAlt;
+
   if (node.status === 'unavailable') return m.figures.unavailable;
 
   // "We tried and failed" is not the same as "nobody asked". Saying so stops
@@ -335,6 +339,11 @@ export function figurePlaceholderText(
   if (node.descriptionAttempted) {
     return m.figures.describeFailed;
   }
+
+  // Where the reading could see the `/Alt` field, its absence is the author's,
+  // not a failure to read it. "Could not be obtained" is true only where the
+  // reading has no way to see one — pdf-inspector's layout reading.
+  if (node.altTextFieldRead) return m.figures.noAuthorAlt;
 
   return m.figures.noAlt;
 }

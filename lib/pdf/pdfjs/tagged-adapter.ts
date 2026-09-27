@@ -529,6 +529,7 @@ function figureFrom(node: StructNode, context: Context): DocumentNode {
       : {}),
     ...(caption ? { caption } : {}),
     ...(contentIds.length > 0 ? { contentIds } : {}),
+    altTextFieldRead: true,
     status: alt ? 'available' : 'missing-alt',
   };
 }
