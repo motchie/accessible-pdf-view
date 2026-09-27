@@ -52,8 +52,11 @@ Both structure producers run on every document:
   (58 ms on a 29-page deck) and grows with the document. The worker returns a
   Document Model, not a raw result. It produces the Markdown view, the OCR
   classification, and the structure used for untagged documents.
-- **TaggedPdfAdapter** runs when `getMarkInfo()` reports `Marked: true`. If the
-  extraction is usable, it wins.
+- **TaggedPdfAdapter** runs when `getMarkInfo()` reports `Marked: true`, or
+  when the catalog has a `/StructTreeRoot` without that declaration — some
+  producers write the tree and omit `/MarkInfo`, and the tree is still the
+  author's structure. If the extraction is usable, it wins. The document
+  information panel says which of the two it was.
 
 Tagged structure wins because inference is a guess and tagging is a statement.
 The difference is not academic: where inference produced neither, the tags have
@@ -417,8 +420,9 @@ document at all. It now does several jobs, one module each:
 - `figure-regions.ts` — decides which region belongs to which figure.
 - `region-raster.ts` — renders a region to a blob, for the Reader and for the
   describer.
-- `metadata.ts` — `getMetadata()` and `getMarkInfo()`. Source of the document's
-  title, author, dates, `/Lang` and its tagged-or-not status. PDF.js types
+- `metadata.ts` — `getMetadata()` and `getMarkInfo()`, and page 1's
+  `getStructTree()` to learn whether a structure tree exists at all. Source of
+  the document's title, author, dates, `/Lang` and its tagged-or-not status. PDF.js types
   `info` as `Object`, so every field is validated rather than trusted.
 - `tagged-adapter.ts` + `page-text-index.ts` — the structure tree.
 - `page-lines.ts` — a page's text as lines with positions, rebuilt from

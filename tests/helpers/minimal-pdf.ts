@@ -10,6 +10,12 @@ export interface MinimalPdfOptions {
   /** One entry per page; each string is drawn as a separate text line. */
   pages: string[][];
   title?: string;
+  /**
+   * Tag every line as a `P` in a structure tree. `declared` also writes
+   * `/MarkInfo << /Marked true >>`; `undeclared` writes the tree alone, as some
+   * producers do.
+   */
+  tagged?: 'declared' | 'undeclared';
 }
 
 export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
@@ -26,7 +32,18 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
     .map((_, index) => `${firstPageObj + index * 2} 0 R`)
     .join(' ');
 
-  objects[1] = `<< /Type /Catalog /Pages 2 0 R >>`;
+  // Structure objects follow the pages: the root, its parent tree, then one
+  // `P` element per line.
+  const structRootObj = firstPageObj + pageCount * 2;
+  const parentTreeObj = structRootObj + 1;
+  let nextElementObj = parentTreeObj + 1;
+  const elements: number[] = [];
+  const parentTreeNums: string[] = [];
+
+  const catalogExtras =
+    (options.tagged ? ` /StructTreeRoot ${structRootObj} 0 R` : '') +
+    (options.tagged === 'declared' ? ' /MarkInfo << /Marked true >>' : '');
+  objects[1] = `<< /Type /Catalog /Pages 2 0 R${catalogExtras} >>`;
   objects[2] = `<< /Type /Pages /Kids [${kids}] /Count ${pageCount} >>`;
   objects[fontObj] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>`;
 
@@ -34,19 +51,38 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
     const pageObj = firstPageObj + index * 2;
     const contentObj = pageObj + 1;
 
+    const pageElements: number[] = [];
     const content = lines
       .map((line, lineIndex) => {
         const size = lineIndex === 0 ? 24 : 12;
         const y = 720 - lineIndex * 30;
-        return `BT /F1 ${size} Tf 72 ${y} Td (${escapePdfString(line)}) Tj ET`;
+        const text = `BT /F1 ${size} Tf 72 ${y} Td (${escapePdfString(line)}) Tj ET`;
+        if (!options.tagged) return text;
+
+        const elementObj = nextElementObj++;
+        objects[elementObj] =
+          `<< /Type /StructElem /S /P /P ${structRootObj} 0 R /Pg ${pageObj} 0 R /K ${lineIndex} >>`;
+        pageElements.push(elementObj);
+        return `/P << /MCID ${lineIndex} >> BDC ${text} EMC`;
       })
       .join('\n');
+    elements.push(...pageElements);
+    parentTreeNums.push(`${index} [${pageElements.map((obj) => `${obj} 0 R`).join(' ')}]`);
 
     objects[pageObj] =
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] ` +
-      `/Resources << /Font << /F1 ${fontObj} 0 R >> >> /Contents ${contentObj} 0 R >>`;
+      `/Resources << /Font << /F1 ${fontObj} 0 R >> >> /Contents ${contentObj} 0 R` +
+      (options.tagged ? ` /StructParents ${index}` : '') +
+      ` >>`;
     objects[contentObj] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
   });
+
+  if (options.tagged) {
+    objects[structRootObj] =
+      `<< /Type /StructTreeRoot /K [${elements.map((obj) => `${obj} 0 R`).join(' ')}] ` +
+      `/ParentTree ${parentTreeObj} 0 R >>`;
+    objects[parentTreeObj] = `<< /Nums [${parentTreeNums.join(' ')}] >>`;
+  }
 
   const infoObj = objects.length;
   if (options.title) {

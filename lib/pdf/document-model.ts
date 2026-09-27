@@ -132,6 +132,12 @@ export interface PdfFileInfo {
   pdfVersion?: string;
   /** The document declares logical structure (`/MarkInfo /Marked true`). */
   isTagged: boolean;
+  /**
+   * The document catalog has a `/StructTreeRoot` — structure tags exist,
+   * whether or not `isTagged` declares them. Tagged PDF requires both; some
+   * producers write the tree and omit the declaration.
+   */
+  hasStructureTree: boolean;
   isLinearized?: boolean;
   hasAcroForm?: boolean;
   /** Raw XMP packet, kept for a future Structure view. */

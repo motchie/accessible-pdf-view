@@ -123,6 +123,7 @@ export const ja: Messages = {
     pdfVersion: 'PDF バージョン',
     tagged: '構造タグ',
     taggedYes: 'あり (Tagged PDF)',
+    taggedUndeclared: 'あり（Tagged PDF の宣言なし）',
     taggedNo: 'なし',
     thisView: 'この画面の構造',
     pages: (count: number) => `${count} ページ`,

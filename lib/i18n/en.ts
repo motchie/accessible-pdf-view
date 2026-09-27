@@ -150,6 +150,8 @@ export const en = {
     pdfVersion: 'PDF version',
     tagged: 'Structure tags',
     taggedYes: 'Yes (Tagged PDF)',
+    // The tree is there; the catalog's /MarkInfo does not declare it.
+    taggedUndeclared: 'Yes, but not declared as Tagged PDF',
     taggedNo: 'No',
     thisView: 'Structure on screen',
     pages: (count: number) => `${count} ${count === 1 ? 'page' : 'pages'}`,

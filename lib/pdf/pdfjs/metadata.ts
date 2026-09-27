@@ -5,9 +5,10 @@ import type { PdfFileInfo } from '../document-model';
  * Reads the PDF's own description of itself.
  *
  * pdf-inspector reports a title and nothing else, so this is where the rest of
- * the document information comes from. `isTagged` is the consequential one: it
- * is how the Reader learns the author supplied real structure, and that it
- * should be preferred over anything inferred from layout.
+ * the document information comes from. `isTagged` and `hasStructureTree` are
+ * the consequential ones: they are how the Reader learns the author supplied
+ * real structure, and that it should be preferred over anything inferred from
+ * layout.
  *
  * The shape lives in the Document Model (`PdfFileInfo`) so that nothing
  * downstream depends on PDF.js.
@@ -26,9 +27,9 @@ export type PdfDocumentInfo = PdfFileInfo;
  * it, and the failure is silent because falling back to inferred structure
  * looks like an untagged PDF rather than like a bug.
  *
- * So the shape is decided at runtime and both are accepted. `isTagged` gates
- * the whole tagged path, which makes it the single field here worth being
- * defensive about.
+ * So the shape is decided at runtime and both are accepted. `isTagged` is one
+ * of the two fields that open the tagged path (with `hasStructureTree`), which
+ * makes it worth being defensive about.
  */
 export function isMarked(markInfo: unknown): boolean {
   if (markInfo instanceof Map) return markInfo.get('Marked') === true;
@@ -36,6 +37,30 @@ export function isMarked(markInfo: unknown): boolean {
     return (markInfo as { Marked?: unknown }).Marked === true;
   }
   return false;
+}
+
+/**
+ * Whether the document catalog has a `/StructTreeRoot`.
+ *
+ * PDF.js exposes no catalog accessor for it, but `getStructTree()` returns null
+ * for every page exactly when the catalog has none (or it cannot be read), and
+ * a tree — possibly empty — otherwise. So the first page answers for the whole
+ * document, at the cost of parsing that page's share of the tree once.
+ *
+ * This is separate from `isMarked` because producers disagree with the
+ * standard: a document can carry a complete, well-ordered tree and no
+ * `/MarkInfo` at all. Tagged PDF requires both, so such a document is not
+ * conforming — but its tags are still the author's structure, and a reader is
+ * better served by them than by a guess from layout.
+ */
+async function hasStructTreeRoot(document: PDFDocumentProxy): Promise<boolean> {
+  try {
+    if (document.numPages < 1) return false;
+    const page = await document.getPage(1);
+    return (await page.getStructTree()) !== null;
+  } catch {
+    return false;
+  }
 }
 
 /** The subset of PDF.js's untyped `info` object this project reads. */
@@ -59,9 +84,10 @@ export async function readPdfDocumentInfo(
 ): Promise<PdfDocumentInfo> {
   // `getMetadata` is typed as returning `info: Object`, so every field is
   // treated as unknown and validated here rather than trusted.
-  const [meta, markInfo] = await Promise.all([
+  const [meta, markInfo, structureTree] = await Promise.all([
     document.getMetadata().catch(() => null),
     document.getMarkInfo().catch(() => null),
+    hasStructTreeRoot(document),
   ]);
 
   const info = (meta?.info ?? {}) as RawInfo;
@@ -79,6 +105,7 @@ export async function readPdfDocumentInfo(
     ...optional('language', normalizeLanguage(text(info.Language))),
     ...optional('pdfVersion', text(info.PDFFormatVersion)),
     isTagged: isMarked(markInfo),
+    hasStructureTree: structureTree,
     ...optional('isLinearized', boolean(info.IsLinearized)),
     ...optional('hasAcroForm', boolean(info.IsAcroFormPresent)),
     ...optional('xmp', xmp),
