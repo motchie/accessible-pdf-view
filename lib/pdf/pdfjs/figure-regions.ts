@@ -81,8 +81,8 @@ export function reconcileToCount(
  * a caption's text, so draw order is still worth trying. `too-small` when the
  * tags did locate the drawing but it is a hairline or an icon: that is an
  * answer, and falling back to draw order would hand the figure someone else's
- * picture. In the iPDF flyer (issue #12) three 10pt "i" icons were shown as the
- * Nippon Lighthouse and iPDF logos.
+ * picture. In the iPDF flyer (issue #12) two "i" icons, 11 x 11pt and 4 x 8pt,
+ * were shown as the Nippon Lighthouse and iPDF logos.
  */
 function boundsFor(
   contentIds: string[] | undefined,
