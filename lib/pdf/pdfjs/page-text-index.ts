@@ -29,6 +29,11 @@ export interface PageTextIndex {
   get(id: string): MarkedContent | undefined;
   /** Link annotation rectangles, in PDF user space. */
   links: Array<{ url: string; bbox: BoundingBox }>;
+  /**
+   * Non-whitespace characters of all the page's text, inside marked content
+   * or not: what the tagged reading can be measured against.
+   */
+  textLength: number;
 }
 
 /** The text-item shape PDF.js yields; its types are loose here. */
@@ -52,6 +57,7 @@ export async function buildPageTextIndex(page: PDFPageProxy): Promise<PageTextIn
   // Marked-content sections nest, and text belongs to every section enclosing
   // it, so an explicit stack is needed rather than a single "current" id.
   const open: Array<string | null> = [];
+  let textLength = 0;
 
   for (const raw of content.items as TextItem[]) {
     const item = raw;
@@ -65,6 +71,7 @@ export async function buildPageTextIndex(page: PDFPageProxy): Promise<PageTextIn
       continue;
     }
     if (typeof item.str !== 'string') continue;
+    textLength += nonWhitespaceLength(item.str);
 
     const box = boxOf(item);
     // A line break inside a structure element is a space, not a paragraph
@@ -103,7 +110,11 @@ export async function buildPageTextIndex(page: PDFPageProxy): Promise<PageTextIn
     });
   }
 
-  return { get: (id) => byId.get(id), links };
+  return { get: (id) => byId.get(id), links, textLength };
+}
+
+export function nonWhitespaceLength(text: string): number {
+  return text.replace(/\s/g, '').length;
 }
 
 function boxOf(item: TextItem): BoundingBox | null {

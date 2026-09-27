@@ -19,7 +19,7 @@ import { detectLanguage, detectScriptLanguage } from '../pdf/pdfjs/language';
 import { classifyPages } from '../pdf/pdfjs/page-content';
 import { readPdfDocumentInfo } from '../pdf/pdfjs/metadata';
 import { loadPdfDocument } from '../pdf/pdfjs/renderer';
-import { extractTaggedDocument, isUsable } from '../pdf/pdfjs/tagged-adapter';
+import { coversPageText, extractTaggedDocument, isUsable } from '../pdf/pdfjs/tagged-adapter';
 import { countHeadings, documentToPlainText } from '../pdf/document-model';
 import type { PdfSource } from '../pdf/source/pdf-source';
 import type { StructureSource } from './settings';
@@ -225,6 +225,8 @@ export function usePdfAnalysis(
 
         // Either is enough: a tree without the `/Marked` declaration is still
         // the author's structure, and `isUsable` below rejects an empty one.
+        // Undeclared, it must also carry most of the page text: without the
+        // declaration nothing says the tree is the whole document.
         if (info.isTagged || info.hasStructureTree) {
           const tagged = await extractTaggedDocument(pdfDocument.document, {
             sourceUrl,
@@ -232,7 +234,7 @@ export function usePdfAnalysis(
             signal: controller.signal,
           });
           if (cancelled) return;
-          if (isUsable(tagged)) {
+          if (isUsable(tagged) && (info.isTagged || coversPageText(tagged!))) {
             // The author's structure, plus the headings the inferred reading
             // can show it lacks. Null for most documents: any heading tag of
             // the author's own, or nothing verifiable to add, and there is no

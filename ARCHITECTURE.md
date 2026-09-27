@@ -55,8 +55,10 @@ Both structure producers run on every document:
 - **TaggedPdfAdapter** runs when `getMarkInfo()` reports `Marked: true`, or
   when the catalog has a `/StructTreeRoot` without that declaration — some
   producers write the tree and omit `/MarkInfo`, and the tree is still the
-  author's structure. If the extraction is usable, it wins. The document
-  information panel says which of the two it was.
+  author's structure. If the extraction is usable, it wins — an undeclared tree
+  only if it also carries at least half the page text (`coversPageText`), since
+  nothing says it is the whole document. The document information panel says
+  which of the two it was.
 
 Tagged structure wins because inference is a guess and tagging is a statement.
 The difference is not academic: where inference produced neither, the tags have
