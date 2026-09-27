@@ -133,6 +133,8 @@ export const ja: Messages = {
       'pdf-inspector': 'レイアウトから推測',
       ocr: 'OCR による認識結果',
     },
+    undeclaredNote:
+      'この PDF には構造タグがありますが、Tagged PDF であるという宣言（/MarkInfo の /Marked true）がありません。規格（ISO 32000、PDF/UA）が求める宣言がないため、ほかのビューアや支援技術ではタグが使われないことがあります。',
     untaggedNote:
       'この PDF には構造タグが含まれていないため、文字の配置から見出しや表を推測しています。実際の文書構造と異なる場合があります。',
     combinedNote:
