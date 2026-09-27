@@ -3,7 +3,7 @@ import {
   IDENTITY,
   applyMatrix,
   gap,
-  intersectsPage,
+  intersect,
   multiply,
   touches,
   transformedBounds,
@@ -80,6 +80,17 @@ describe('bounds', () => {
     const b = { x: 20, y: 5, width: 10, height: 10 };
     expect(union(a, b)).toEqual({ x: 0, y: 0, width: 30, height: 15 });
   });
+
+  it('intersects two boxes to the area they share, or to nothing', () => {
+    const a = { x: 0, y: 0, width: 10, height: 10 };
+    expect(intersect(a, { x: 5, y: -5, width: 10, height: 10 })).toEqual({
+      x: 5,
+      y: 0,
+      width: 5,
+      height: 5,
+    });
+    expect(intersect(a, { x: 10, y: 0, width: 10, height: 10 })).toBeNull();
+  });
 });
 
 describe('separation', () => {
@@ -105,14 +116,6 @@ describe('separation', () => {
     expect(
       touches({ x: 0, y: 0, width: 10, height: 10 }, { x: 40, y: 0, width: 10, height: 10 }),
     ).toBe(false);
-  });
-
-  /** The backstop for any transform the walker does not model: a region off
-   * the page would crop to a blank image. */
-  it('rejects a box entirely outside the page', () => {
-    expect(intersectsPage({ x: 700, y: 0, width: 50, height: 50 }, 595, 842)).toBe(false);
-    expect(intersectsPage({ x: -60, y: 0, width: 50, height: 50 }, 595, 842)).toBe(false);
-    expect(intersectsPage({ x: -10, y: 0, width: 50, height: 50 }, 595, 842)).toBe(true);
   });
 });
 

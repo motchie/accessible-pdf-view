@@ -79,19 +79,21 @@ export function union(a: BoundingBox, b: BoundingBox): BoundingBox {
   };
 }
 
+/** The part two boxes share, or `null` when they do not overlap. */
+export function intersect(a: BoundingBox, b: BoundingBox): BoundingBox | null {
+  const x = Math.max(a.x, b.x);
+  const y = Math.max(a.y, b.y);
+  const width = Math.min(a.x + a.width, b.x + b.width) - x;
+  const height = Math.min(a.y + a.height, b.y + b.height) - y;
+  return width > 0 && height > 0 ? { x, y, width, height } : null;
+}
+
 /** Distance between two boxes along whichever axis separates them; zero when
  * they overlap. */
 export function gap(a: BoundingBox, b: BoundingBox): number {
   const dx = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.width, b.x + b.width));
   const dy = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.height, b.y + b.height));
   return Math.max(dx, dy);
-}
-
-/** True when any part of the box lies within a page of this size. */
-export function intersectsPage(bbox: BoundingBox, width: number, height: number): boolean {
-  return (
-    bbox.x < width && bbox.y < height && bbox.x + bbox.width > 0 && bbox.y + bbox.height > 0
-  );
 }
 
 /** Tiles butt up against each other rather than overlapping, so a small
