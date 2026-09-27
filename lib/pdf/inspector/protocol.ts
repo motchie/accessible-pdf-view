@@ -36,7 +36,7 @@ export interface InspectorRequest {
   sourceUrl?: string | null;
 }
 
-/** Mirrors `PdfProcessResult` from @firecrawl/pdf-inspector-wasm 1.23.0. */
+/** Mirrors `PdfProcessResult` from @firecrawl/pdf-inspector-wasm 1.25.0. */
 export interface InspectorRawResult {
   pdfType: 'TextBased' | 'Scanned' | 'ImageBased' | 'Mixed';
   markdown?: string;
@@ -46,6 +46,19 @@ export interface InspectorRawResult {
   pagesNeedingOcr: number[];
   ocrReasonsByPage: Array<{ page: number; reasons: string[] }>;
   title?: string;
+  /*
+   * The document information dictionary's entries, added in 1.24. Not read:
+   * PdfFileInfo comes from PDF.js's own reading of the same dictionary, and
+   * one source for it is enough. Mirrored so the mirror stays whole.
+   */
+  author?: string;
+  subject?: string;
+  keywords?: string;
+  creator?: string;
+  producer?: string;
+  /** As written: a PDF date string such as `D:20240115103000+01'00'`. */
+  creationDate?: string;
+  modDate?: string;
   confidence: number;
   layout: {
     isComplex: boolean;

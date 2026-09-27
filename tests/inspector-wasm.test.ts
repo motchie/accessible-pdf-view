@@ -9,11 +9,15 @@ import { buildMinimalPdf } from './helpers/minimal-pdf';
 
 /**
  * The mirror in protocol.ts and the package's own declaration, held together by
- * the compiler. Each direction fails `tsc` on a different drift: the package
- * gaining a field the mirror lacks, or the mirror claiming one the package
- * never sends. Checked at compile time only; nothing here runs.
+ * the compiler: the same keys, and each assignable to the other. Assignability
+ * alone is not enough — an optional field the package adds leaves both
+ * directions assignable, which is how 1.24's document-information fields went
+ * unnoticed until the keys were compared too. Checked at compile time only;
+ * nothing here runs.
  */
-type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type SameKeys<A, B> = [keyof A] extends [keyof B] ? ([keyof B] extends [keyof A] ? true : false) : false;
+type Assignable<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type Same<A, B> = SameKeys<A, B> extends true ? Assignable<A, B> : false;
 const mirrorMatchesPackage: Same<InspectorRawResult, PdfProcessResult> = true;
 void mirrorMatchesPackage;
 

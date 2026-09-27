@@ -55,7 +55,27 @@ export interface PdfProcessResult {
     /** 1-indexed page numbers. */
     pagesNeedingOcr: number[];
     ocrReasonsByPage: PageOcrReasons[];
+    /**
+     * The `/Title` of the document information dictionary, decoded as a PDF
+     * text string (UTF-16 or UTF-8 after a byte order mark, PDFDocEncoding
+     * otherwise). Absent when the entry is missing or not a string. The
+     * entries below follow the same decoding and missing-value rule.
+     */
     title?: string;
+    /** The document information dictionary's `/Author`. */
+    author?: string;
+    /** The document information dictionary's `/Subject`. */
+    subject?: string;
+    /** The document information dictionary's `/Keywords`. */
+    keywords?: string;
+    /** The document information dictionary's `/Creator`: the application the document was authored in. */
+    creator?: string;
+    /** The document information dictionary's `/Producer`: the application that wrote the PDF. */
+    producer?: string;
+    /** The document information dictionary's `/CreationDate` as written, a PDF date string such as `D:20240115103000+01'00'`. */
+    creationDate?: string;
+    /** The document information dictionary's `/ModDate` as written. */
+    modDate?: string;
     confidence: number;
     layout: LayoutComplexity;
     hasEncodingIssues: boolean;

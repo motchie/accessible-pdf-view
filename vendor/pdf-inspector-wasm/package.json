@@ -4,8 +4,8 @@
   "collaborators": [
     "Firecrawl Team"
   ],
-  "description": "Browser WebAssembly bindings for pdf-inspector \u2014 1.23.0 with the bcmap decoding fixes (firecrawl/pdf-inspector#594), built for Accessible PDF View",
-  "version": "1.23.0-apv.2",
+  "description": "Browser WebAssembly bindings for pdf-inspector \u2014 1.25.0 with the bcmap decoding fixes (firecrawl/pdf-inspector#594), built for Accessible PDF View",
+  "version": "1.25.0-apv.1",
   "license": "MIT",
   "repository": {
     "type": "git",
