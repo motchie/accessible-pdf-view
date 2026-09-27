@@ -65,7 +65,7 @@ yet said they matter.
   is waiting upstream
   ([firecrawl/pdf-inspector#594](https://github.com/firecrawl/pdf-inspector/pull/594)).
   Until a release carries it the extension ships its own build of 1.23.0 with
-  that one fix (`vendor/pdf-inspector-wasm/`); when one does, it goes back to
+  that fix (`vendor/pdf-inspector-wasm/`); when one does, it goes back to
   the npm package, and to whatever else that release changes.
 
 ## What would change this file
