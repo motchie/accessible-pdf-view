@@ -23,8 +23,10 @@ Until a release carries it, the extension ships this build.
 ## What it is
 
 - **Source:** [`motchie/pdf-inspector`, branch `apv/1.23.0-bcmap-fix`](https://github.com/motchie/pdf-inspector/tree/apv/1.23.0-bcmap-fix),
-  commit `3f43343a175fff69063ce0bf9a6b97d63d5cfbca` — the upstream tag
-  `v1.23.0` plus the one commit of #594.
+  commit `d1ce6af47ef2c8672fc0c964913e0f8814d63674` — the upstream tag
+  `v1.23.0` plus the two commits of #594. The first makes the CMaps parse at
+  all; the second makes every mapping in them read as pdf.js reads it,
+  characters outside the BMP included, which the first left as U+FFFD.
 - **Built with:** rustc 1.98.0 (the version upstream pins), wasm-pack 0.15.0,
   the command upstream's release workflow uses:
 
@@ -33,11 +35,11 @@ Until a release carries it, the extension ships this build.
   ```
 
 - **`pdf_inspector_wasm_bg.wasm`** SHA-256
-  `6e4d24da75a4b637a1030eda0b939f0481d50f56c1e6d1b01a1a959eca700850`.
+  `8a5694310e8bd89e9f5e5a3a884c7448a1c81127cc0129ce5472cbb3ca638c21`.
   The JavaScript glue and the type declarations are byte-identical to npm's
   1.23.0.
 - **`package.json`** is the generated one with three fields changed: the
-  version, marked `1.23.0-apv.1`; the description, which says what this build
+  version, marked `1.23.0-apv.2`; the description, which says what this build
   is; and `files`, which gains this README and the licence.
 
 ## What it changes
@@ -47,6 +49,11 @@ with the same toolchain gives output identical to npm's 1.23.0 on all ten
 documents, so the build itself changes nothing. This build changes two of the
 ten — the two with CID fonts that have no ToUnicode — and in both the text
 now matches what poppler reads. The other eight are identical.
+
+The second commit changes none of the ten, because none of them uses a
+character outside the BMP. On a document built for it — a non-embedded
+Adobe-Japan1 font, no ToUnicode, showing あ, CID 7641 and あ — the first build
+read `あ�あ` and this one reads `あ𨳝あ`, as poppler does.
 
 ## When it goes
 
