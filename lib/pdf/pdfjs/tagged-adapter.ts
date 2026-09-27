@@ -8,7 +8,7 @@ import type {
   TableCell,
   TableRow,
 } from '../document-model';
-import { documentToPlainText, inlineToPlainText } from '../document-model';
+import { inlineToPlainText } from '../document-model';
 import { normalizeCjkSpacing } from '../inspector/markdown-to-document';
 import { sanitizeHref } from '../sanitize-url';
 import { classifyAlternativeText } from './generated-alt';
@@ -135,7 +135,8 @@ export function isUsable(extraction: TaggedExtraction | null): boolean {
 }
 
 /**
- * Whether a tagged extraction carries at least half of the page text.
+ * Whether a tagged extraction carries at least half of the page text,
+ * counting its text only.
  *
  * `isUsable` is enough for a document that declares itself Tagged PDF: the
  * declaration is the author's statement that the tree is the document. A tree
@@ -145,13 +146,17 @@ export function isUsable(extraction: TaggedExtraction | null): boolean {
  * whole document with a handful of fragments.
  *
  * Complete trees are nowhere near the line. On the fixtures this was measured
- * against, declared and undeclared alike, the tagged reading's text was 98% to
- * 121% of PDF.js's — over 100% where alternative text is added — so half
- * leaves a wide margin and still refuses a tree that tags a corner of the page.
+ * against, declared and undeclared alike, the tagged reading's text was 94% to
+ * 100% of PDF.js's, so half leaves a wide margin and still refuses a tree that
+ * tags a corner of the page.
  */
 export function coversPageText(extraction: TaggedExtraction): boolean {
   if (extraction.pageTextLength === 0) return true;
-  const tagged = nonWhitespaceLength(documentToPlainText(extraction.document));
+  // Text only: a figure's alternative text is not page text, and counting it
+  // would let a tree that tags one well-described image pass.
+  const tagged = nonWhitespaceLength(
+    extraction.document.pages.flatMap((page) => page.nodes.map(plainTextOf)).join(''),
+  );
   return tagged >= extraction.pageTextLength / 2;
 }
 

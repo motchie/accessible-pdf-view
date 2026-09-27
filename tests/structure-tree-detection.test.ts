@@ -6,7 +6,12 @@ import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { nodeToPlainText } from '../lib/pdf/document-model';
 import { readPdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
-import { coversPageText, extractTaggedDocument, isUsable } from '../lib/pdf/pdfjs/tagged-adapter';
+import {
+  coversPageText,
+  extractTaggedDocument,
+  isUsable,
+  type TaggedExtraction,
+} from '../lib/pdf/pdfjs/tagged-adapter';
 import { buildMinimalPdf, type MinimalPdfOptions } from './helpers/minimal-pdf';
 
 /**
@@ -85,6 +90,35 @@ describe('coversPageText', () => {
       tagged: 'undeclared',
       taggedLines: 1,
     });
+    expect(coversPageText(extraction)).toBe(false);
+  });
+
+  it('does not count alternative text as page text', () => {
+    // One well-described image tagged on a page of 100 characters: the
+    // description is longer than half the page, but none of it is the page.
+    const extraction: TaggedExtraction = {
+      roles: {},
+      pageTextLength: 100,
+      document: {
+        metadata: { sourceUrl: null, pageCount: 1, producedBy: ['tagged-pdf'] },
+        pages: [
+          {
+            pageNumber: 1,
+            origin: 'tagged-pdf',
+            status: 'available',
+            nodes: [
+              {
+                type: 'figure',
+                status: 'available',
+                alternativeText: 'x'.repeat(80),
+                alternativeTextSource: 'author',
+              },
+              { type: 'paragraph', content: [{ type: 'text', text: 'Ten chars.' }] },
+            ],
+          },
+        ],
+      },
+    };
     expect(coversPageText(extraction)).toBe(false);
   });
 });
