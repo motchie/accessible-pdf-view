@@ -689,21 +689,37 @@ a guess, and the difference is large: where inference sees a grid of text, the
 tags give a table with both column *and* row headers, and numbered sections as
 a properly numbered list.
 
+A PDF can carry a structure tree without declaring itself Tagged PDF — the
+`/MarkInfo /Marked true` that ISO 32000 and PDF/UA require is missing. Its tree
+is read too, because it is still the author's structure, but only if it carries
+at least half of the text on the pages: without the declaration nothing says
+the tree is the whole document. The Document information panel says the
+declaration is missing, since other viewers and assistive technology may not
+use such tags.
+
 **Layout inference (fallback).** For untagged documents, pdf-inspector infers
 structure from where the glyphs sit. It works well on straightforward documents,
-but it is a guess, and these are its observed limits, re-checked against
-pdf-inspector 1.17.0:
+but it is a guess, and these are its observed limits, re-checked against the
+pdf-inspector build the extension ships (1.23.0 with the fix in
+`vendor/pdf-inspector-wasm/`) on the ten documents it is tested against:
 
-- **Numbered sections stay in the body.** `１. 背景および目的` is run together
-  with the paragraph after it, so it does not appear in heading navigation.
-- **Closing markers can be misread as headings.** `以上` comes back as a heading.
 - **The first row of a table is always a header row.** GFM requires a delimiter
-  row, so pdf-inspector emits one whether or not the table has headers. For a
-  label/value table this announces the wrong column header during table
-  navigation. The extension keeps the producer's structure rather than guessing,
-  because overriding it would break tables that genuinely do have headers.
+  row, so pdf-inspector emits one whether or not the table has headers — all
+  nine tables in those documents, two of them label/value tables. For such a
+  table this announces the wrong column header during table navigation. The
+  extension keeps the producer's structure rather than guessing, because
+  overriding it would break tables that genuinely do have headers.
 - **The title may be read twice** — once as the page's `<h1>`, and again in the
   body if the PDF repeats it in a form that was not recognised as a heading.
+  Four of the seven documents with a title do.
+- **Numbered sections are run into the paragraph after them.** pdf-inspector
+  reads `１. 背景および目的` and the body below it as one paragraph. The Reader
+  splits such a heading back out where PDF.js shows the line break that ends
+  it, which recovers all three in the one document that has them; a heading
+  whose line break PDF.js cannot confirm stays in the body.
+
+A limit listed here before, a closing `以上` read as a heading, no longer
+reproduces: the three documents that end with one read it as a paragraph.
 
 When inference is in use, the Document information panel says so explicitly, so
 a reader knows how much to trust the headings and tables they are navigating.
