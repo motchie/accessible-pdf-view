@@ -179,6 +179,9 @@ export const ja: Messages = {
     unavailable: '画像がありますが、表示できませんでした。',
     describeFailed: '画像があります。内容を解析しましたが、説明を生成できませんでした。',
     noAlt: '画像があります。代替テキストを取得できませんでした。',
+    noAuthorAlt: '画像があります。作成者による代替テキストはありません。',
+    tooSmallNoAuthorAlt:
+      '図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。',
     table: '表',
     tableWithCaption: (caption: string) => `表: ${caption}`,
     pageLabel: (pageNumber: number) => `${pageNumber} ページ`,

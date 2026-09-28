@@ -27,6 +27,12 @@ export interface MinimalPdfOptions {
   rotate?: number;
   /** The page's `/CropBox`; the media box stays [0 0 612 792]. */
   cropBox?: [number, number, number, number];
+  /**
+   * With `tagged`, `Figure` elements drawn after each page's text, each a
+   * 100pt square. `alt` is written as `/Alt` when given, empty string
+   * included; leave it out for a figure with no `/Alt` at all.
+   */
+  figures?: Array<{ alt?: string }>;
 }
 
 export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
@@ -77,6 +83,20 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
         pageElements.push(elementObj);
         return `/P << /MCID ${lineIndex} >> BDC ${text} EMC`;
       })
+      .concat(
+        options.tagged
+          ? (options.figures ?? []).map((figure, figureIndex) => {
+              const mcid = lines.length + figureIndex;
+              const elementObj = nextElementObj++;
+              const alt = figure.alt === undefined ? '' : ` /Alt (${escapePdfString(figure.alt)})`;
+              objects[elementObj] =
+                `<< /Type /StructElem /S /Figure /P ${structRootObj} 0 R /Pg ${pageObj} 0 R /K ${mcid}${alt} >>`;
+              pageElements.push(elementObj);
+              const x = 72 + figureIndex * 120;
+              return `/Figure << /MCID ${mcid} >> BDC 0 0 1 rg ${x} 300 100 100 re f EMC`;
+            })
+          : [],
+      )
       .join('\n')
       .concat(options.drawing ? `\n${options.drawing}` : '');
     elements.push(...pageElements);

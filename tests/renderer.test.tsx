@@ -151,6 +151,37 @@ describe('Document Model -> semantic HTML', () => {
     expect(dom.querySelector('img')).toBeNull();
   });
 
+  /**
+   * GitHub issue #14. Where the reading saw the `/Alt` field, "could not be
+   * obtained" is false: the author gave none. And a figure too small to crop
+   * shows no image, so its notice must not open by announcing one.
+   */
+  it('says the author gave no alternative text when the tag has no /Alt', () => {
+    const dom = render([
+      {
+        type: 'figure',
+        status: 'missing-alt',
+        altTextFieldRead: true,
+        source: { kind: 'url', url: 'blob:figure' },
+      },
+    ]);
+
+    expect(dom.querySelector('figure p')?.textContent).toBe(
+      '画像があります。作成者による代替テキストはありません。',
+    );
+  });
+
+  it('says a tagged figure too small to crop is not shown, and why', () => {
+    const dom = render([
+      { type: 'figure', status: 'missing-alt', altTextFieldRead: true, tooSmallToShow: true },
+    ]);
+
+    expect(dom.querySelector('img')).toBeNull();
+    expect(dom.querySelector('figure p')?.textContent).toBe(
+      '図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。',
+    );
+  });
+
   it('uses the document-supplied alternative text when there is one', () => {
     const dom = render([
       { type: 'figure', status: 'available', alternativeText: '作成者の説明', caption: '図1' },
