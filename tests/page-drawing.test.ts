@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import * as pdfjs from 'pdfjs-dist';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { OPS } from 'pdfjs-dist';
 import { describe, expect, it } from 'vitest';
@@ -137,7 +137,7 @@ describe('findPageDrawing', () => {
 describe('findPageDrawing, on a real page', () => {
   async function drawingOf(options: Omit<MinimalPdfOptions, 'pages'>) {
     (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
-      pathToFileURL(resolve('node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')).href;
+      pathToFileURL(resolve('node_modules/pdfjs-dist/build/pdf.worker.mjs')).href;
     const pdf = await (
       pdfjs as unknown as { getDocument: (o: unknown) => { promise: Promise<PDFDocumentProxy> } }
     ).getDocument({ data: buildMinimalPdf({ pages: [[]], tagged: 'declared', ...options }) }).promise;

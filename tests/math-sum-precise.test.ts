@@ -19,6 +19,18 @@ describe('Math.sumPrecise in the test environment', () => {
     expect(sumPrecise([1, 1e100, 1, -1e100])).toBe(2);
   });
 
+  it('gets a finite answer when the running total would overflow', () => {
+    expect(sumPrecise([1e308, 1e308, -1e308])).toBe(1e308);
+    expect(sumPrecise([Number.MAX_VALUE, Number.MAX_VALUE, -Number.MAX_VALUE])).toBe(Number.MAX_VALUE);
+    expect(sumPrecise([-1e308, -1e308, 1e308])).toBe(-1e308);
+    expect(sumPrecise([Number.MAX_VALUE, Number.MAX_VALUE])).toBe(Infinity);
+    expect(sumPrecise([-Number.MAX_VALUE, -Number.MAX_VALUE])).toBe(-Infinity);
+    // Half an ulp above the largest double rounds up to infinity; just under
+    // half, it stays finite.
+    expect(sumPrecise([Number.MAX_VALUE, 2 ** 970])).toBe(Infinity);
+    expect(sumPrecise([Number.MAX_VALUE, 2 ** 970, -(2 ** 900)])).toBe(Number.MAX_VALUE);
+  });
+
   it('follows the specification at the edges', () => {
     expect(Object.is(sumPrecise([]), -0)).toBe(true);
     expect(Object.is(sumPrecise([-0, -0]), -0)).toBe(true);
