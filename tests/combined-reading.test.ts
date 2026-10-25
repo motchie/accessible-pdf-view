@@ -115,6 +115,26 @@ describe('the combined reading', () => {
     expect(combineReadings(tagged, inferred)).toBeNull();
   });
 
+  /**
+   * Word tags its Title-style paragraph H1. When that is the only heading tag,
+   * the document has no headings of its own: the Reader shows the title as
+   * the page's h1 and drops the repeat, and counts the reading as having none.
+   * The combined reading has to agree, or the reader is pointed past it.
+   */
+  it('exists when the only heading tag repeats the title', () => {
+    const tagged = documentOf('tagged-pdf', [
+      heading('検証用文書その1', 1),
+      paragraph('はじめに'),
+      paragraph('本文です。'),
+    ]);
+    const inferred = documentOf('pdf-inspector', [heading('検証用文書その1', 1), heading('はじめに')]);
+
+    const combined = combineReadings(tagged, inferred, '検証用文書 その1');
+    expect(combined?.pages[0]!.nodes[1]).toMatchObject({ type: 'heading', level: 2 });
+    // Without that title the H1 is a heading of the author's own.
+    expect(combineReadings(tagged, inferred, '別の題')).toBeNull();
+  });
+
   it('does not exist when nothing could be placed', () => {
     const tagged = documentOf('tagged-pdf', [paragraph('本文だけです。')]);
     expect(combineReadings(tagged, documentOf('pdf-inspector', [heading('■見出し')]))).toBeNull();

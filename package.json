@@ -38,6 +38,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.1.1",
     "@wxt-dev/module-react": "^1.2.2",
+    "dom-accessibility-api": "0.7.1",
     "jsdom": "^30.1.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.1",

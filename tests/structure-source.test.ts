@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DocumentOrigin } from '../lib/pdf/document-model';
 import {
   STRUCTURE_ORDER,
+  betterHeadings,
   initialStructureSource,
 } from '../lib/reader/structure-source';
 import { en } from '../lib/i18n/en';
@@ -61,5 +62,36 @@ describe('the words for each reading', () => {
     // The combined reading has to say what it adds and what it keeps.
     expect(ja.structure.sources.combined.detail).toContain('推測した見出し');
     expect(ja.structure.sources.combined.detail).toContain('見出し以外は構造タグのまま');
+  });
+});
+
+describe('pointing at a reading that has headings', () => {
+  const sources: DocumentOrigin[] = ['combined', 'tagged-pdf', 'pdf-inspector'];
+
+  it('names the first other reading with headings when this one has none', () => {
+    expect(
+      betterHeadings({
+        structureSource: 'tagged-pdf',
+        availableSources: sources,
+        headingCounts: { combined: 0, 'tagged-pdf': 0, 'pdf-inspector': 4 },
+      }),
+    ).toEqual({ origin: 'pdf-inspector', count: 4 });
+  });
+
+  it('says nothing when this reading has headings, or no other one does', () => {
+    expect(
+      betterHeadings({
+        structureSource: 'tagged-pdf',
+        availableSources: sources,
+        headingCounts: { combined: 5, 'tagged-pdf': 2, 'pdf-inspector': 4 },
+      }),
+    ).toBeNull();
+    expect(
+      betterHeadings({
+        structureSource: 'tagged-pdf',
+        availableSources: sources,
+        headingCounts: { combined: 0, 'tagged-pdf': 0, 'pdf-inspector': 0 },
+      }),
+    ).toBeNull();
   });
 });

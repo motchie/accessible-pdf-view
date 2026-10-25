@@ -7,7 +7,7 @@ import type {
   InlineNode,
   TableRow as ModelTableRow,
 } from '../pdf/document-model';
-import { inlineToPlainText } from '../pdf/document-model';
+import { dropRepeatedTitle } from '../pdf/repeated-title';
 
 /**
  * Document Model -> semantic HTML.
@@ -47,8 +47,7 @@ export function DocumentView({
 }: DocumentViewProps): JSX.Element {
   // A heading in the body that merely repeats the title would be read twice and
   // would sit at the same level as the page's `<h1>`.
-  const title = document.metadata.title?.trim();
-  const pages = title ? dropLeadingTitleHeading(document.pages, title) : document.pages;
+  const { pages } = dropRepeatedTitle(document);
 
   return (
     <>
@@ -393,27 +392,4 @@ function applyEmphasis(
         return <code>{child}</code>;
     }
   }, text);
-}
-
-function dropLeadingTitleHeading(
-  pages: DocumentPage[],
-  title: string,
-): DocumentPage[] {
-  const firstWithContent = pages.findIndex((page) => page.nodes.length > 0);
-  if (firstWithContent === -1) return pages;
-
-  const page = pages[firstWithContent]!;
-  const [first] = page.nodes;
-  if (
-    first?.type !== 'heading' ||
-    inlineToPlainText(first.content).trim() !== title.trim()
-  ) {
-    return pages;
-  }
-
-  return pages.map((candidate, index) =>
-    index === firstWithContent
-      ? { ...candidate, nodes: candidate.nodes.slice(1) }
-      : candidate,
-  );
 }
