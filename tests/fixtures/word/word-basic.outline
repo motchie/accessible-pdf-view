@@ -1,0 +1,89 @@
+# What the Reader should expose for word-basic.pdf, written from what the
+# document means — never generated from the Reader's output. Rendered with the
+# interface in Japanese, which is where `document lang=ja`, the region's name,
+# the page separator's wording and the link's new-tab note come from.
+#
+# Conventions this follows, from how renderer.tsx presents a document:
+#   - The document title is the page's h1, outside the article, and appears
+#     once. The Title-style paragraph at the top of the body is the same text
+#     and must not be read a second time — whether the tags call it a heading
+#     (which `dropLeadingTitleHeading` removes) or a paragraph (which it does
+#     not).
+#   - Content headings sit one level below the title: Word's Heading 1 is h2.
+#   - A list item's text is a paragraph inside the item.
+#   - The table's first column is row headers: the .docx turns on the
+#     "First Column" table style option, and Word tags those cells TH.
+#   - Every table sits in a region named 表, so it can scroll by keyboard.
+#   - The separator before page 2 is a paragraph, in the tree by design.
+#   - A link's name carries the Reader's note that it opens a new tab, and so
+#     does the sentence it is part of.
+#
+# Absent by intent: the running header (ヘッダー：検証用文書), the footer
+# (フッター N), and the decorative divider — no img and no empty figure.
+document lang=ja title="アクセシビリティ検証用文書 その1（リーダー） — Accessible PDF View"
+  banner
+    heading level=1 "アクセシビリティ検証用文書 その1"
+  main
+    region "リーダー"
+      article lang=ja
+        heading level=2 "はじめに"
+        paragraph "この文書は、Accessible PDF View の動作を確かめるために作成したものです。"
+        paragraph "詳しくは、Accessible PDF View のサイト（新しいタブで開きます）をご覧ください。"
+          link href=https://accessiblepdfview.org/ "Accessible PDF View のサイト（新しいタブで開きます）"
+        heading level=2 "確認する要素"
+        heading level=3 "箇条書き"
+        paragraph "次の項目を確認します。"
+        list
+          listitem
+            paragraph "見出しの階層"
+          listitem
+            paragraph "箇条書きと番号付きリスト"
+            # Known gap (producer): Word does not tag this nesting. See
+            # known-gaps.ts.
+            list
+              listitem
+                paragraph "入れ子の箇条書き"
+          listitem
+            paragraph "見出しセルのある表"
+        heading level=3 "番号付きリスト"
+        # One list of three, even if Word tags each numbered paragraph as a
+        # list of its own.
+        list ordered
+          listitem
+            paragraph "PDF を開く"
+          listitem
+            paragraph "構造を読み取る"
+          listitem
+            paragraph "HTML として表示する"
+        heading level=3 "表"
+        paragraph "表1は、文書の要素と PDF のタグ、HTML の要素の対応です。"
+        region "表"
+          table
+            row
+              columnheader "要素"
+              columnheader "PDF のタグ"
+              columnheader "HTML の要素"
+            row
+              rowheader "見出し"
+              cell "H1〜H6"
+              cell "h1〜h6"
+            row
+              rowheader "箇条書き"
+              cell "L、LI"
+              cell "ul、li"
+            row
+              rowheader "表"
+              cell "Table、TR、TH、TD"
+              cell "table、tr、th、td"
+        heading level=3 "図"
+        paragraph "図1は、月ごとの閲覧数を示した棒グラフです。"
+        # Letter-size page 1 has no room left for the chart.
+        paragraph "2 ページ"
+        figure
+          img "月ごとの閲覧数の棒グラフ。4月120、5月180、6月150、7月240で、7月が最も多い。"
+        heading level=4 "装飾の画像"
+        paragraph "すぐ上の横線は装飾として指定した画像なので、文書の構造には含まれないはずです。"
+        # The manual page break: the heading says 2ページ目 but it lands on page 3.
+        paragraph "3 ページ"
+        heading level=2 "2ページ目"
+        paragraph "本文は2ページ目に続きます。ヘッダーとフッターの文字は、本文には含まれないはずです。"

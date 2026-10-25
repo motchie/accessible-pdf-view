@@ -12,9 +12,10 @@ public/pdfjs/
 public/pdf-inspector/
 
 # Nothing here ignores working material any more, because none of it is in this
-# directory: the test PDFs, the suites written around them, the design files,
-# the original brief and the parked notes all live outside the repository. See
-# "Kept outside this repository" in README.md.
+# directory: the third-party test PDFs, the suites written around them, the
+# design files, the original brief and the parked notes all live outside the
+# repository. The documents written for this project are the exception, and are
+# committed: see tests/fixtures/word/README.md.
 #
 # This one stays as insurance. Windows writes it beside a downloaded file and
 # it records where the file came from (`ReferrerUrl=`), so a stray one would
@@ -24,3 +25,6 @@ public/pdf-inspector/
 # Written by `wxt submit init`. Store credentials; the CI copies live in the
 # `chrome-web-store` environment on GitHub.
 .env.submit
+
+# Word's lock file beside an open document, such as a fixture's .docx.
+~$*
