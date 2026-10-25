@@ -42,6 +42,16 @@ const MACHINE_MARKERS: RegExp[] = [
   /,?\s*[Dd]escription automatically generated/,
 ];
 
+/**
+ * Text Office appends to the author's own description, which is not part of
+ * it. PowerPoint exports a group's alternative text with
+ * 「 (グループ化されたオブジェクト)」 after it (#28): the description stays the
+ * author's, so it is removed without marking the text machine-written. Only
+ * the Japanese form has been seen; the English one is unverified, so it is not
+ * guessed at here.
+ */
+const PRODUCER_SUFFIXES: RegExp[] = [/\s*\(グループ化されたオブジェクト\)$/];
+
 export interface AlternativeTextOrigin {
   /** The description with any boilerplate removed. Empty when nothing is left. */
   text: string;
@@ -50,7 +60,8 @@ export interface AlternativeTextOrigin {
 }
 
 /**
- * Classifies a `/Alt` value, and strips the disclaimer when there is one.
+ * Classifies a `/Alt` value, and strips the disclaimer when there is one,
+ * and any text Office appended to the author's (`PRODUCER_SUFFIXES`).
  *
  * The disclaimer is removed rather than read out. It is identical on every
  * image in the document, so a screen reader user would hear the same sentence
@@ -59,7 +70,7 @@ export interface AlternativeTextOrigin {
  * known boilerplate is removed; the description itself is never edited.
  */
 export function classifyAlternativeText(raw: string | undefined): AlternativeTextOrigin {
-  const alt = raw?.trim() ?? '';
+  const alt = withoutProducerSuffixes(raw?.trim() ?? '');
   if (alt === '') return { text: '', machineWritten: false };
 
   let machineWritten = false;
@@ -72,8 +83,16 @@ export function classifyAlternativeText(raw: string | undefined): AlternativeTex
 
   return {
     // Collapse the whitespace the removal leaves behind, including the blank
-    // line between description and disclaimer.
-    text: text.replace(/\s+/g, ' ').trim(),
+    // line between description and disclaimer. The suffixes are looked for
+    // again because a disclaimer may have followed one: which of the two
+    // PowerPoint puts last on a group has not been seen.
+    text: withoutProducerSuffixes(text.replace(/\s+/g, ' ').trim()),
     machineWritten,
   };
+}
+
+function withoutProducerSuffixes(text: string): string {
+  let result = text;
+  for (const suffix of PRODUCER_SUFFIXES) result = result.replace(suffix, '').trim();
+  return result;
 }

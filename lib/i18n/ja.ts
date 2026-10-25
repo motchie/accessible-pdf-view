@@ -173,7 +173,6 @@ export const ja: Messages = {
     withOcrText: (text: string) => `画像（画像内から読み取った文字）: ${text}`,
     withDocumentAiAlt: (text: string) => `画像（文書作成ソフトが自動生成した説明）: ${text}`,
     withAlt: (text: string) => `画像: ${text}`,
-    decorative: '装飾的な画像です。内容はありません。',
     decorativeGuess:
       '画像があります。AIは装飾的な画像と判定しましたが、これは自動判定であり誤っている可能性があります。',
     unavailable: '画像がありますが、表示できませんでした。',
