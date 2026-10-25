@@ -10,7 +10,7 @@ These are packaged into the built extension and distributed to users.
 | Component | Version | License | Notes |
 | --- | --- | --- | --- |
 | [pdf-inspector](https://github.com/firecrawl/pdf-inspector) (`@firecrawl/pdf-inspector-wasm`) | 1.25.0, **modified** | MIT | The Rust core compiled to WebAssembly. Built from 1.25.0 plus one fix in two commits, not taken from npm; see below. |
-| [PDF.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) | 6.2.108 | Apache-2.0 | Library, worker, CMaps, standard fonts, and the image-decoder WebAssembly modules are shipped. |
+| [PDF.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) | 6.4.299 | Apache-2.0 | Library, worker, CMaps, standard fonts, and the image-decoder WebAssembly modules are shipped. |
 | [React](https://github.com/facebook/react) | 19.2 | MIT | |
 | [mdast-util-from-markdown](https://github.com/syntax-tree/mdast-util-from-markdown) | 2.0 | MIT | |
 | [mdast-util-gfm-table](https://github.com/syntax-tree/mdast-util-gfm-table) | 2.0 | MIT | |
@@ -72,8 +72,8 @@ Not distributed to users.
 | Component | Version | License |
 | --- | --- | --- |
 | [WXT](https://github.com/wxt-dev/wxt) | 0.21 | MIT |
-| [Vitest](https://github.com/vitest-dev/vitest) | 4.1 | MIT |
-| [TypeScript](https://github.com/microsoft/TypeScript) | 5.9 | Apache-2.0 |
+| [Vitest](https://github.com/vitest-dev/vitest) | 5.0 | MIT |
+| [TypeScript](https://github.com/microsoft/TypeScript) | 7.0 | Apache-2.0 |
 
 ---
 
