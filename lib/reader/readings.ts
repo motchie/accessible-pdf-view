@@ -39,6 +39,10 @@ export interface Readings {
 /**
  * Builds every reading the document offers from pdf-inspector's document and
  * the PDF.js document.
+ *
+ * Throws the abort reason once `signal` is aborted. The steps it calls stop
+ * early when aborted and hand back what they had, which is a partial reading
+ * that looks like a whole one; this, and `prepareReading`, never return that.
  */
 export async function buildReadings(
   inspectorDocument: AccessibleDocument,
@@ -46,13 +50,16 @@ export async function buildReadings(
   options: { sourceUrl: string | null; signal?: AbortSignal },
 ): Promise<Readings> {
   const { sourceUrl, signal } = options;
+  signal?.throwIfAborted();
 
   // The headings pdf-inspector merged into the paragraph below them, split
   // back apart at the line break PDF.js still has. Done here, before the
   // documents are counted or shown, so the heading count the Reader offers for
   // this reading is the one it will actually navigate.
   const inferred = await promoteMergedHeadings(inspectorDocument, pdf, { signal });
+  signal?.throwIfAborted();
   const info = await readPdfDocumentInfo(pdf);
+  signal?.throwIfAborted();
 
   const raw = new Map<DocumentOrigin, AccessibleDocument>();
 
@@ -62,6 +69,7 @@ export async function buildReadings(
   // says the tree is the whole document.
   if (info.isTagged || info.hasStructureTree) {
     const tagged = await extractTaggedDocument(pdf, { sourceUrl, info, signal });
+    signal?.throwIfAborted();
     if (isUsable(tagged) && (info.isTagged || coversPageText(tagged!))) {
       // The author's structure, plus the headings the inferred reading can show
       // it lacks. Null for most documents: any heading tag of the author's own,
@@ -85,7 +93,7 @@ export function chooseReading(
   available: readonly DocumentOrigin[],
   preferred: StructureSource,
 ): DocumentOrigin {
-  return initialStructureSource([...available], preferred) ?? 'pdf-inspector';
+  return initialStructureSource(available, preferred) ?? 'pdf-inspector';
 }
 
 /** Renders a document's located figures to images it can display. */
@@ -100,7 +108,8 @@ export type FigureRasterizer = (
  *
  * Neither producer positions its figures, so this is where they are found on
  * the page and given an image of it. `rasterize` is the canvas step; the tests
- * substitute one that needs no canvas.
+ * substitute one that needs no canvas. Throws once `signal` is aborted, as
+ * `buildReadings` does, freeing any images it had already made.
  */
 export async function prepareReading(
   raw: AccessibleDocument,
@@ -108,11 +117,19 @@ export async function prepareReading(
   options: { signal?: AbortSignal; rasterize?: FigureRasterizer } = {},
 ): Promise<{ document: AccessibleDocument; revoke: () => void }> {
   const { signal, rasterize = materializeFigureImages } = options;
+  signal?.throwIfAborted();
   // Before anything else: a page this producer dropped is not an empty page,
   // and must not reach the reader described as one.
   const complete = await recoverEmptyPages(raw, pdf, { signal });
+  signal?.throwIfAborted();
   const positioned = await attachFigureRegions(complete, pdf, { signal });
-  return rasterize(positioned, pdf, { signal });
+  signal?.throwIfAborted();
+  const rasterized = await rasterize(positioned, pdf, { signal });
+  if (signal?.aborted) {
+    rasterized.revoke();
+    signal.throwIfAborted();
+  }
+  return rasterized;
 }
 
 /**
@@ -189,4 +206,23 @@ export function decorate(document: AccessibleDocument, facts: DocumentFacts): Ac
  */
 export function shownHeadingCount(document: AccessibleDocument, info: PdfFileInfo): number {
   return countHeadings(dropRepeatedTitle(document, info.title ?? document.metadata.title));
+}
+
+/**
+ * Headings per reading, as the picker offers them: a reading that has been
+ * prepared is counted as prepared, because recovering empty pages can change
+ * which heading comes first, and so whether it is the title; the others are
+ * counted as their producers left them.
+ */
+export function readingHeadingCounts(
+  raw: ReadonlyMap<DocumentOrigin, AccessibleDocument>,
+  prepared: Partial<Record<DocumentOrigin, AccessibleDocument>>,
+  info: PdfFileInfo,
+): Partial<Record<DocumentOrigin, number>> {
+  return Object.fromEntries(
+    [...raw].map(([origin, document]) => [
+      origin,
+      shownHeadingCount(prepared[origin] ?? document, info),
+    ]),
+  );
 }

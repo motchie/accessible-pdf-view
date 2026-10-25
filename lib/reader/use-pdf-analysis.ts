@@ -21,6 +21,7 @@ import {
   documentLanguage,
   pagesNeedingExplanation,
   prepareReading,
+  readingHeadingCounts,
   shownHeadingCount,
 } from './readings';
 
@@ -256,15 +257,7 @@ export function usePdfAnalysis(
           structureSource: shown,
           availableSources: [...entries.keys()],
           preparingSource: null,
-          headingCounts: Object.fromEntries(
-            // The shown reading is counted as prepared: recovering empty pages
-            // can change which heading comes first, and so whether it is the
-            // title. The others are counted raw until they are prepared.
-            [...entries].map(([origin, value]) => [
-              origin,
-              shownHeadingCount(value.document ?? value.raw, info),
-            ]),
-          ),
+          headingCounts: readingHeadingCounts(raw, { [shown]: entry.document }, info),
           switchError: null,
           pdf: pdfDocument.document,
           error: null,
@@ -278,10 +271,6 @@ export function usePdfAnalysis(
         // the whole document back for one sentence of wording per page would be
         // a bad trade. The notices sharpen a moment later instead; until then
         // each page says only what is certain.
-        // Only the pages the producer did not explain. pdf-inspector reports a
-        // cause per page and this used to be computed from scratch regardless:
-        // on the 29-page scanned deck that is 26 content-stream walks for an
-        // answer already sitting in the result.
         const needsExplaining = pagesNeedingExplanation(entry.document);
 
         if (needsExplaining.length > 0) {

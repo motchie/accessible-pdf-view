@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import init, { processPdf } from '@firecrawl/pdf-inspector-wasm';
+import init from '@firecrawl/pdf-inspector-wasm';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type {
@@ -12,8 +12,8 @@ import type {
   PdfFileInfo,
 } from '../../lib/pdf/document-model';
 import { mapFigures } from '../../lib/pdf/document-model';
-import { adaptInspectorResult } from '../../lib/pdf/inspector/adapter';
-import { READER_PROCESS_OPTIONS, type InspectorRawResult } from '../../lib/pdf/inspector/protocol';
+import { analyzePdfBytes } from '../../lib/pdf/inspector/analyze';
+import { READER_PROCESS_OPTIONS } from '../../lib/pdf/inspector/protocol';
 import { classifyPages } from '../../lib/pdf/pdfjs/page-content';
 import {
   buildReadings,
@@ -22,7 +22,7 @@ import {
   documentLanguage,
   pagesNeedingExplanation,
   prepareReading,
-  shownHeadingCount,
+  readingHeadingCounts,
   type FigureRasterizer,
 } from '../../lib/reader/readings';
 import { DEFAULT_SETTINGS, type StructureSource } from '../../lib/reader/settings';
@@ -33,12 +33,12 @@ import { DEFAULT_SETTINGS, type StructureSource } from '../../lib/reader/setting
  * Every step is the Reader's own, from `lib/reader/readings.ts`, called in the
  * order `usePdfAnalysis` calls them: `buildReadings`, `chooseReading`,
  * `prepareReading`, `documentLanguage`, `pagesNeedingExplanation` with
- * `classifyPages`, and `decorate`; heading counts with `shownHeadingCount`.
+ * `classifyPages`, and `decorate`; heading counts with `readingHeadingCounts`.
  * What is left here is only what the hook does through the browser:
  *
- *   - pdf-inspector runs in-process (its WASM core with
- *     `READER_PROCESS_OPTIONS`, lowered by `adaptInspectorResult`) rather than
- *     in the inspector worker, which makes the same two calls.
+ *   - pdf-inspector runs in-process, through `analyzePdfBytes` with
+ *     `READER_PROCESS_OPTIONS`, rather than in the inspector worker, which
+ *     calls the same function.
  *   - PDF.js is the legacy build, which runs under Node, and reads its CMaps,
  *     fonts, image-decoder WASM and ICC profiles from `node_modules/pdfjs-dist`
  *     rather than from the extension's origin — the same files.
@@ -134,8 +134,7 @@ export async function readPdfAsReader(
 
   // Both producers consume the buffer, so each gets its own copy.
   await ensureInspector();
-  const rawResult = processPdf(bytes.slice(0), READER_PROCESS_OPTIONS) as unknown as InspectorRawResult;
-  const inspector = adaptInspectorResult(rawResult, sourceUrl);
+  const inspector = analyzePdfBytes(bytes.slice(0), READER_PROCESS_OPTIONS, sourceUrl);
 
   const loaded = await loadWithPdfjs(bytes.slice(0));
   try {
@@ -158,13 +157,7 @@ export async function readPdfAsReader(
       document,
       structureSource: shown,
       availableSources: [...raw.keys()],
-      // As the hook counts them: the shown reading as prepared, the rest raw.
-      headingCounts: Object.fromEntries(
-        [...raw].map(([origin, reading]) => [
-          origin,
-          shownHeadingCount(origin === shown ? document : reading, info),
-        ]),
-      ),
+      headingCounts: readingHeadingCounts(raw, { [shown]: document }, info),
       raw: Object.fromEntries(raw),
       info,
       capabilities: inspector.capabilities,

@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import init, { processPdf } from '@firecrawl/pdf-inspector-wasm';
+import init from '@firecrawl/pdf-inspector-wasm';
 // The `?url` import makes the bundler emit the 4.8 MB module once and hands
 // back its final, hashed path. Letting wasm-bindgen's own default
 // (`new URL('pdf_inspector_wasm_bg.wasm', import.meta.url)`) resolve it works
@@ -9,8 +9,8 @@ import init, { processPdf } from '@firecrawl/pdf-inspector-wasm';
 // this project's privacy model allow.
 import wasmUrl from '@firecrawl/pdf-inspector-wasm/pdf_inspector_wasm_bg.wasm?url';
 import { PdfError, serializePdfError } from '../errors';
-import { adaptInspectorResult } from './adapter';
-import type { InspectorRawResult, InspectorRequest, InspectorResponse } from './protocol';
+import { analyzePdfBytes } from './analyze';
+import type { InspectorRequest, InspectorResponse } from './protocol';
 
 /**
  * Runs pdf-inspector's WebAssembly core off the main thread.
@@ -45,17 +45,16 @@ self.onmessage = async (event: MessageEvent<InspectorRequest>) => {
   try {
     await ensureInitialized();
 
-    const raw = processPdf(
-      new Uint8Array(request.bytes),
-      request.options,
-    ) as unknown as InspectorRawResult;
-
     const response: InspectorResponse = {
       type: 'result',
       requestId: request.requestId,
       // A plain object graph either way, so it crosses the structured-clone
       // boundary as-is.
-      result: adaptInspectorResult(raw, request.sourceUrl ?? null),
+      result: analyzePdfBytes(
+        new Uint8Array(request.bytes),
+        request.options,
+        request.sourceUrl ?? null,
+      ),
     };
     self.postMessage(response);
   } catch (cause) {
