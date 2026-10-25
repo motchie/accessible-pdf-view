@@ -90,6 +90,34 @@ export async function renderRegionToBlob(
  * The returned `revoke` must be called when the document is discarded; blob
  * URLs are held by the document until it is.
  */
+/** The resolution figures are displayed at: two pixels to the point. */
+const DISPLAY_DPI = 144;
+/** The shortest side a figure is displayed with, in pixels. */
+const MIN_DISPLAY_EDGE_PX = 48;
+/** The longest side a small figure may be enlarged to, in pixels. */
+const MAX_ENLARGED_EDGE_PX = 1200;
+
+/**
+ * The resolution a figure is rendered at for display.
+ *
+ * Normally 144 DPI. A figure is drawn at its rendered pixel size, so at that
+ * resolution a 10pt icon would be 20 pixels across: present, and too small to
+ * make out. A figure shown although it is small (an author described it, #15)
+ * is rendered finer instead, aiming for a shorter side of 48 pixels — the size
+ * a 24pt figure gets — and it stays sharp, because the content is drawn, not
+ * scaled up. The longer side is capped at 1200 pixels, and the cap wins: a
+ * thin, wide figure such as a route drawn as a 224 x 4pt group comes out about
+ * 1200 x 21 pixels rather than an enormous image.
+ */
+export function displayDpi(bbox: BoundingBox): number {
+  const shortPt = Math.min(bbox.width, bbox.height);
+  const longPt = Math.max(bbox.width, bbox.height);
+  if (shortPt <= 0 || (shortPt * DISPLAY_DPI) / 72 >= MIN_DISPLAY_EDGE_PX) return DISPLAY_DPI;
+  const enlarged = (72 * MIN_DISPLAY_EDGE_PX) / shortPt;
+  const capped = (72 * MAX_ENLARGED_EDGE_PX) / longPt;
+  return Math.max(DISPLAY_DPI, Math.min(enlarged, capped));
+}
+
 export async function materializeFigureImages(
   document: AccessibleDocument,
   pdf: PDFDocumentProxy,
@@ -113,7 +141,7 @@ export async function materializeFigureImages(
           const pdfPage = await pdf.getPage(figure.region.pageNumber);
           const blob = await renderRegionToBlob(pdfPage, figure.region.bbox, {
             // Display resolution, not OCR resolution — this is for looking at.
-            dpi: options.dpi ?? 144,
+            dpi: options.dpi ?? displayDpi(figure.region.bbox),
             ...(options.signal ? { signal: options.signal } : {}),
           });
           pdfPage.cleanup();

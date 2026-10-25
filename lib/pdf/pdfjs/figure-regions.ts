@@ -1,5 +1,5 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import type { AccessibleDocument, BoundingBox } from '../document-model';
+import type { AccessibleDocument, BoundingBox, FigureNode } from '../document-model';
 import { collectFigures, mapFigures } from '../document-model';
 import { MIN_FIGURE_SIZE_PT, gap, union } from '../geometry';
 import { findPageDrawing, type PageDrawing, type PageImageRegion } from './page-drawing';
@@ -87,6 +87,7 @@ export function reconcileToCount(
 function boundsFor(
   contentIds: string[] | undefined,
   drawing: PageDrawing,
+  authorDescribed = false,
 ): BoundingBox | 'none' | 'too-small' {
   if (!contentIds?.length) return 'none';
 
@@ -97,9 +98,37 @@ function boundsFor(
   }
 
   if (!bounds) return 'none';
+  // The size floor is for telling a figure from a hairline or a bullet. An
+  // author who described the figure in their own words has already said it is
+  // one, so its size is no reason to hide it (#15): in the iPDF flyer that is
+  // six icons, 4 to 42pt, each with the author's alternative text. Without
+  // that, size is all there is to go on, and it does not separate a small
+  // icon from a fragment of a larger drawing — a PowerPoint notice has both.
+  //
+  // Even described, a drawing too thin to show anything — a rule, or one
+  // clipped to nothing — stays a notice: as an image it would be a strip of
+  // a pixel or two, and the author's words, which the notice shows, would be
+  // out of sight in `alt`.
+  if (authorDescribed) {
+    return Math.min(bounds.width, bounds.height) >= MIN_DESCRIBED_FIGURE_PT ? bounds : 'too-small';
+  }
   return bounds.width >= MIN_FIGURE_SIZE_PT && bounds.height >= MIN_FIGURE_SIZE_PT
     ? bounds
     : 'too-small';
+}
+
+/**
+ * The thinnest side a described figure is shown with, in points (#15). The
+ * smallest described icon measured, in the iPDF flyer, is 4 x 8pt.
+ */
+const MIN_DESCRIBED_FIGURE_PT = 2;
+
+/**
+ * Whether the figure's alternative text is the author's own words. Text the
+ * document's word processor generated does not count: nobody vouched for it.
+ */
+function describedByAuthor(figure: FigureNode): boolean {
+  return figure.alternativeTextSource === 'author' && Boolean(figure.alternativeText);
 }
 
 /**
@@ -134,16 +163,18 @@ export async function attachFigureRegions(
 
       // Figures whose tags locate their drawing are placed exactly; only the
       // rest fall back to draw order, and only they consume image regions.
-      const unresolved = figures.filter(
-        ({ figure }) => !figure.region && boundsFor(figure.contentIds, drawing) === 'none',
+      // Worked out once, in the traversal order `mapFigures` uses below.
+      const exacts = figures.map(({ figure }) =>
+        figure.region ? null : boundsFor(figure.contentIds, drawing, describedByAuthor(figure)),
       );
-      const reconciled = reconcileToCount(drawing.images, unresolved.length);
+      const unresolved = exacts.filter((exact) => exact === 'none').length;
+      const reconciled = reconcileToCount(drawing.images, unresolved);
 
       let cursor = 0;
-      const nodes = mapFigures(page.nodes, (figure) => {
+      const nodes = mapFigures(page.nodes, (figure, index) => {
         if (figure.region) return figure;
 
-        const exact = boundsFor(figure.contentIds, drawing);
+        const exact = exacts[index]!;
         if (exact === 'too-small') return { ...figure, tooSmallToShow: true };
         if (exact !== 'none') {
           return { ...figure, region: { pageNumber: page.pageNumber, bbox: exact } };

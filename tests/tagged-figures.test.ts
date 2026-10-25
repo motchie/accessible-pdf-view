@@ -6,6 +6,7 @@ import * as pdfjs from 'pdfjs-dist';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { collectFigures } from '../lib/pdf/document-model';
 import { ja } from '../lib/i18n/ja';
+import { attachFigureRegions } from '../lib/pdf/pdfjs/figure-regions';
 import { readPdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
 import { extractTaggedDocument } from '../lib/pdf/pdfjs/tagged-adapter';
 import { figurePlaceholderText } from '../lib/reader/renderer';
@@ -57,5 +58,43 @@ describe('tagged figures and their /Alt', () => {
 
     expect(blank).toMatchObject({ status: 'missing-alt' });
     expect(blank!.alternativeText).toBeUndefined();
+  });
+});
+
+/**
+ * Which small figures are shown (#15): the author's own description is what
+ * lifts the 24pt floor, and even that does not make a hairline worth showing.
+ */
+describe('small tagged figures', () => {
+  async function located(figures: NonNullable<MinimalPdfOptions['figures']>) {
+    (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
+      pathToFileURL(resolve('node_modules/pdfjs-dist/build/pdf.worker.mjs')).href;
+    const pdf = await (
+      pdfjs as unknown as { getDocument: (o: unknown) => { promise: Promise<PDFDocumentProxy> } }
+    ).getDocument({
+      data: buildMinimalPdf({ pages: [['Heading', 'Body text.']], tagged: 'declared', figures }),
+    }).promise;
+    const extraction = await extractTaggedDocument(pdf, { info: await readPdfDocumentInfo(pdf) });
+    const document = await attachFigureRegions(extraction!.document, pdf);
+    return document.pages.flatMap((page) => collectFigures(page.nodes)).map((f) => f.figure);
+  }
+
+  it('shows a described 10pt icon, and not an undescribed one or a described hairline', async () => {
+    const [described, undescribed, hairline] = await located([
+      { alt: 'A search icon', width: 10, height: 10 },
+      { width: 10, height: 10 },
+      { alt: 'A dividing rule', width: 200, height: 1 },
+    ]);
+
+    expect(described!.region?.bbox).toMatchObject({ width: 10, height: 10 });
+    expect(described!.tooSmallToShow).toBeUndefined();
+
+    expect(undescribed!.region).toBeUndefined();
+    expect(undescribed!.tooSmallToShow).toBe(true);
+
+    // Kept as a notice, which shows the author's words.
+    expect(hairline!.region).toBeUndefined();
+    expect(hairline!.tooSmallToShow).toBe(true);
+    expect(figurePlaceholderText(ja, hairline!)).toBe('画像: A dividing rule');
   });
 });

@@ -7,6 +7,7 @@ import * as pdfjs from 'pdfjs-dist';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { collectFigures } from '../lib/pdf/document-model';
 import { ja } from '../lib/i18n/ja';
+import { attachFigureRegions } from '../lib/pdf/pdfjs/figure-regions';
 import { readPdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
 import { extractTaggedDocument } from '../lib/pdf/pdfjs/tagged-adapter';
 import { figurePlaceholderText } from '../lib/reader/renderer';
@@ -34,6 +35,9 @@ async function slide3() {
     .promise;
   const extraction = await extractTaggedDocument(pdf, { info: await readPdfDocumentInfo(pdf) });
   const page = extraction!.document.pages.find((candidate) => candidate.pageNumber === 3)!;
+  const located = (await attachFigureRegions(extraction!.document, pdf)).pages.find(
+    (candidate) => candidate.pageNumber === 3,
+  )!;
 
   // What the PDF itself says, so the tests below check the case they are
   // about: a re-export that stopped writing `/Alt ()` must fail here, not pass
@@ -45,7 +49,11 @@ async function slide3() {
   };
   visit((await (await pdf.getPage(3)).getStructTree()) as unknown as Parameters<typeof visit>[0]);
 
-  return { figures: collectFigures(page.nodes).map(({ figure }) => figure), tagged };
+  return {
+    figures: collectFigures(page.nodes).map(({ figure }) => figure),
+    located: collectFigures(located.nodes).map(({ figure }) => figure),
+    tagged,
+  };
 }
 
 describe('PowerPoint figures', () => {
@@ -70,5 +78,17 @@ describe('PowerPoint figures', () => {
       alternativeText: '道順の図：駅から 4 つ目の角を右へ',
       alternativeTextSource: 'author',
     });
+  });
+
+  it('shows the described group however thin it is, and not the loose dots (#15)', async () => {
+    const { located } = await slide3();
+    const group = located.find((figure) => figure.alternativeText?.startsWith('道順の図'))!;
+    // 224 x 4pt: under 24pt on one side, shown because the author described it.
+    expect(group.region?.bbox.height).toBeLessThan(24);
+    expect(group.tooSmallToShow).toBeUndefined();
+    for (const dot of located.slice(0, 4)) {
+      expect(dot.region).toBeUndefined();
+      expect(dot.tooSmallToShow).toBe(true);
+    }
   });
 });
