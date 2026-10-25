@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module';
 import { defineConfig } from 'wxt';
+import { MINIMUM_CHROME_VERSION, MINIMUM_FIREFOX_VERSION } from './lib/browser/minimum-versions';
 
 /**
  * `decode-named-character-reference` decodes `&amp;` and friends for the
@@ -166,15 +167,12 @@ export default defineConfig({
             gecko: {
               id: 'accessible-pdf-view@accessiblepdfview.org',
               /**
-               * The floor for everything this manifest relies on.
-               *
-               * `optional_host_permissions` is the newest of them, and an older
-               * Firefox would install this happily and then have no way to
-               * grant a site — which is the one thing that makes a PDF readable
-               * there. Refusing to install is a better answer than a button
-               * that cannot work.
+               * The newest of what this manifest and the shipped PDF.js need,
+               * listed with their reasons in `lib/browser/minimum-versions.ts`.
+               * Refusing to install is a better answer than a reader that
+               * cannot work.
                */
-              strict_min_version: '128.0',
+              strict_min_version: `${MINIMUM_FIREFOX_VERSION}.0`,
               // Accurate, not boilerplate: the extension collects nothing and
               // transmits nothing. If hosted OCR is ever added, this has to
               // change with it.
@@ -182,7 +180,12 @@ export default defineConfig({
             },
           },
         }
-      : {}),
+      : {
+          // Chromium's floor, which is what the shipped PDF.js needs
+          // (`lib/browser/minimum-versions.ts`); Firefox's is
+          // `strict_min_version` above.
+          minimum_chrome_version: String(MINIMUM_CHROME_VERSION),
+        }),
   }),
 
   vite: () => ({
