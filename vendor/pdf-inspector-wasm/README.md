@@ -25,7 +25,8 @@ Until a release carries it, the extension ships this build.
 - **Source:** [`motchie/pdf-inspector`, branch `apv/1.25.2-bcmap-fix`](https://github.com/motchie/pdf-inspector/tree/apv/1.25.2-bcmap-fix),
   commit `2c3e0c5e0d05aec219649a61fb8cf3f9788711ce` — upstream's 1.25.2 release
   commit (`ef52f77`, "bump package versions to 1.25.2"; the release has no tag)
-  plus the two commits of #594, cherry-picked unchanged; they apply cleanly.
+  plus the two commits of firecrawl/pdf-inspector#594, cherry-picked
+  unchanged; they apply cleanly.
   The first commit makes the CMaps parse at all; the second makes every mapping
   in them read as pdf.js reads it, characters outside the BMP included, which
   the first left as U+FFFD.
@@ -59,10 +60,17 @@ Reader's options, timing aside:
   npm's 1.25.2 reads the InDesign flyer as 0 Japanese characters and 337
   U+FFFD, and this build reads 579 and none; the other document goes from
   6,068 and 1,455 to 7,824 and none. The other twelve are identical.
+- **None of the fourteen uses a character outside the BMP.** A PDF built for
+  it — a non-embedded Adobe-Japan1 font, no ToUnicode, showing CIDs 843, 7641
+  and 843 — reads as `あ𨳝あ` in this build, as poppler reads it, and as `���`
+  in npm's 1.25.2. `tests/inspector-wasm.test.ts` builds that PDF and checks
+  it, so CI fails if the bundled binary loses the fix.
 - **Against the 1.25.0 build it replaces,** the results are identical on all
   fourteen. Upstream's 1.25.1 and 1.25.2 fix text extraction from simple and
-  Type1 fonts and subset ToUnicode repairs (#595, #596, #597, #603, #605); none
-  of these documents exercises them.
+  Type1 fonts and subset ToUnicode repairs (firecrawl/pdf-inspector#595,
+  firecrawl/pdf-inspector#596, firecrawl/pdf-inspector#597,
+  firecrawl/pdf-inspector#603 and firecrawl/pdf-inspector#605); none of these
+  documents exercises them.
 
 ## When it goes
 

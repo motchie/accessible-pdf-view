@@ -33,7 +33,36 @@ export interface MinimalPdfOptions {
    * included; leave it out for a figure with no `/Alt` at all.
    */
   figures?: Array<{ alt?: string }>;
+  /**
+   * A line drawn after each page's text in a CID font from the Adobe-Japan1
+   * collection that is neither embedded nor given a ToUnicode CMap, so the
+   * only way to read it is the collection's own CID-to-Unicode mapping. Each
+   * number is a CID, written through Identity-H.
+   */
+  japan1Cids?: number[];
 }
+
+/**
+ * The CID font `japan1Cids` draws with, as its three objects: the Type0 font,
+ * its descendant and the descriptor. Kozuka Mincho by name only: nothing is
+ * embedded, which is the point.
+ */
+function japan1FontObjects(type0: number): string[] {
+  const descendant = type0 + 1;
+  const descriptor = type0 + 2;
+  return [
+    `<< /Type /Font /Subtype /Type0 /BaseFont /KozMinPr6N-Regular /Encoding /Identity-H ` +
+      `/DescendantFonts [${descendant} 0 R] >>`,
+    `<< /Type /Font /Subtype /CIDFontType0 /BaseFont /KozMinPr6N-Regular ` +
+      `/CIDSystemInfo << /Registry (Adobe) /Ordering (Japan1) /Supplement 6 >> ` +
+      `/FontDescriptor ${descriptor} 0 R /DW 1000 >>`,
+    `<< /Type /FontDescriptor /FontName /KozMinPr6N-Regular /Flags 6 ` +
+      `/FontBBox [0 -120 1000 880] /ItalicAngle 0 /Ascent 880 /Descent -120 /CapHeight 742 /StemV 80 >>`,
+  ];
+}
+
+/** Stands in for the CID font's object number until it is known. */
+const JAPAN1_FONT_REF = '@@JAPAN1@@';
 
 export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
   const encoder = new TextEncoder();
@@ -98,6 +127,13 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
           : [],
       )
       .join('\n')
+      .concat(
+        options.japan1Cids
+          ? `\nBT /F2 12 Tf 72 ${720 - lines.length * 30} Td <${options.japan1Cids
+              .map((cid) => cid.toString(16).padStart(4, '0'))
+              .join('')}> Tj ET`
+          : '',
+      )
       .concat(options.drawing ? `\n${options.drawing}` : '');
     elements.push(...pageElements);
     parentTreeNums.push(`${index} [${pageElements.map((obj) => `${obj} 0 R`).join(' ')}]`);
@@ -106,7 +142,8 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
       `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] ` +
       (options.rotate ? `/Rotate ${options.rotate} ` : '') +
       (options.cropBox ? `/CropBox [${options.cropBox.join(' ')}] ` : '') +
-      `/Resources << /Font << /F1 ${fontObj} 0 R >> >> /Contents ${contentObj} 0 R` +
+      `/Resources << /Font << /F1 ${fontObj} 0 R${options.japan1Cids ? ` /F2 ${JAPAN1_FONT_REF}` : ''} >> >> ` +
+      `/Contents ${contentObj} 0 R` +
       (options.tagged ? ` /StructParents ${index}` : '') +
       ` >>`;
     objects[contentObj] = `<< /Length ${content.length} >>\nstream\n${content}\nendstream`;
@@ -117,6 +154,18 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
       `<< /Type /StructTreeRoot /K [${elements.map((obj) => `${obj} 0 R`).join(' ')}] ` +
       `/ParentTree ${parentTreeObj} 0 R >>`;
     objects[parentTreeObj] = `<< /Nums [${parentTreeNums.join(' ')}] >>`;
+  }
+
+  // The CID font goes last among the content objects: every number before it
+  // depends on the page and element counts, and the pages refer to it.
+  if (options.japan1Cids) {
+    const type0 = objects.length;
+    japan1FontObjects(type0).forEach((object, offset) => {
+      objects[type0 + offset] = object;
+    });
+    for (let index = 0; index < objects.length; index++) {
+      objects[index] = objects[index]?.replace(JAPAN1_FONT_REF, `${type0} 0 R`) as string;
+    }
   }
 
   const infoObj = objects.length;
