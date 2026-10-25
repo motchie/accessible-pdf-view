@@ -2,8 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import init from '@firecrawl/pdf-inspector-wasm';
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
-import type { PDFDocumentProxy } from 'pdfjs-dist';
+import * as pdfjs from 'pdfjs-dist';
 import type {
   AccessibleDocument,
   DocumentOrigin,
@@ -39,9 +38,13 @@ import { DEFAULT_SETTINGS, type StructureSource } from '../../lib/reader/setting
  *   - pdf-inspector runs in-process, through `analyzePdfBytes` with
  *     `READER_PROCESS_OPTIONS`, rather than in the inspector worker, which
  *     calls the same function.
- *   - PDF.js is the legacy build, which runs under Node, and reads its CMaps,
- *     fonts, image-decoder WASM and ICC profiles from `node_modules/pdfjs-dist`
- *     rather than from the extension's origin — the same files.
+ *   - PDF.js is the module the extension imports (`pdfjs-dist`, which is
+ *     `build/`, not `legacy/`), with its unminified worker run in-process; it
+ *     reads its CMaps, fonts, image-decoder WASM and ICC profiles from
+ *     `node_modules/pdfjs-dist` rather than from the extension's origin — the
+ *     same files. The legacy build is transpiled separately and does not read
+ *     every document the same way, so a check run on it would not be a check
+ *     of what ships.
  *   - Figure rasterising is replaced by a **stand-in**: there is no canvas
  *     here (the jsdom setup's canvas globals are inert stubs on purpose). Every
  *     figure that was located gets a fixed placeholder URL
@@ -98,28 +101,21 @@ function ensureInspector(): Promise<unknown> {
   return inspectorReady;
 }
 
-type PdfjsLegacy = {
-  GlobalWorkerOptions: { workerSrc: string };
-  getDocument: (options: unknown) => { promise: Promise<PDFDocumentProxy>; destroy(): Promise<void> };
-  VerbosityLevel: { ERRORS: number };
-};
-
 async function loadWithPdfjs(bytes: Uint8Array) {
-  const legacy = pdfjs as unknown as PdfjsLegacy;
-  legacy.GlobalWorkerOptions.workerSrc = pathToFileURL(
-    resolve(pdfjsRoot, 'legacy/build/pdf.worker.mjs'),
+  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(
+    resolve(pdfjsRoot, 'build/pdf.worker.mjs'),
   ).href;
   // The same options `loadPdfDocument` passes, pointed at the package's own
   // copies of the assets. Without the CMaps, Japanese text in CID fonts comes
   // back empty — which would make every CJK fixture fail for the wrong reason.
-  const task = legacy.getDocument({
+  const task = pdfjs.getDocument({
     data: bytes,
     cMapUrl: `${resolve(pdfjsRoot, 'cmaps')}/`,
     cMapPacked: true,
     standardFontDataUrl: `${resolve(pdfjsRoot, 'standard_fonts')}/`,
     wasmUrl: `${resolve(pdfjsRoot, 'wasm')}/`,
     iccUrl: `${resolve(pdfjsRoot, 'iccs')}/`,
-    verbosity: legacy.VerbosityLevel.ERRORS,
+    verbosity: pdfjs.VerbosityLevel.ERRORS,
   });
   return { document: await task.promise, destroy: () => task.destroy() };
 }

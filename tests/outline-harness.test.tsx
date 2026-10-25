@@ -16,11 +16,12 @@ import { renderReader, type RenderedReader } from './helpers/render-reader';
  * ## Why this runs in jsdom
  *
  * One environment does all of it. pdf-inspector is plain WebAssembly and does
- * not care; PDF.js's legacy build runs under vitest's jsdom environment as
- * long as nothing rasterises, because it still sees Node (`process`) and so
- * reads its CMaps and fonts from disk and uses its in-process fake worker. The
- * canvas globals it touches on import are the inert stubs in
- * `tests/setup/jsdom-canvas.ts`, and the only step that would really draw —
+ * not care; PDF.js — the build the extension ships — runs under vitest's
+ * jsdom environment as long as nothing rasterises, because it still sees Node
+ * (`process`) and so reads its CMaps and fonts from disk and uses its
+ * in-process fake worker. The canvas globals it touches on import are the
+ * inert stubs in `tests/setup/jsdom-canvas.ts`, and the only step that would
+ * really draw —
  * `materializeFigureImages` — is replaced by a stand-in in `read-pdf.ts`.
  * Rendering then needs jsdom's `document`, which this environment provides,
  * so there is no hand-built jsdom and no split across files.
