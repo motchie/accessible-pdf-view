@@ -16,9 +16,10 @@ import { buildMinimalPdf, type MinimalPdfOptions } from './helpers/minimal-pdf';
  * GitHub issue #14.
  *
  * PDF.js reports a missing `/Alt` as no `alt` at all and an empty one as
- * `alt: ''`. They mean different things: the author gave nothing, or the
- * author said the figure is decorative. Saying "the author gave no
- * alternative text" about the second would be false.
+ * `alt: ''`. Both are read as no alternative text. An empty one was once taken
+ * for the author's decorative verdict, but neither Office export writes it for
+ * that: an author's Decorative becomes an artifact, and PowerPoint writes
+ * `/Alt ()` for a shape given no alternative text (#27).
  */
 async function figuresOf(figures: NonNullable<MinimalPdfOptions['figures']>) {
   (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
@@ -33,7 +34,7 @@ async function figuresOf(figures: NonNullable<MinimalPdfOptions['figures']>) {
 }
 
 describe('tagged figures and their /Alt', () => {
-  it('tells no /Alt, an empty /Alt and a written one apart', async () => {
+  it('reads no /Alt and an empty /Alt alike, and a written one as the author\'s', async () => {
     const [none, empty, written] = await figuresOf([{}, { alt: '' }, { alt: 'A chart' }]);
 
     expect(none).toMatchObject({ status: 'missing-alt', altTextFieldRead: true });
@@ -42,12 +43,11 @@ describe('tagged figures and their /Alt', () => {
       '画像があります。作成者による代替テキストはありません。',
     );
 
-    expect(empty).toMatchObject({
-      status: 'available',
-      alternativeText: '',
-      alternativeTextSource: 'author',
-    });
-    expect(figurePlaceholderText(ja, empty!)).toBe('装飾的な画像です。内容はありません。');
+    expect(empty).toMatchObject({ status: 'missing-alt', altTextFieldRead: true });
+    expect(empty!.alternativeText).toBeUndefined();
+    expect(figurePlaceholderText(ja, empty!)).toBe(
+      '画像があります。作成者による代替テキストはありません。',
+    );
 
     expect(written).toMatchObject({ alternativeText: 'A chart', alternativeTextSource: 'author' });
   });

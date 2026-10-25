@@ -374,8 +374,10 @@ describe('describeFigures', () => {
     );
   });
 
-  it('still hides an image the author marked decorative', () => {
-    // An author's empty alt text *is* authoritative — that one stays silent.
+  it('calls a figure decorative only when a describer judged it so', () => {
+    // An empty `/Alt` is read as none (#27), so an author's empty text never
+    // reaches the renderer; were one to, it must not borrow the describer's
+    // "judged decorative" sentence, nor be silenced.
     const authored = figure({
       alternativeText: '',
       alternativeTextSource: 'author',
@@ -386,7 +388,7 @@ describe('describeFigures', () => {
     const dom = new DOMParser().parseFromString(`<main>${html}</main>`, 'text/html');
 
     expect(dom.querySelector('img')?.getAttribute('alt')).toBe('');
-    expect(dom.querySelector('.apv-figure__placeholder')).toBeNull();
+    expect(dom.querySelector('.apv-figure__placeholder')?.textContent).not.toContain('装飾');
   });
 
   it('records an outcome for every figure, successes included', async () => {

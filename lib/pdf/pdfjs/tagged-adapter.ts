@@ -506,12 +506,14 @@ function figureFrom(node: StructNode, context: Context): DocumentNode {
   // alternative text and write it here verbatim, disclaimer included. Word also
   // emits `alt=" "` for decorative spacing, so whitespace-only values are not
   // descriptions at all.
+  // An `/Alt` that is present but empty, or only whitespace, is no
+  // alternative text. It was once read as the author's decorative verdict
+  // (#14), but neither Office export means that by it: Word and PowerPoint
+  // both turn a figure the author marked Decorative into an artifact, outside
+  // the tag tree, and PowerPoint writes `/Alt ()` for a shape the author gave
+  // no alternative text at all (#27). Reporting a decision nobody made would
+  // be a false claim about who said what.
   const { text: alt, machineWritten } = classifyAlternativeText(node.alt);
-  // An `/Alt` that is present and exactly empty is the author saying the
-  // figure is decorative — a verdict, not an absence (GitHub issue #14). A
-  // whitespace-only value is left as no alternative text: Word writes one for
-  // spacing, and nobody has decided yet whether that is the same verdict.
-  const authorDecorative = node.alt === '';
   // The tag tree names the drawing operations that make up this figure. Kept
   // so the region can be derived from them exactly, rather than by matching
   // draw order against document order.
@@ -531,13 +533,11 @@ function figureFrom(node: StructNode, context: Context): DocumentNode {
             ? ('document-ai' as const)
             : ('author' as const),
         }
-      : authorDecorative
-        ? { alternativeText: '', alternativeTextSource: 'author' as const }
-        : {}),
+      : {}),
     ...(caption ? { caption } : {}),
     ...(contentIds.length > 0 ? { contentIds } : {}),
     altTextFieldRead: true,
-    status: alt || authorDecorative ? 'available' : 'missing-alt',
+    status: alt ? 'available' : 'missing-alt',
   };
 }
 

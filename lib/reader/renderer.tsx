@@ -247,11 +247,9 @@ function Figure({
   //   check. Hiding a generated description in an attribute meant a sighted
   //   reader watching the feature run saw absolutely nothing happen — and the
   //   one person who could have caught a wrong description had no way to.
-  const authorDecorative =
-    node.alternativeText === '' && node.alternativeTextSource === 'author';
   const authorAlt =
     node.alternativeTextSource === 'author' && Boolean(node.alternativeText);
-  const showsNotice = !hasImage || (!authorDecorative && !authorAlt);
+  const showsNotice = !hasImage || !authorAlt;
 
   return (
     <figure className="apv-figure">
@@ -316,14 +314,12 @@ export function figurePlaceholderText(
   }
   if (node.alternativeText) return m.figures.withAlt(node.alternativeText);
 
-  // An empty alternative text means "decorative" — but who decided that
-  // matters as much as the verdict itself. An author marking their own image
-  // decorative is authoritative; a model guessing it is not, and saying so is
-  // the difference between an informed reader and a silent gap.
-  if (node.alternativeText === '' && node.alternativeTextSource === 'author') {
-    return m.figures.decorative;
-  }
-  if (node.alternativeText === '' && node.alternativeTextSource) {
+  // An empty alternative text from a describer means it judged the image
+  // decorative. That is a guess, and saying so is the difference between an
+  // informed reader and a silent gap. (An author's decorative mark never gets
+  // here: the Office exports make such a figure an artifact, and an empty
+  // `/Alt` is read as none — #27.)
+  if (node.alternativeText === '' && node.alternativeTextSource === 'generated') {
     return m.figures.decorativeGuess;
   }
 

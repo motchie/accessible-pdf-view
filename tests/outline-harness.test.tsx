@@ -127,11 +127,11 @@ document lang=ja title="Annual Report（リーダー） — Accessible PDF View"
         paragraph "${BODY_1}"
         figure
           img "A blue square on a white page."
-        # The author marked this one decorative. The <img alt=""> leaves the
-        # tree, but its <figure> stays, empty — present behaviour, and not
-        # obviously the intended one.
+        # An empty /Alt reads as none (#27): the image is silenced and the
+        # notice speaks for it, as for the one with no /Alt below.
         figure
-        # No /Alt: the image is silenced and the notice speaks for it.
+          paragraph "画像があります。作成者による代替テキストはありません。"
+        # No /Alt.
         figure
           paragraph "画像があります。作成者による代替テキストはありません。"
 `,

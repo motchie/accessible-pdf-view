@@ -345,6 +345,20 @@ describe("telling a person's alternative text from their word processor's", () =
     expect(classifyAlternativeText(undefined)).toEqual({ text: '', machineWritten: false });
   });
 
+  it("removes PowerPoint's group suffix, and leaves the author's words as theirs", () => {
+    // PowerPoint appends it to a group's alternative text on export (#28).
+    expect(classifyAlternativeText('道順の図：駅から 4 つ目の角を右へ (グループ化されたオブジェクト)')).toEqual({
+      text: '道順の図：駅から 4 つ目の角を右へ',
+      machineWritten: false,
+    });
+    // A group with no text of its own leaves nothing.
+    expect(classifyAlternativeText('(グループ化されたオブジェクト)')).toEqual({ text: '', machineWritten: false });
+    // Only at the end, where PowerPoint puts it.
+    expect(classifyAlternativeText('(グループ化されたオブジェクト) の説明図').text).toBe(
+      '(グループ化されたオブジェクト) の説明図',
+    );
+  });
+
   it('keeps the description when the disclaimer is all there is to remove', () => {
     expect(classifyAlternativeText('AI 生成コンテンツは誤りを含む可能性があります。')).toEqual({
       text: '',

@@ -42,6 +42,16 @@ const MACHINE_MARKERS: RegExp[] = [
   /,?\s*[Dd]escription automatically generated/,
 ];
 
+/**
+ * Text Office appends to the author's own description, which is not part of
+ * it. PowerPoint exports a group's alternative text with
+ * 「 (グループ化されたオブジェクト)」 after it (#28): the description stays the
+ * author's, so it is removed without marking the text machine-written. Only
+ * the Japanese form has been seen; the English one is unverified, so it is not
+ * guessed at here.
+ */
+const PRODUCER_SUFFIXES: RegExp[] = [/\s*\(グループ化されたオブジェクト\)$/];
+
 export interface AlternativeTextOrigin {
   /** The description with any boilerplate removed. Empty when nothing is left. */
   text: string;
@@ -50,7 +60,8 @@ export interface AlternativeTextOrigin {
 }
 
 /**
- * Classifies a `/Alt` value, and strips the disclaimer when there is one.
+ * Classifies a `/Alt` value, and strips the disclaimer when there is one,
+ * and any text Office appended to the author's (`PRODUCER_SUFFIXES`).
  *
  * The disclaimer is removed rather than read out. It is identical on every
  * image in the document, so a screen reader user would hear the same sentence
@@ -59,7 +70,8 @@ export interface AlternativeTextOrigin {
  * known boilerplate is removed; the description itself is never edited.
  */
 export function classifyAlternativeText(raw: string | undefined): AlternativeTextOrigin {
-  const alt = raw?.trim() ?? '';
+  let alt = raw?.trim() ?? '';
+  for (const suffix of PRODUCER_SUFFIXES) alt = alt.replace(suffix, '').trim();
   if (alt === '') return { text: '', machineWritten: false };
 
   let machineWritten = false;
