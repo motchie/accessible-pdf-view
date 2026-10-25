@@ -8,6 +8,7 @@ import type {
   TableRow as ModelTableRow,
 } from '../pdf/document-model';
 import { inlineToPlainText } from '../pdf/document-model';
+import { normalizeCjkSpacing } from '../pdf/inspector/markdown-to-document';
 
 /**
  * Document Model -> semantic HTML.
@@ -406,7 +407,7 @@ function dropLeadingTitleHeading(
   const [first] = page.nodes;
   if (
     first?.type !== 'heading' ||
-    inlineToPlainText(first.content).trim() !== title.trim()
+    comparableTitle(inlineToPlainText(first.content)) !== comparableTitle(title)
   ) {
     return pages;
   }
@@ -416,4 +417,16 @@ function dropLeadingTitleHeading(
       ? { ...candidate, nodes: candidate.nodes.slice(1) }
       : candidate,
   );
+}
+
+/**
+ * The two sides of the title comparison come through different paths: the
+ * heading's text has had the spaces between Japanese characters removed as
+ * extraction artefacts, and the `/Title` metadata has not. Word's
+ * 「検証用文書 その1」 arrives as a heading reading 「検証用文書その1」, and an
+ * exact comparison let the title be read twice. Both sides get the same
+ * normalisation, so the comparison is between what each one says.
+ */
+function comparableTitle(text: string): string {
+  return normalizeCjkSpacing(text.replace(/\s+/g, ' ').trim());
 }

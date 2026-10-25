@@ -223,6 +223,28 @@ describe('Document Model -> semantic HTML', () => {
     expect(dom.querySelector('p')?.textContent).toBe('Body.');
   });
 
+  it('drops a title heading whose Japanese spacing was normalised away', () => {
+    // Word's Title-style paragraph, tagged H1. Extraction removes the space
+    // between Japanese characters; the /Title metadata keeps it.
+    const dom = render(
+      [
+        { type: 'heading', level: 1, content: [{ type: 'text', text: '検証用文書その1' }] },
+        { type: 'paragraph', content: [{ type: 'text', text: '本文。' }] },
+      ],
+      {
+        metadata: {
+          title: '検証用文書 その1',
+          sourceUrl: null,
+          pageCount: 1,
+          producedBy: ['tagged-pdf'],
+        },
+      },
+    );
+
+    expect(dom.querySelector('h2')).toBeNull();
+    expect(dom.querySelector('p')?.textContent).toBe('本文。');
+  });
+
   it('marks page boundaries without polluting the heading outline', () => {
     const document: AccessibleDocument = {
       metadata: { sourceUrl: null, pageCount: 2, producedBy: ['pdf-inspector'] },
