@@ -1,6 +1,6 @@
 {
   "name": "accessible-pdf-view",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Read PDFs as accessible, structured HTML.",
   "private": true,
   "type": "module",
