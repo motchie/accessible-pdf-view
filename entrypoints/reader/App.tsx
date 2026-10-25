@@ -1,5 +1,4 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type JSX } from "react";
-import type { DocumentOrigin } from "../../lib/pdf/document-model";
 import { PdfError } from "../../lib/pdf/errors";
 import { createPdfSource } from "../../lib/pdf/source/handoff-pdf-source";
 import type { PdfSource } from "../../lib/pdf/source/pdf-source";
@@ -33,6 +32,7 @@ import {
 } from "../../lib/i18n";
 import { fileNameFromUrl, readParams } from "../../lib/reader/params";
 import { readerTabTitle } from "../../lib/reader/document-title";
+import { betterHeadings } from "../../lib/reader/structure-source";
 
 /**
  * Four surfaces that no reader needs in order to read.
@@ -431,26 +431,6 @@ function ocrCandidatePages(
   return (analysis.document?.pages ?? [])
     .filter((page) => page.status === "requires-ocr")
     .map((page) => page.pageNumber);
-}
-
-/**
- * The other reading, when this one has no headings and that one does.
- *
- * Both halves matter. Saying "no headings" without an alternative is a
- * complaint about the document; saying it with one is a route. And a reading
- * that also has none is not an alternative worth sending anyone to.
- */
-function betterHeadings(
-  analysis: ReturnType<typeof usePdfAnalysis>,
-): { origin: DocumentOrigin; count: number } | null {
-  const current = analysis.structureSource;
-  if (!current || (analysis.headingCounts[current] ?? 0) > 0) return null;
-
-  for (const origin of analysis.availableSources) {
-    const count = analysis.headingCounts[origin] ?? 0;
-    if (origin !== current && count > 0) return { origin, count };
-  }
-  return null;
 }
 
 function statusMessage(

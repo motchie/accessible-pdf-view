@@ -1,4 +1,4 @@
-import { computeAccessibleName, getRole, isInaccessible } from 'dom-accessibility-api';
+import { computeAccessibleName, getRole } from 'dom-accessibility-api';
 import type { OutlineNode } from './outline';
 
 /**
@@ -15,8 +15,10 @@ import type { OutlineNode } from './outline';
  * Every element with a role becomes a node, except the roles in `TRANSPARENT`:
  * those carry no structure a reader navigates by, so their children are
  * hoisted into the nearest kept ancestor. Hidden content — `hidden`,
- * `aria-hidden="true"`, `display: none`, `visibility: hidden` — is left out
- * with everything under it.
+ * `aria-hidden="true"`, `display: none` — is left out
+ * with everything under it, except `visibility: hidden`: CSS lets a descendant
+ * set `visibility: visible` and be shown, so an invisible element contributes
+ * no node and no text of its own, but its children are still looked at.
  *
  * ## Names
  *
@@ -121,7 +123,7 @@ function outlineChildren(parent: Element): OutlineNode[] {
   for (const child of Array.from(parent.children)) {
     if (isHidden(child)) continue;
     const role = roleOf(child);
-    if (TRANSPARENT.has(role)) {
+    if (TRANSPARENT.has(role) || isInvisible(child)) {
       out.push(...outlineChildren(child));
     } else {
       out.push(toNode(child, role!));
@@ -196,7 +198,7 @@ function ownText(element: Element): string {
   const visit = (node: Node) => {
     for (const child of Array.from(node.childNodes)) {
       if (child.nodeType === child.TEXT_NODE) {
-        text += child.nodeValue ?? '';
+        if (!isInvisible(node as Element)) text += child.nodeValue ?? '';
         continue;
       }
       if (child.nodeType !== child.ELEMENT_NODE) continue;
@@ -207,7 +209,9 @@ function ownText(element: Element): string {
         continue;
       }
       const role = roleOf(childElement);
-      if (!TRANSPARENT.has(role) && !INLINE_ROLES.has(role!)) continue;
+      // An invisible element's own node is gone, so its visible descendants
+      // are this element's text, as a transparent element's would be.
+      if (!TRANSPARENT.has(role) && !INLINE_ROLES.has(role!) && !isInvisible(childElement)) continue;
       visit(childElement);
     }
   };
@@ -215,12 +219,18 @@ function ownText(element: Element): string {
   return nfc(collapse(text));
 }
 
+/** Left out with everything under it. */
 function isHidden(element: Element): boolean {
   if (element.hasAttribute('hidden')) return true;
   if (element.getAttribute('aria-hidden') === 'true') return true;
-  const style = (element as HTMLElement).style;
-  if (style && (style.display === 'none' || style.visibility === 'hidden')) return true;
-  return isInaccessible(element);
+  return getComputedStyle(element).display === 'none';
+}
+
+/** Not exposed itself, though a descendant can be: visibility is inherited
+ * and can be set back to `visible` further down. */
+function isInvisible(element: Element): boolean {
+  const visibility = getComputedStyle(element).visibility;
+  return visibility === 'hidden' || visibility === 'collapse';
 }
 
 /**

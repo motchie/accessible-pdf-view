@@ -20,9 +20,10 @@ import { classifyPages } from '../pdf/pdfjs/page-content';
 import { readPdfDocumentInfo } from '../pdf/pdfjs/metadata';
 import { loadPdfDocument } from '../pdf/pdfjs/renderer';
 import { coversPageText, extractTaggedDocument, isUsable } from '../pdf/pdfjs/tagged-adapter';
-import { countHeadings, documentToPlainText } from '../pdf/document-model';
+import { documentToPlainText } from '../pdf/document-model';
 import type { PdfSource } from '../pdf/source/pdf-source';
 import type { StructureSource } from './settings';
+import { decorate, shownHeadingCount } from './decorate';
 import { initialStructureSource } from './structure-source';
 
 /**
@@ -301,7 +302,7 @@ export function usePdfAnalysis(
           availableSources: [...entries.keys()],
           preparingSource: null,
           headingCounts: Object.fromEntries(
-            [...entries].map(([origin, value]) => [origin, countHeadings(value.raw)]),
+            [...entries].map(([origin, value]) => [origin, shownHeadingCount(value.raw, info)]),
           ),
           switchError: null,
           pdf: pdfDocument.document,
@@ -454,28 +455,4 @@ async function enrich(
   return materializeFigureImages(positioned, runtime.pdf, {
     signal: runtime.controller.signal,
   });
-}
-
-/**
- * Folds in what belongs to the PDF rather than to a producer: its own title and
- * language, and what its text-less pages actually draw.
- */
-function decorate(document: AccessibleDocument, runtime: Runtime): AccessibleDocument {
-  return {
-    ...document,
-    metadata: {
-      ...document.metadata,
-      // The document's own title and language beat anything inferred.
-      title: runtime.info.title ?? document.metadata.title,
-      ...(runtime.language ? { language: runtime.language } : {}),
-      info: runtime.info,
-    },
-    pages:
-      runtime.kinds.size === 0
-        ? document.pages
-        : document.pages.map((page) => {
-            const kind = runtime.kinds.get(page.pageNumber);
-            return kind ? { ...page, contentKind: kind } : page;
-          }),
-  };
 }

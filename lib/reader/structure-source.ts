@@ -38,3 +38,25 @@ export function initialStructureSource(
   if (available.length === 0) return null;
   return available.includes(preference) ? preference : (available[0] ?? null);
 }
+
+/**
+ * The other reading, when this one has no headings and that one does.
+ *
+ * Both halves matter. Saying "no headings" without an alternative is a
+ * complaint about the document; saying it with one is a route. And a reading
+ * that also has none is not an alternative worth sending anyone to.
+ */
+export function betterHeadings(analysis: {
+  structureSource: DocumentOrigin | null;
+  availableSources: readonly DocumentOrigin[];
+  headingCounts: Partial<Record<DocumentOrigin, number>>;
+}): { origin: DocumentOrigin; count: number } | null {
+  const current = analysis.structureSource;
+  if (!current || (analysis.headingCounts[current] ?? 0) > 0) return null;
+
+  for (const origin of analysis.availableSources) {
+    const count = analysis.headingCounts[origin] ?? 0;
+    if (origin !== current && count > 0) return { origin, count };
+  }
+  return null;
+}

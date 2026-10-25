@@ -11,7 +11,7 @@ import type {
   PdfCapabilities,
   PdfFileInfo,
 } from '../../lib/pdf/document-model';
-import { countHeadings, documentToPlainText, mapFigures } from '../../lib/pdf/document-model';
+import { documentToPlainText, mapFigures } from '../../lib/pdf/document-model';
 import { combineReadings } from '../../lib/pdf/combined-reading';
 import { adaptInspectorResult } from '../../lib/pdf/inspector/adapter';
 import { promoteMergedHeadings } from '../../lib/pdf/inspector/heading-promotion';
@@ -22,6 +22,7 @@ import { readPdfDocumentInfo } from '../../lib/pdf/pdfjs/metadata';
 import { classifyPages } from '../../lib/pdf/pdfjs/page-content';
 import { recoverEmptyPages } from '../../lib/pdf/pdfjs/recover-pages';
 import { coversPageText, extractTaggedDocument, isUsable } from '../../lib/pdf/pdfjs/tagged-adapter';
+import { decorate, shownHeadingCount } from '../../lib/reader/decorate';
 import { DEFAULT_SETTINGS, type StructureSource } from '../../lib/reader/settings';
 import { initialStructureSource } from '../../lib/reader/structure-source';
 
@@ -51,10 +52,11 @@ import { initialStructureSource } from '../../lib/reader/structure-source';
  *     only the PDF — text and the content stream — and need no canvas.
  *   - The language chain: `/Lang`, then the producer's language, then
  *     `detectLanguage`, then `detectScriptLanguage`.
- *   - `decorate`: the PDF's own title and language, `info`, and the page
- *     content kinds from `classifyPages`. The hook folds those in after the
- *     document is first shown; this returns the settled document, which is
- *     what is on screen a moment later.
+ *   - `decorate` and `shownHeadingCount`, imported rather than copied: the
+ *     PDF's own title and language, `info`, and the page content kinds from
+ *     `classifyPages`. The hook folds the kinds in after the document is first
+ *     shown; this returns the settled document, which is what is on screen a
+ *     moment later.
  *
  * Skipped, and why:
  *
@@ -106,8 +108,11 @@ export interface ReadPdfOptions {
   preferred?: StructureSource;
 }
 
-const pdfjsRoot = resolve('node_modules/pdfjs-dist');
-const wasmPath = resolve('node_modules/@firecrawl/pdf-inspector-wasm/pdf_inspector_wasm_bg.wasm');
+// From this file rather than the working directory, so a run started elsewhere
+// (`vitest --root`, a private suite's runner) finds the same files.
+const packageRoot = resolve(import.meta.dirname, '../..');
+const pdfjsRoot = resolve(packageRoot, 'node_modules/pdfjs-dist');
+const wasmPath = resolve(packageRoot, 'node_modules/@firecrawl/pdf-inspector-wasm/pdf_inspector_wasm_bg.wasm');
 
 let inspectorReady: Promise<unknown> | null = null;
 
@@ -198,7 +203,7 @@ export async function readPdfAsReader(
       structureSource: shown,
       availableSources: [...entries.keys()],
       headingCounts: Object.fromEntries(
-        [...entries].map(([origin, document]) => [origin, countHeadings(document)]),
+        [...entries].map(([origin, document]) => [origin, shownHeadingCount(document, info)]),
       ),
       raw: Object.fromEntries(entries),
       info,
@@ -232,28 +237,5 @@ function standInFigureImages(document: AccessibleDocument): AccessibleDocument {
           : figure,
       ),
     })),
-  };
-}
-
-/** The hook's `decorate`, verbatim apart from taking its inputs directly. */
-function decorate(
-  document: AccessibleDocument,
-  runtime: { info: PdfFileInfo; language: string | undefined; kinds: Map<number, PageContentKind> },
-): AccessibleDocument {
-  return {
-    ...document,
-    metadata: {
-      ...document.metadata,
-      title: runtime.info.title ?? document.metadata.title,
-      ...(runtime.language ? { language: runtime.language } : {}),
-      info: runtime.info,
-    },
-    pages:
-      runtime.kinds.size === 0
-        ? document.pages
-        : document.pages.map((page) => {
-            const kind = runtime.kinds.get(page.pageNumber);
-            return kind ? { ...page, contentKind: kind } : page;
-          }),
   };
 }

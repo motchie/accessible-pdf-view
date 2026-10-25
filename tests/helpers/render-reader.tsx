@@ -1,6 +1,5 @@
 import { act, type JSX } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { DocumentOrigin } from '../../lib/pdf/document-model';
 import { MessagesProvider, messagesFor, type Locale, type Messages } from '../../lib/i18n';
 import {
   NoHeadingsNotice,
@@ -11,6 +10,7 @@ import {
 import { readerTabTitle } from '../../lib/reader/document-title';
 import { fileNameFromUrl } from '../../lib/reader/params';
 import { DocumentView } from '../../lib/reader/renderer';
+import { betterHeadings } from '../../lib/reader/structure-source';
 import type { ReaderReading } from './read-pdf';
 
 declare global {
@@ -31,7 +31,7 @@ declare global {
  *     `<html lang>` from the UI locale — the two things App sets on the page;
  *   - the page title `<h1 class="apv-title">`;
  *   - the Reader tab panel, `<section aria-label=…>`, with `NoHeadingsNotice`
- *     under the same condition App uses (`betterHeadings`);
+ *     under App's own condition (`betterHeadings`, shared with it);
  *   - `<article lang>` holding `DocumentView` with `headingOffset={1}` and the
  *     same `renderPageNotice`.
  *
@@ -60,6 +60,10 @@ export function renderReader(
   // the extension's name for the heading and nothing for the tab.
   const documentName =
     reading.document.metadata.title?.trim() || fileNameFromUrl(options.sourceUrl ?? null) || null;
+  // Page-wide, so put back on unmount: the next test in the file must not
+  // inherit this one's title and language.
+  const previousTitle = document.title;
+  const previousLang = document.documentElement.getAttribute('lang');
   document.title = readerTabTitle(m, { phase: 'ready', view: 'reader', name: documentName });
   document.documentElement.lang = locale;
 
@@ -79,6 +83,9 @@ export function renderReader(
     unmount() {
       act(() => root.unmount());
       container.remove();
+      document.title = previousTitle;
+      if (previousLang === null) document.documentElement.removeAttribute('lang');
+      else document.documentElement.setAttribute('lang', previousLang);
     },
   };
 }
@@ -139,15 +146,4 @@ function ReaderDocumentArea({
       </main>
     </>
   );
-}
-
-/** App's `betterHeadings`, over a `ReaderReading`. */
-function betterHeadings(reading: ReaderReading): { origin: DocumentOrigin; count: number } | null {
-  const current = reading.structureSource;
-  if ((reading.headingCounts[current] ?? 0) > 0) return null;
-  for (const origin of reading.availableSources) {
-    const count = reading.headingCounts[origin] ?? 0;
-    if (origin !== current && count > 0) return { origin, count };
-  }
-  return null;
 }

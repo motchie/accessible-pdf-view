@@ -8,7 +8,7 @@ import type {
   TableRow as ModelTableRow,
 } from '../pdf/document-model';
 import { inlineToPlainText } from '../pdf/document-model';
-import { normalizeCjkSpacing } from '../pdf/inspector/markdown-to-document';
+import { dropRepeatedTitle } from '../pdf/repeated-title';
 
 /**
  * Document Model -> semantic HTML.
@@ -48,8 +48,7 @@ export function DocumentView({
 }: DocumentViewProps): JSX.Element {
   // A heading in the body that merely repeats the title would be read twice and
   // would sit at the same level as the page's `<h1>`.
-  const title = document.metadata.title?.trim();
-  const pages = title ? dropLeadingTitleHeading(document.pages, title) : document.pages;
+  const { pages } = dropRepeatedTitle(document);
 
   return (
     <>
@@ -394,39 +393,4 @@ function applyEmphasis(
         return <code>{child}</code>;
     }
   }, text);
-}
-
-function dropLeadingTitleHeading(
-  pages: DocumentPage[],
-  title: string,
-): DocumentPage[] {
-  const firstWithContent = pages.findIndex((page) => page.nodes.length > 0);
-  if (firstWithContent === -1) return pages;
-
-  const page = pages[firstWithContent]!;
-  const [first] = page.nodes;
-  if (
-    first?.type !== 'heading' ||
-    comparableTitle(inlineToPlainText(first.content)) !== comparableTitle(title)
-  ) {
-    return pages;
-  }
-
-  return pages.map((candidate, index) =>
-    index === firstWithContent
-      ? { ...candidate, nodes: candidate.nodes.slice(1) }
-      : candidate,
-  );
-}
-
-/**
- * The two sides of the title comparison come through different paths: the
- * heading's text has had the spaces between Japanese characters removed as
- * extraction artefacts, and the `/Title` metadata has not. Word's
- * 「検証用文書 その1」 arrives as a heading reading 「検証用文書その1」, and an
- * exact comparison let the title be read twice. Both sides get the same
- * normalisation, so the comparison is between what each one says.
- */
-function comparableTitle(text: string): string {
-  return normalizeCjkSpacing(text.replace(/\s+/g, ' ').trim());
 }

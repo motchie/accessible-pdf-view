@@ -6,6 +6,7 @@ import type {
   TableRow,
 } from '../pdf/document-model';
 import { inlineToPlainText } from '../pdf/document-model';
+import { dropRepeatedTitle } from '../pdf/repeated-title';
 import { figurePlaceholderText } from './renderer';
 import type { Messages } from '../i18n';
 
@@ -54,8 +55,10 @@ export function documentToMarkdown(
   const blocks: string[] = [];
   const title = document.metadata.title?.trim();
   if (includeTitle && title) blocks.push(`# ${escapeText(title)}`);
+  // As in the Reader: the title written as `#` is not written again below it.
+  const body = includeTitle && title ? dropRepeatedTitle(document, title) : document;
 
-  for (const page of document.pages) {
+  for (const page of body.pages) {
     if (includePageMarkers) blocks.push(`<!-- Page ${page.pageNumber} -->`);
     for (const node of page.nodes) {
       const rendered = blockToMarkdown(node, title ? 1 : 0, m);

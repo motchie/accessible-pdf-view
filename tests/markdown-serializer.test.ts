@@ -204,3 +204,28 @@ describe('documentToMarkdown', () => {
     expect(markdown).toContain('<!-- Page 2 -->');
   });
 });
+
+describe('the title in the Markdown export', () => {
+  const titleHeading: DocumentNode = {
+    type: 'heading',
+    level: 1,
+    content: [{ type: 'text', text: '検証用文書その1' }],
+  };
+  const body: DocumentNode = { type: 'paragraph', content: [{ type: 'text', text: '本文。' }] };
+
+  it('is not written again by a first heading that repeats it, as in the Reader', () => {
+    // Word's Title-style H1, its Japanese spacing normalised by extraction.
+    const markdown = toMarkdown(documentWith([titleHeading, body], '検証用文書 その1'), {
+      includePageMarkers: false,
+    });
+    expect(markdown).toBe('# 検証用文書 その1\n\n本文。\n');
+  });
+
+  it('keeps that heading when the title itself is left out', () => {
+    const markdown = toMarkdown(documentWith([titleHeading, body], '検証用文書 その1'), {
+      includePageMarkers: false,
+      includeTitle: false,
+    });
+    expect(markdown).toBe('## 検証用文書その1\n\n本文。\n');
+  });
+});

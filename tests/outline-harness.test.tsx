@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -138,7 +137,7 @@ document lang=ja title="Annual Report（リーダー） — Accessible PDF View"
     );
   }, 30_000);
 
-  it('opens the author\'s tags alone when asked, and says another reading has headings', async () => {
+  it('opens the author\'s tags alone when asked, and points nowhere when the only other heading is the title', async () => {
     const { outline, reading } = await readerOutline(
       buildMinimalPdf({
         title: 'Annual Report',
@@ -160,7 +159,9 @@ document lang=ja title="Annual Report（リーダー） — Accessible PDF View"
     heading level=1 "Annual Report"
   main
     region "リーダー"
-      paragraph "いま表示している読み取り方には見出しがありません。見出しジャンプでは移動できません。「構造タグ＋推測した見出し」に切り替えると、見出しが 1 件あります。"
+      # No notice pointing at the combined reading: its one heading is the
+      # title, which the Reader does not show again, so there would be nothing
+      # there to navigate.
       article
         # Tagged as a paragraph, so it is not the heading the title check
         # drops, and the title is read twice.
@@ -189,14 +190,12 @@ document lang=ja title="Annual Report（リーダー） — Accessible PDF View"
 /**
  * The Word fixture: a document written for this project, exported from Word
  * with structure tags, and an outline written from what the document means.
- * Skipped until the exported PDF is committed.
+ * Committed, so never skipped: a missing file is a failure, not a pass.
  */
-// From the working directory, which vitest sets to the repository root: under
-// jsdom, `import.meta.url` is not a file URL.
-const wordPdf = resolve('tests/fixtures/word/word-basic.pdf');
-const wordOutline = resolve('tests/fixtures/word/word-basic.outline');
+const wordPdf = resolve(import.meta.dirname, 'fixtures/word/word-basic.pdf');
+const wordOutline = resolve(import.meta.dirname, 'fixtures/word/word-basic.outline');
 
-describe.skipIf(!existsSync(wordPdf))('word-basic.pdf', () => {
+describe('word-basic.pdf', () => {
   it('matches its hand-written outline', async () => {
     const { outline, reading } = await readerOutline(new Uint8Array(await readFile(wordPdf)));
 

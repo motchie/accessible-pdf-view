@@ -27,7 +27,7 @@ suites use, they can be published.
 
 `tests/outline-harness.test.tsx` reads the PDF the way the Reader does, renders
 it with the interface in Japanese, and compares the result with the outline.
-It is skipped while the PDF is absent.
+It is never skipped: these files are committed, so a missing one is a failure.
 
 ## Adding a fixture
 

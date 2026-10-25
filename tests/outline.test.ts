@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   applyKnownGaps,
@@ -239,9 +240,16 @@ describe('the committed expected outlines', () => {
   // Parsed even while their PDFs are absent, so a malformed expectation is
   // caught when it is written rather than when the PDF arrives.
   it.each(['word-basic'])('%s.outline parses and is canonical apart from comments', async (name) => {
-    const text = await readFile(`tests/fixtures/word/${name}.outline`, 'utf8');
+    const text = await readFile(resolve(import.meta.dirname, `fixtures/word/${name}.outline`), 'utf8');
     const nodes = parseOutline(text);
     expect(nodes).toHaveLength(1);
-    expect(diffOutlines(text, serializeOutline(nodes))).toBeNull();
+    // Compared as written, not through `diffOutlines`, which canonicalises
+    // both sides and so could never fail here.
+    const written = text
+      .split(/\r?\n/)
+      .filter((line) => line.trim() !== '' && !line.trimStart().startsWith('#'))
+      .map((line) => `${line}\n`)
+      .join('');
+    expect(written).toBe(serializeOutline(nodes));
   });
 });

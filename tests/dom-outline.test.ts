@@ -53,6 +53,16 @@ describe('domToOutline', () => {
     ).toBe('paragraph "shown"\nparagraph "text only"\n');
   });
 
+  it('keeps a visible descendant of an invisible element', () => {
+    // CSS lets `visibility: visible` undo an inherited `hidden`, and the
+    // browser then exposes the descendant; `display: none` cannot be undone.
+    expect(
+      outlineOf(
+        '<div style="visibility: hidden"><p>gone</p><p style="visibility: visible">kept</p></div>',
+      ),
+    ).toBe('paragraph "kept"\n');
+  });
+
   it('marks <ol> as ordered and gives a list item no name when a paragraph holds its text', () => {
     expect(outlineOf('<ol><li><p>Open</p><ul><li>Nested</li></ul></li></ol>')).toBe(
       'list ordered\n' +

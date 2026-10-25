@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countHeadings } from '../lib/pdf/document-model';
+import { shownHeadingCount } from '../lib/reader/decorate';
 import type { AccessibleDocument, DocumentNode } from '../lib/pdf/document-model';
 
 /**
@@ -60,5 +61,38 @@ describe('counting the headings a reading offers', () => {
   it('is zero for an empty document rather than throwing', () => {
     expect(countHeadings(documentOf())).toBe(0);
     expect(countHeadings(documentOf([]))).toBe(0);
+  });
+});
+
+describe('the headings a reading offers', () => {
+  const info = { isTagged: true, hasStructureTree: true };
+  const titled: AccessibleDocument = {
+    metadata: { sourceUrl: null, pageCount: 1, producedBy: ['tagged-pdf'] },
+    pages: [
+      {
+        pageNumber: 1,
+        origin: 'tagged-pdf',
+        status: 'available',
+        nodes: [
+          { type: 'heading', level: 1, content: [{ type: 'text', text: '検証用文書その1' }] },
+          text('本文。'),
+        ],
+      },
+    ],
+  };
+
+  /**
+   * The Reader shows the title once, as the page's h1, and drops a first
+   * heading that repeats it. Counting that heading would offer one to navigate
+   * where there is none — and hide the notice that points somewhere better.
+   */
+  it('leaves out a first heading that only repeats the PDF title', () => {
+    expect(countHeadings(titled)).toBe(1);
+    expect(shownHeadingCount(titled, { ...info, title: '検証用文書 その1' })).toBe(0);
+  });
+
+  it('counts it when the PDF has another title or none', () => {
+    expect(shownHeadingCount(titled, { ...info, title: '別の題' })).toBe(1);
+    expect(shownHeadingCount(titled, info)).toBe(1);
   });
 });
