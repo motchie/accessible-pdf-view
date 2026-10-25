@@ -388,7 +388,11 @@ describe('describeFigures', () => {
     const dom = new DOMParser().parseFromString(`<main>${html}</main>`, 'text/html');
 
     expect(dom.querySelector('img')?.getAttribute('alt')).toBe('');
-    expect(dom.querySelector('.apv-figure__placeholder')?.textContent).not.toContain('装飾');
+    // Nothing here says the alt field was read, so this is the reading that
+    // could not see one; the point is that it is not called decorative.
+    expect(dom.querySelector('.apv-figure__placeholder')?.textContent).toBe(
+      '画像があります。代替テキストを取得できませんでした。',
+    );
   });
 
   it('records an outcome for every figure, successes included', async () => {

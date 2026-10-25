@@ -70,8 +70,7 @@ export interface AlternativeTextOrigin {
  * known boilerplate is removed; the description itself is never edited.
  */
 export function classifyAlternativeText(raw: string | undefined): AlternativeTextOrigin {
-  let alt = raw?.trim() ?? '';
-  for (const suffix of PRODUCER_SUFFIXES) alt = alt.replace(suffix, '').trim();
+  const alt = withoutProducerSuffixes(raw?.trim() ?? '');
   if (alt === '') return { text: '', machineWritten: false };
 
   let machineWritten = false;
@@ -84,8 +83,16 @@ export function classifyAlternativeText(raw: string | undefined): AlternativeTex
 
   return {
     // Collapse the whitespace the removal leaves behind, including the blank
-    // line between description and disclaimer.
-    text: text.replace(/\s+/g, ' ').trim(),
+    // line between description and disclaimer. The suffixes are looked for
+    // again because a disclaimer may have followed one: which of the two
+    // PowerPoint puts last on a group has not been seen.
+    text: withoutProducerSuffixes(text.replace(/\s+/g, ' ').trim()),
     machineWritten,
   };
+}
+
+function withoutProducerSuffixes(text: string): string {
+  let result = text;
+  for (const suffix of PRODUCER_SUFFIXES) result = result.replace(suffix, '').trim();
+  return result;
 }

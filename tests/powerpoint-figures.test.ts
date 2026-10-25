@@ -34,22 +34,37 @@ async function slide3() {
     .promise;
   const extraction = await extractTaggedDocument(pdf, { info: await readPdfDocumentInfo(pdf) });
   const page = extraction!.document.pages.find((candidate) => candidate.pageNumber === 3)!;
-  return collectFigures(page.nodes).map(({ figure }) => figure);
+
+  // What the PDF itself says, so the tests below check the case they are
+  // about: a re-export that stopped writing `/Alt ()` must fail here, not pass
+  // for the wrong reason.
+  const tagged: Array<string | undefined> = [];
+  const visit = (node: { role?: string; alt?: string; children?: unknown[] }) => {
+    if (node.role === 'Figure') tagged.push(node.alt);
+    for (const child of node.children ?? []) visit(child as typeof node);
+  };
+  visit((await (await pdf.getPage(3)).getStructTree()) as unknown as Parameters<typeof visit>[0]);
+
+  return { figures: collectFigures(page.nodes).map(({ figure }) => figure), tagged };
 }
 
 describe('PowerPoint figures', () => {
   it('reads a shape with no alternative text as having none, not as decorative (#27)', async () => {
-    const figures = await slide3();
-    // The four dots of the loose route, each `/Alt ()` in the PDF.
-    const dots = figures.slice(0, 4);
-    for (const dot of dots) {
+    const { figures, tagged } = await slide3();
+    // The four dots of the loose route: `/Alt ()` in the PDF.
+    expect(tagged.slice(0, 4)).toEqual(['', '', '', '']);
+    for (const dot of figures.slice(0, 4)) {
+      expect(dot).toMatchObject({ status: 'missing-alt', altTextFieldRead: true });
       expect(dot.alternativeText).toBeUndefined();
-      expect(figurePlaceholderText(ja, dot)).not.toContain('装飾');
+      // Before regions are attached; with them, the too-small wording of the
+      // same sentence.
+      expect(figurePlaceholderText(ja, dot)).toBe('画像があります。作成者による代替テキストはありません。');
     }
   });
 
   it("shows a group's alternative text as the author wrote it (#28)", async () => {
-    const figures = await slide3();
+    const { figures, tagged } = await slide3();
+    expect(tagged).toContain('道順の図：駅から 4 つ目の角を右へ (グループ化されたオブジェクト)');
     const group = figures.find((figure) => figure.alternativeText?.startsWith('道順の図'));
     expect(group).toMatchObject({
       alternativeText: '道順の図：駅から 4 つ目の角を右へ',

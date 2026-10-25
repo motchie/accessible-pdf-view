@@ -353,6 +353,12 @@ describe("telling a person's alternative text from their word processor's", () =
     });
     // A group with no text of its own leaves nothing.
     expect(classifyAlternativeText('(グループ化されたオブジェクト)')).toEqual({ text: '', machineWritten: false });
+    // Also when the AI disclaimer follows it, in case PowerPoint puts that last.
+    expect(
+      classifyAlternativeText(
+        '道順の図 (グループ化されたオブジェクト)\n\nAI 生成コンテンツは誤りを含む可能性があります。',
+      ),
+    ).toEqual({ text: '道順の図', machineWritten: true });
     // Only at the end, where PowerPoint puts it.
     expect(classifyAlternativeText('(グループ化されたオブジェクト) の説明図').text).toBe(
       '(グループ化されたオブジェクト) の説明図',

@@ -508,11 +508,13 @@ function figureFrom(node: StructNode, context: Context): DocumentNode {
   // descriptions at all.
   // An `/Alt` that is present but empty, or only whitespace, is no
   // alternative text. It was once read as the author's decorative verdict
-  // (#14), but neither Office export means that by it: Word and PowerPoint
-  // both turn a figure the author marked Decorative into an artifact, outside
-  // the tag tree, and PowerPoint writes `/Alt ()` for a shape the author gave
-  // no alternative text at all (#27). Reporting a decision nobody made would
-  // be a false claim about who said what.
+  // (#14), but the exports measured do not mean that by it: Word and
+  // PowerPoint for Microsoft 365 both turn a picture the author marked
+  // Decorative into an artifact, outside the tag tree, and PowerPoint writes
+  // `/Alt ()` for a shape the author gave no alternative text at all (#27).
+  // Other producers, and Word's shapes, have not been measured. Reporting a
+  // decision nobody is known to have made would be a false claim about who
+  // said what.
   const { text: alt, machineWritten } = classifyAlternativeText(node.alt);
   // The tag tree names the drawing operations that make up this figure. Kept
   // so the region can be derived from them exactly, rather than by matching
