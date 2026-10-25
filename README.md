@@ -700,8 +700,9 @@ use such tags.
 **Layout inference (fallback).** For untagged documents, pdf-inspector infers
 structure from where the glyphs sit. It works well on straightforward documents,
 but it is a guess, and these are its observed limits, re-checked against the
-pdf-inspector build the extension ships (1.25.0 with the fix in
-`vendor/pdf-inspector-wasm/`) on the ten documents it is tested against:
+pdf-inspector build the extension ships (now 1.25.2 with the fix in
+`vendor/pdf-inspector-wasm/`, which reads every test document exactly as the
+1.25.0 build they were checked with) on the ten documents it is tested against:
 
 - **The first row of a table is always a header row.** GFM requires a delimiter
   row, so pdf-inspector emits one whether or not the table has headers — all

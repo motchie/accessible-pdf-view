@@ -1,4 +1,4 @@
-# pdf-inspector 1.25.0, with the bcmap fix
+# pdf-inspector 1.25.2, with the bcmap fix
 
 A build of [pdf-inspector](https://github.com/firecrawl/pdf-inspector)'s
 WebAssembly package that is not the one on npm. It is here for one reason, and
@@ -10,7 +10,7 @@ pdf-inspector's reader for pdf.js binary CMaps did not decode their delta
 encoding, so every bundled `Adobe-*-UCS2.bcmap` failed to parse
 ([firecrawl/pdf-inspector#573](https://github.com/firecrawl/pdf-inspector/issues/573)).
 A CID font with no ToUnicode CMap therefore never got its character collection's
-mapping, and its text came out as noise. Two of the ten documents in the
+mapping, and its text came out as noise. Two of the documents in the
 private fixture set are made this way, one of them the InDesign flyer that
 was reported, and the inferred reading and the Markdown view of both were
 unreadable
@@ -22,10 +22,10 @@ Until a release carries it, the extension ships this build.
 
 ## What it is
 
-- **Source:** [`motchie/pdf-inspector`, branch `apv/1.25.0-bcmap-fix`](https://github.com/motchie/pdf-inspector/tree/apv/1.25.0-bcmap-fix),
-  commit `708e4f95326b22c61eb56c065bec4e294243dea8` — upstream's 1.25.0 release
-  commit (`2dbd16b`, "bump package versions to 1.25.0"; the release has no tag)
-  plus the two commits of #594, which is exactly that pull request's branch.
+- **Source:** [`motchie/pdf-inspector`, branch `apv/1.25.2-bcmap-fix`](https://github.com/motchie/pdf-inspector/tree/apv/1.25.2-bcmap-fix),
+  commit `2c3e0c5e0d05aec219649a61fb8cf3f9788711ce` — upstream's 1.25.2 release
+  commit (`ef52f77`, "bump package versions to 1.25.2"; the release has no tag)
+  plus the two commits of #594, cherry-picked unchanged; they apply cleanly.
   The first commit makes the CMaps parse at all; the second makes every mapping
   in them read as pdf.js reads it, characters outside the BMP included, which
   the first left as U+FFFD.
@@ -36,32 +36,33 @@ Until a release carries it, the extension ships this build.
   wasm-pack build wasm --target web --scope firecrawl --out-dir pkg --release
   ```
 
+  `cargo test --release` passes on that commit, including the fix's own tests
+  (`ucs2_cmaps_read_characters_outside_the_bmp` among them).
 - **`pdf_inspector_wasm_bg.wasm`** SHA-256
-  `ad47f5e7d2185879af34fb423abaa88ce4b34f41e5c36c26887bc66526848b92`.
+  `a46e99c1c48c526638efb2d4a1fef43fb378fcae963dedbcd6918ad2f2760ab4`.
   The JavaScript glue and the type declarations are byte-identical to npm's
-  1.25.0.
+  1.25.2, which are themselves identical to 1.25.0's.
 - **`package.json`** is the generated one with three fields changed: the
-  version, marked `1.25.0-apv.1`; the description, which says what this build
+  version, marked `1.25.2-apv.1`; the description, which says what this build
   is; and `files`, which gains this README and the licence.
 
 ## What it changes
 
-Measured against the private fixture set:
+Measured on the fourteen documents the tests use (the private fixture set and
+`tests/fixtures/word/word-basic.pdf`), comparing `processPdf` results with the
+Reader's options, timing aside:
 
-- An unpatched build from the same commit with the same toolchain gives output
-  identical to npm's 1.25.0 on all ten documents, so the build itself changes
-  nothing.
-- This build changes two of the ten — the two with CID fonts that have no
-  ToUnicode — and in both the text now matches what poppler reads. The other
-  eight are identical.
-- None of the ten uses a character outside the BMP. On a document built for
-  it — a non-embedded Adobe-Japan1 font, no ToUnicode, showing あ, CID 7641
-  and あ — npm's 1.25.0 reads `���` and this build `あ𨳝あ`, as poppler does.
-
-Against the 1.23.0 build it replaces, the Markdown is identical on all ten.
-What 1.24 and 1.25 add to the result are the document information entries
-(`author`, `creator`, dates and so on), which the extension does not read — it
-takes them from PDF.js.
+- **The build itself changes nothing:** an unpatched build from the same commit
+  with the same toolchain gives results identical to npm's 1.25.2 on all
+  fourteen, though the binaries differ byte for byte.
+- **The fix changes two:** the two with CID fonts that have no ToUnicode.
+  npm's 1.25.2 reads the InDesign flyer as 0 Japanese characters and 337
+  U+FFFD, and this build reads 579 and none; the other document goes from
+  6,068 and 1,455 to 7,824 and none. The other twelve are identical.
+- **Against the 1.25.0 build it replaces,** the results are identical on all
+  fourteen. Upstream's 1.25.1 and 1.25.2 fix text extraction from simple and
+  Type1 fonts and subset ToUnicode repairs (#595, #596, #597, #603, #605); none
+  of these documents exercises them.
 
 ## When it goes
 
