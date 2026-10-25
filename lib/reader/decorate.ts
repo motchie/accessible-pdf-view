@@ -34,10 +34,11 @@ export function decorate(document: AccessibleDocument, facts: DocumentFacts): Ac
 }
 
 /**
- * The headings a reader can navigate in a reading, counted before it is
- * prepared: a first heading that repeats the title is not shown, so it is not
- * counted. The title is the one `decorate` will give the document.
+ * The headings a reader can navigate in a reading: a first heading that repeats
+ * the title is not shown, so it is not counted. The title is the one `decorate`
+ * gives the document. Count the document as it is shown once it has been
+ * prepared — recovered pages and OCR change which heading comes first.
  */
-export function shownHeadingCount(raw: AccessibleDocument, info: PdfFileInfo): number {
-  return countHeadings(dropRepeatedTitle(raw, info.title ?? raw.metadata.title));
+export function shownHeadingCount(document: AccessibleDocument, info: PdfFileInfo): number {
+  return countHeadings(dropRepeatedTitle(document, info.title ?? document.metadata.title));
 }

@@ -1,6 +1,7 @@
 import type { AccessibleDocument, DocumentNode } from './document-model';
 import { countHeadings, inlineToPlainText } from './document-model';
 import { splitInline } from './inline-split';
+import { dropRepeatedTitle } from './repeated-title';
 import { alignLines } from './text-alignment';
 
 /**
@@ -61,8 +62,13 @@ import { alignLines } from './text-alignment';
 export function combineReadings(
   tagged: AccessibleDocument,
   inferred: AccessibleDocument,
+  title: string | undefined = tagged.metadata.title,
 ): AccessibleDocument | null {
-  if (countHeadings(tagged) > 0) return null;
+  // A first heading that only repeats the title is not part of the outline:
+  // the Reader shows it as the page's h1 and drops it from the body. Word tags
+  // its Title-style paragraph H1, so a document whose only heading tag is that
+  // one still has no headings of its own, and is counted that way everywhere.
+  if (countHeadings(dropRepeatedTitle(tagged, title)) > 0) return null;
 
   const inferredByPage = new Map(inferred.pages.map((page) => [page.pageNumber, page]));
   let placed = 0;

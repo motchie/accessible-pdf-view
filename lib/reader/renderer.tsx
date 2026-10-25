@@ -7,7 +7,6 @@ import type {
   InlineNode,
   TableRow as ModelTableRow,
 } from '../pdf/document-model';
-import { inlineToPlainText } from '../pdf/document-model';
 import { dropRepeatedTitle } from '../pdf/repeated-title';
 
 /**

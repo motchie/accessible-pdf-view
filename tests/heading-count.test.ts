@@ -91,6 +91,25 @@ describe('the headings a reading offers', () => {
     expect(shownHeadingCount(titled, { ...info, title: '検証用文書 その1' })).toBe(0);
   });
 
+  /**
+   * Which heading is "first" depends on the pages before it, and preparing a
+   * reading can fill a page the producer left empty. That is why the Reader
+   * counts the shown reading as prepared rather than as it arrived.
+   */
+  it('depends on whether an earlier page has content', () => {
+    const titleInfo = { ...info, title: '検証用文書 その1' };
+    const later: AccessibleDocument = {
+      ...titled,
+      pages: [{ ...titled.pages[0]!, nodes: [] }, { ...titled.pages[0]!, pageNumber: 2 }],
+    };
+    expect(shownHeadingCount(later, titleInfo)).toBe(0);
+    const recovered: AccessibleDocument = {
+      ...later,
+      pages: [{ ...later.pages[0]!, origin: 'pdf-text', nodes: [text('取り戻した本文。')] }, later.pages[1]!],
+    };
+    expect(shownHeadingCount(recovered, titleInfo)).toBe(1);
+  });
+
   it('counts it when the PDF has another title or none', () => {
     expect(shownHeadingCount(titled, { ...info, title: '別の題' })).toBe(1);
     expect(shownHeadingCount(titled, info)).toBe(1);

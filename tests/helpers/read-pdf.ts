@@ -172,7 +172,11 @@ export async function readPdfAsReader(
     if (info.isTagged || info.hasStructureTree) {
       const tagged = await extractTaggedDocument(pdf, { sourceUrl, info });
       if (isUsable(tagged) && (info.isTagged || coversPageText(tagged!))) {
-        const combined = combineReadings(tagged!.document, inferred);
+        const combined = combineReadings(
+          tagged!.document,
+          inferred,
+          info.title ?? tagged!.document.metadata.title,
+        );
         if (combined) entries.set('combined', combined);
         entries.set('tagged-pdf', tagged!.document);
       }
@@ -198,12 +202,17 @@ export async function readPdfAsReader(
         ? await classifyPages(pdf, needsExplaining)
         : new Map<number, PageContentKind>();
 
+    const document = decorate(enriched, { info, language, kinds });
     return {
-      document: decorate(enriched, { info, language, kinds }),
+      document,
       structureSource: shown,
       availableSources: [...entries.keys()],
+      // As the hook counts them: the shown reading as prepared, the rest raw.
       headingCounts: Object.fromEntries(
-        [...entries].map(([origin, document]) => [origin, shownHeadingCount(document, info)]),
+        [...entries].map(([origin, raw]) => [
+          origin,
+          shownHeadingCount(origin === shown ? document : raw, info),
+        ]),
       ),
       raw: Object.fromEntries(entries),
       info,

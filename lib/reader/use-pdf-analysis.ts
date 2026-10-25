@@ -240,7 +240,11 @@ export function usePdfAnalysis(
             // can show it lacks. Null for most documents: any heading tag of
             // the author's own, or nothing verifiable to add, and there is no
             // third reading to offer.
-            const combined = combineReadings(tagged!.document, inferred);
+            const combined = combineReadings(
+              tagged!.document,
+              inferred,
+              info.title ?? tagged!.document.metadata.title,
+            );
             if (combined) entries.set('combined', { raw: combined, document: null, revoke: null });
             entries.set('tagged-pdf', { raw: tagged!.document, document: null, revoke: null });
           }
@@ -302,7 +306,13 @@ export function usePdfAnalysis(
           availableSources: [...entries.keys()],
           preparingSource: null,
           headingCounts: Object.fromEntries(
-            [...entries].map(([origin, value]) => [origin, shownHeadingCount(value.raw, info)]),
+            // The shown reading is counted as prepared: recovering empty pages
+            // can change which heading comes first, and so whether it is the
+            // title. The others are counted raw until they are prepared.
+            [...entries].map(([origin, value]) => [
+              origin,
+              shownHeadingCount(value.document ?? value.raw, info),
+            ]),
           ),
           switchError: null,
           pdf: pdfDocument.document,
@@ -376,9 +386,19 @@ export function usePdfAnalysis(
   useEffect(() => () => clientRef.current?.terminate(), []);
 
   const replaceDocument = useCallback((document: AccessibleDocument) => {
-    const entry = runtimeRef.current?.entries.get(shownRef.current!);
+    const runtime = runtimeRef.current;
+    const shown = shownRef.current;
+    const entry = shown ? runtime?.entries.get(shown) : undefined;
     if (entry) entry.document = document;
-    setState((previous) => (previous.phase === 'ready' ? { ...previous, document } : previous));
+    setState((previous) => {
+      if (previous.phase !== 'ready') return previous;
+      // OCR can add headings, or fill a page ahead of the title heading.
+      const headingCounts =
+        runtime && shown
+          ? { ...previous.headingCounts, [shown]: shownHeadingCount(document, runtime.info) }
+          : previous.headingCounts;
+      return { ...previous, document, headingCounts };
+    });
   }, []);
 
   const selectSource = useCallback((origin: DocumentOrigin) => {
@@ -413,11 +433,16 @@ export function usePdfAnalysis(
         // for it again should be instant.
         if (wantedRef.current !== origin) return;
         shownRef.current = origin;
+        const prepared = entry.document;
         setState((previous) => ({
           ...previous,
-          document: entry.document,
+          document: prepared,
           structureSource: origin,
           preparingSource: null,
+          headingCounts: {
+            ...previous.headingCounts,
+            [origin]: shownHeadingCount(prepared, runtime.info),
+          },
         }));
       } catch (cause) {
         if (runtime.controller.signal.aborted || wantedRef.current !== origin) return;
