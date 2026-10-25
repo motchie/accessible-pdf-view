@@ -9,22 +9,21 @@ import type {
 } from '../pdf/document-model';
 import { PdfError, isPdfError } from '../pdf/errors';
 import { InspectorClient } from '../pdf/inspector/client';
-import { promoteMergedHeadings } from '../pdf/inspector/heading-promotion';
-import { combineReadings } from '../pdf/combined-reading';
 import { READER_PROCESS_OPTIONS } from '../pdf/inspector/protocol';
-import { attachFigureRegions } from '../pdf/pdfjs/figure-regions';
-import { materializeFigureImages } from '../pdf/pdfjs/region-raster';
-import { recoverEmptyPages } from '../pdf/pdfjs/recover-pages';
-import { detectLanguage, detectScriptLanguage } from '../pdf/pdfjs/language';
 import { classifyPages } from '../pdf/pdfjs/page-content';
-import { readPdfDocumentInfo } from '../pdf/pdfjs/metadata';
 import { loadPdfDocument } from '../pdf/pdfjs/renderer';
-import { coversPageText, extractTaggedDocument, isUsable } from '../pdf/pdfjs/tagged-adapter';
-import { documentToPlainText } from '../pdf/document-model';
 import type { PdfSource } from '../pdf/source/pdf-source';
 import type { StructureSource } from './settings';
-import { decorate, shownHeadingCount } from './decorate';
-import { initialStructureSource } from './structure-source';
+import {
+  buildReadings,
+  chooseReading,
+  decorate,
+  documentLanguage,
+  pagesNeedingExplanation,
+  prepareReading,
+  readingHeadingCounts,
+  shownHeadingCount,
+} from './readings';
 
 /**
  * The Reader's load-and-analyse state machine.
@@ -208,52 +207,15 @@ export function usePdfAnalysis(
         }
         loaded = pdfDocument;
 
-        // The headings pdf-inspector merged into the paragraph below them, split
-        // back apart at the line break PDF.js still has. Done here, before the
-        // documents are counted or shown, so the heading count the Reader
-        // offers for this reading is the one it will actually navigate.
-        const inferred = await promoteMergedHeadings(inspector.document, pdfDocument.document, {
+        const { info, raw } = await buildReadings(inspector.document, pdfDocument.document, {
+          sourceUrl,
           signal: controller.signal,
         });
         if (cancelled) return;
 
-        const info = await readPdfDocumentInfo(pdfDocument.document);
-        if (cancelled) return;
-
-        // In offered order — the picker lists them as they were added, and
-        // a preference the document cannot honour falls to the first.
-        const entries = new Map<DocumentOrigin, SourceEntry>();
-
-        // Either is enough: a tree without the `/Marked` declaration is still
-        // the author's structure, and `isUsable` below rejects an empty one.
-        // Undeclared, it must also carry most of the page text: without the
-        // declaration nothing says the tree is the whole document.
-        if (info.isTagged || info.hasStructureTree) {
-          const tagged = await extractTaggedDocument(pdfDocument.document, {
-            sourceUrl,
-            info,
-            signal: controller.signal,
-          });
-          if (cancelled) return;
-          if (isUsable(tagged) && (info.isTagged || coversPageText(tagged!))) {
-            // The author's structure, plus the headings the inferred reading
-            // can show it lacks. Null for most documents: any heading tag of
-            // the author's own, or nothing verifiable to add, and there is no
-            // third reading to offer.
-            const combined = combineReadings(
-              tagged!.document,
-              inferred,
-              info.title ?? tagged!.document.metadata.title,
-            );
-            if (combined) entries.set('combined', { raw: combined, document: null, revoke: null });
-            entries.set('tagged-pdf', { raw: tagged!.document, document: null, revoke: null });
-          }
-        }
-        entries.set('pdf-inspector', {
-          raw: inferred,
-          document: null,
-          revoke: null,
-        });
+        const entries = new Map<DocumentOrigin, SourceEntry>(
+          [...raw].map(([origin, document]) => [origin, { raw: document, document: null, revoke: null }]),
+        );
 
         const runtime: Runtime = {
           controller,
@@ -267,8 +229,7 @@ export function usePdfAnalysis(
 
         // The reader's setting decides, where there is a decision to make. The
         // other reading stays raw until asked for.
-        const shown =
-          initialStructureSource([...entries.keys()], preferredRef.current) ?? 'pdf-inspector';
+        const shown = chooseReading([...entries.keys()], preferredRef.current);
         wantedRef.current = shown;
         const entry = entries.get(shown)!;
 
@@ -279,18 +240,9 @@ export function usePdfAnalysis(
         }
         entry.revoke = enriched.revoke;
 
-        // `/Lang` wins; detection only fills the gap. Without a language the
-        // screen reader picks its own, which mispronounces the document.
-        const sample = documentToPlainText(enriched.document).slice(0, 4000);
-        runtime.language =
-          info.language ??
-          enriched.document.metadata.language ??
-          (await detectLanguage(sample, { signal: controller.signal })) ??
-          // Chrome's detector needs its own model download and reports
-          // `downloadable` until the user has one, so on many machines the line
-          // above returns null for a document that plainly is not English.
-          detectScriptLanguage(sample) ??
-          undefined;
+        runtime.language = await documentLanguage(enriched.document, info, {
+          signal: controller.signal,
+        });
         if (cancelled) return;
 
         entry.document = decorate(enriched.document, runtime);
@@ -305,15 +257,7 @@ export function usePdfAnalysis(
           structureSource: shown,
           availableSources: [...entries.keys()],
           preparingSource: null,
-          headingCounts: Object.fromEntries(
-            // The shown reading is counted as prepared: recovering empty pages
-            // can change which heading comes first, and so whether it is the
-            // title. The others are counted raw until they are prepared.
-            [...entries].map(([origin, value]) => [
-              origin,
-              shownHeadingCount(value.document ?? value.raw, info),
-            ]),
-          ),
+          headingCounts: readingHeadingCounts(raw, { [shown]: entry.document }, info),
           switchError: null,
           pdf: pdfDocument.document,
           error: null,
@@ -327,13 +271,7 @@ export function usePdfAnalysis(
         // the whole document back for one sentence of wording per page would be
         // a bad trade. The notices sharpen a moment later instead; until then
         // each page says only what is certain.
-        // Only the pages the producer did not explain. pdf-inspector reports a
-        // cause per page and this used to be computed from scratch regardless:
-        // on the 29-page scanned deck that is 26 content-stream walks for an
-        // answer already sitting in the result.
-        const needsExplaining = entry.document.pages
-          .filter((page) => page.status === 'requires-ocr' && !page.ocrCauses?.length)
-          .map((page) => page.pageNumber);
+        const needsExplaining = pagesNeedingExplanation(entry.document);
 
         if (needsExplaining.length > 0) {
           const kinds = await classifyPages(pdfDocument.document, needsExplaining, {
@@ -461,23 +399,10 @@ export function usePdfAnalysis(
   return { ...state, retry, replaceDocument, selectSource };
 }
 
-/**
- * Gives a producer's document what neither producer supplies: where each figure
- * sits on the page, and an image of it.
- */
-async function enrich(
+/** `prepareReading`, cancelled with the run. */
+function enrich(
   raw: AccessibleDocument,
   runtime: Runtime,
 ): Promise<{ document: AccessibleDocument; revoke: () => void }> {
-  // Before anything else: a page this producer dropped is not an empty page,
-  // and must not reach the reader described as one.
-  const complete = await recoverEmptyPages(raw, runtime.pdf, {
-    signal: runtime.controller.signal,
-  });
-  const positioned = await attachFigureRegions(complete, runtime.pdf, {
-    signal: runtime.controller.signal,
-  });
-  return materializeFigureImages(positioned, runtime.pdf, {
-    signal: runtime.controller.signal,
-  });
+  return prepareReading(raw, runtime.pdf, { signal: runtime.controller.signal });
 }

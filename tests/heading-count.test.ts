@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countHeadings } from '../lib/pdf/document-model';
-import { shownHeadingCount } from '../lib/reader/decorate';
+import { shownHeadingCount } from '../lib/reader/readings';
 import type { AccessibleDocument, DocumentNode } from '../lib/pdf/document-model';
 
 /**
