@@ -239,7 +239,7 @@ listitem
 describe('the committed expected outlines', () => {
   // Parsed even while their PDFs are absent, so a malformed expectation is
   // caught when it is written rather than when the PDF arrives.
-  it.each(['word-basic'])('%s.outline parses and is canonical apart from comments', async (name) => {
+  it.each(['word-basic', 'word-small-figures'])('%s.outline parses and is canonical apart from comments', async (name) => {
     const text = await readFile(resolve(import.meta.dirname, `fixtures/word/${name}.outline`), 'utf8');
     const nodes = parseOutline(text);
     expect(nodes).toHaveLength(1);

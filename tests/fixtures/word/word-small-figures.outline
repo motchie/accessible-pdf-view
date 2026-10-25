@@ -1,0 +1,63 @@
+# What the Reader should expose for word-small-figures.pdf (#15), written from
+# what the document means and the policy decided in #15: a figure the author
+# described is shown however small it is; one without the author's text is
+# shown only from 24pt up, and below that the notice says why it is not.
+#
+# Word places the inline icons after their paragraph in the tag tree, so each
+# sentence comes before its icons, and the spaces around where they stood go
+# with the Reader's Japanese spacing rule (normalizeCjkSpacing). The Reader follows the tags; an icon in the
+# middle of a sentence is not something its model can say.
+#
+# Absent by intent: the rule marked Decorative.
+document lang=ja title="小さな図の検証用文書（リーダー） — Accessible PDF View"
+  banner
+    heading level=1 "小さな図の検証用文書"
+  main
+    region "リーダー"
+      article lang=ja
+        paragraph "この文書は、小さな図をどう扱うかを決めるためのものです。図の大きさ（ポイント）と、代替テキストの有無を組み合わせています。"
+        heading level=2 "代替テキストのある小さなアイコン"
+        paragraph "PDF ファイルをダウンロードできます。検索はから行います。"
+        figure
+          img "アイコン：PDF"
+        figure
+          img "アイコン：検索"
+        paragraph "補足にはの印を付けています。"
+        figure
+          img "図：i"
+        heading level=2 "代替テキストのない小さなアイコン"
+        paragraph "PDF ファイルをダウンロードできます。検索はから行います。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        heading level=2 "意味のある小さな画像（代替テキストなし）"
+        paragraph "開館日はとです。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        heading level=2 "大きな図の部品"
+        paragraph "次の行は、地図の道順を小さな画像の点と矢印の先だけで表したものです。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        heading level=2 "細い罫線"
+        paragraph "次の罫線は、装飾として指定しています。"
+        paragraph "次の罫線は、何も指定していません。"
+        figure
+          paragraph "図としてタグ付けされていますが、小さいため画像は表示していません。作成者による代替テキストはありません。"
+        heading level=2 "比較のための図"
+        paragraph "基準の24pt を超えるアイコンと、普通の大きさのグラフです。"
+        figure
+          img "アイコン：PDF（大）"
+        paragraph "2 ページ"
+        figure
+          img "4 本の棒グラフ。3、5、4、7 で、4 本目が最も高い。"

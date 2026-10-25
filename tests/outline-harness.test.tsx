@@ -212,3 +212,13 @@ describe('word-basic.pdf', () => {
     expectOutline(outline, expected);
   }, 60_000);
 });
+
+describe('word-small-figures.pdf', () => {
+  it('matches its hand-written outline (#15)', async () => {
+    const pdf = resolve(import.meta.dirname, 'fixtures/word/word-small-figures.pdf');
+    const outlinePath = resolve(import.meta.dirname, 'fixtures/word/word-small-figures.outline');
+    const { outline, reading } = await readerOutline(new Uint8Array(await readFile(pdf)));
+    expect(reading.structureSource).toBe('tagged-pdf');
+    expectOutline(outline, await readFile(outlinePath, 'utf8'));
+  }, 60_000);
+});

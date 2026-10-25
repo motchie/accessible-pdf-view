@@ -15,6 +15,11 @@ suites use, they can be published.
   structure tags for accessibility** turned on and PDF/A off. The page is
   Letter, so the chart moves to page 2 and the manual page break puts the
   heading 「2ページ目」 on page 3.
+- `word-small-figures.docx`, `.pdf` and `.outline` — small figures for #15:
+  icons from 8 to 12pt with and without alternative text, day badges, a route
+  drawn from 4pt dots, rules marked Decorative and not, and a 30pt icon and a
+  chart for contrast. Made the same way as `word-basic`, exported by the same
+  Word. Word places each inline icon after its paragraph in the tag tree.
 - `known-gaps.ts` — where the reading is known to fall short of an outline,
   and whether the cause is in the PDF (`producer`) or in the Reader
   (`reader`). The outline keeps the ideal; a gap says what is exposed instead.
