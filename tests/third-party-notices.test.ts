@@ -136,7 +136,7 @@ describe('THIRD_PARTY_NOTICES.md', () => {
     for (const name of Object.keys(lock.packages['']!.dependencies ?? {})) {
       const row = rows.find((cells) => cells[0]!.includes(`\`${name}\``));
       expect(row, `${name} has no row`).toBeDefined();
-      // "1.25.0, **modified**" lists 1.25.0.
+      // "1.25.2, **modified**" lists 1.25.2.
       const listed = row![1]!.split(',')[0]!.trim();
       const { version } = installed(name).entry;
       expect(matchesListed(version, listed), `${name}: listed ${listed}, installed ${version}`).toBe(true);

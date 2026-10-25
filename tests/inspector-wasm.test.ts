@@ -112,4 +112,26 @@ describe('pdf-inspector WASM', () => {
     expect(capabilities.hasExtractableText).toBe(false);
     expect(document.pages[0]!.status).toBe('requires-ocr');
   });
+
+  /**
+   * The reason this build is not npm's (vendor/pdf-inspector-wasm/README.md).
+   *
+   * A CID font with neither an embedded program nor a ToUnicode CMap can only
+   * be read through its character collection's own mapping, which pdf-inspector
+   * keeps as pdf.js's binary CMaps; without firecrawl/pdf-inspector#594 they
+   * do not parse, and every character comes back as U+FFFD. npm's 1.25.2 reads
+   * this line as three of them. CID 7641 is 𨳝 (U+28CDD), outside the BMP,
+   * which the fix's second commit is for. poppler reads the same three.
+   */
+  it('reads a CID font with no ToUnicode through its collection, outside the BMP too', () => {
+    const pdf = buildMinimalPdf({
+      pages: [['A line of body text long enough to read as a paragraph here.']],
+      japan1Cids: [843, 7641, 843],
+    });
+
+    const result = processPdf(pdf, PROCESS_OPTIONS) as unknown as InspectorRawResult;
+
+    expect(result.markdown).toContain('あ\u{28CDD}あ');
+    expect(result.markdown).not.toContain('\uFFFD');
+  });
 });

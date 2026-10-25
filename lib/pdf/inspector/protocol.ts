@@ -36,7 +36,7 @@ export interface InspectorRequest {
   sourceUrl?: string | null;
 }
 
-/** Mirrors `PdfProcessResult` from @firecrawl/pdf-inspector-wasm 1.25.0. */
+/** Mirrors `PdfProcessResult` from @firecrawl/pdf-inspector-wasm 1.25.2. */
 export interface InspectorRawResult {
   pdfType: 'TextBased' | 'Scanned' | 'ImageBased' | 'Mixed';
   markdown?: string;
