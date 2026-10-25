@@ -2,63 +2,58 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MINIMUM_CHROME_VERSION, MINIMUM_FIREFOX_VERSION } from '../lib/browser/minimum-versions';
+import {
+  BROWSER_REQUIREMENTS,
+  MINIMUM_CHROME_VERSION,
+  MINIMUM_FIREFOX_VERSION,
+} from '../lib/browser/minimum-versions';
 
 /**
- * The manifest's minimum browser versions against what the shipped PDF.js
- * calls (#23).
+ * The browser floor against what the shipped PDF.js calls (#23).
  *
  * PDF.js's modern build assumes the newest JavaScript and does not check
- * before calling it, so the oldest browser the extension runs in is set by the
- * newest API that build uses. A PDF.js update that starts calling something
- * newer fails here, instead of quietly breaking fonts or the worker in the
- * browsers between the old floor and the new one.
+ * before calling it, so the floor follows the newest API it uses. The
+ * requirements in `lib/browser/minimum-versions.ts` name those APIs; this
+ * checks that the list and the shipped code agree in both directions. A PDF.js
+ * update that starts calling one of these, or stops, fails here.
  *
- * The table is the APIs newer than the floor's neighbours that PDF.js 6 is
- * known to call unguarded, with the first versions from MDN's
- * browser-compat-data. It cannot find an API it does not list: when a PDF.js
- * update lands, look for new ones (its changelog, or a run under an older
- * browser) and add them here. `Float16Array` and `Iterator.prototype.join` are
- * left out on purpose: PDF.js checks for the first and polyfills the second.
+ * What it cannot see is an API that has no pattern below. When PDF.js is
+ * updated, look for new ones (its changelog, or a run in an older browser),
+ * and add both a requirement and a pattern. `Float16Array` and
+ * `Iterator.prototype.join` are left out on purpose: PDF.js checks for the
+ * first and polyfills the second.
  */
-const APIS: ReadonlyArray<{ api: string; pattern: RegExp; chrome: number; firefox: number }> = [
-  { api: 'Math.sumPrecise', pattern: /Math\.sumPrecise\(/, chrome: 147, firefox: 137 },
-  { api: 'Map.prototype.getOrInsertComputed', pattern: /\.getOrInsertComputed\(/, chrome: 145, firefox: 144 },
-  { api: 'Uint8Array.prototype.toHex', pattern: /\.toHex\(\)/, chrome: 140, firefox: 133 },
-  { api: 'Uint8Array.prototype.toBase64', pattern: /\.toBase64\(\)/, chrome: 140, firefox: 133 },
-  { api: 'Uint8Array.fromBase64', pattern: /Uint8Array\.fromBase64\(/, chrome: 140, firefox: 133 },
-  { api: 'Promise.try', pattern: /Promise\.try\(/, chrome: 128, firefox: 134 },
-];
+const PATTERNS: Record<string, RegExp> = {
+  'PDF.js: Math.sumPrecise': /Math\.sumPrecise\b/,
+  'PDF.js: Map.prototype.getOrInsertComputed': /\bgetOrInsertComputed\b/,
+  'PDF.js: Uint8Array.prototype.toHex': /\.toHex\b/,
+  'PDF.js: Uint8Array.prototype.toBase64': /\.toBase64\b/,
+  'PDF.js: Uint8Array.fromBase64': /\bfromBase64\b/,
+  'PDF.js: Promise.try': /Promise\.try\b/,
+};
 
 const root = resolve(import.meta.dirname, '..');
 // What ships: the library the Reader imports, and the worker copy-assets copies.
 const SHIPPED = ['node_modules/pdfjs-dist/build/pdf.mjs', 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'];
 
-describe('minimum browser versions', () => {
+describe('the browser floor', () => {
   const source = SHIPPED.map((path) => readFileSync(resolve(root, path), 'utf8')).join('\n');
-  const used = APIS.filter(({ pattern }) => pattern.test(source));
+  const pdfjsRequirements = BROWSER_REQUIREMENTS.filter(({ what }) => what.startsWith('PDF.js: '));
 
-  it('finds the newer APIs PDF.js is known to call', () => {
-    // If none matched, the patterns have gone stale and the checks below would
-    // pass for the wrong reason.
-    expect(used.map(({ api }) => api)).toContain('Math.sumPrecise');
+  it('has a pattern for every PDF.js requirement, and a requirement for every pattern', () => {
+    expect(pdfjsRequirements.map(({ what }) => what).sort()).toEqual(Object.keys(PATTERNS).sort());
   });
 
-  it('declare a Chrome no older than any of them needs', () => {
-    for (const { api, chrome } of used) {
-      expect(MINIMUM_CHROME_VERSION, `${api} needs Chrome ${chrome}`).toBeGreaterThanOrEqual(chrome);
-    }
+  it('lists exactly the newer APIs the shipped PDF.js calls', () => {
+    // Both ways: a listed API PDF.js no longer calls holds the floor up for
+    // nothing, and a pattern that stopped matching would quietly drop out.
+    const missing = pdfjsRequirements.filter(({ what }) => !PATTERNS[what]!.test(source)).map(({ what }) => what);
+    expect(missing, 'listed, but not found in the shipped PDF.js').toEqual([]);
   });
 
-  it('declare a Firefox no older than any of them needs', () => {
-    for (const { api, firefox } of used) {
-      expect(MINIMUM_FIREFOX_VERSION, `${api} needs Firefox ${firefox}`).toBeGreaterThanOrEqual(firefox);
-    }
-  });
-
-  it('are what the newest of them needs, not more', () => {
-    // A floor above what anything needs shuts people out for nothing.
-    expect(MINIMUM_CHROME_VERSION).toBe(Math.max(...used.map(({ chrome }) => chrome)));
-    expect(MINIMUM_FIREFOX_VERSION).toBe(Math.max(128, ...used.map(({ firefox }) => firefox)));
+  it('is what the README tells people', () => {
+    const readme = readFileSync(resolve(root, 'README.md'), 'utf8');
+    expect(readme).toContain(`Chrome ${MINIMUM_CHROME_VERSION} or later`);
+    expect(readme).toContain(`Firefox ${MINIMUM_FIREFOX_VERSION} or later`);
   });
 });

@@ -78,7 +78,7 @@ below, and a listing on the add-on site is still to come.
 
 It needs **Chrome 147 or later** (Edge 147), or **Firefox 144 or later**. That
 is what the bundled PDF.js calls without checking for it first; in an older
-browser it does not fail cleanly, so the manifest declares the floor and the
+browser it would not fail cleanly, so the manifest declares the floor and the
 store will not install the extension there
 ([#23](https://github.com/motchie/accessible-pdf-view/issues/23),
 `lib/browser/minimum-versions.ts`).

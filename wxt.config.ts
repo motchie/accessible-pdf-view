@@ -167,13 +167,10 @@ export default defineConfig({
             gecko: {
               id: 'accessible-pdf-view@accessiblepdfview.org',
               /**
-               * The floor for everything this manifest relies on: the newer of
-               * what the manifest needs (`optional_host_permissions`, 128 — an
-               * older Firefox would install this and then have no way to grant
-               * a site, which is the one thing that makes a PDF readable there)
-               * and what the shipped PDF.js needs (144, see
-               * `lib/browser/minimum-versions.ts`). Refusing to install is a
-               * better answer than a reader that cannot work.
+               * The newest of what this manifest and the shipped PDF.js need,
+               * listed with their reasons in `lib/browser/minimum-versions.ts`.
+               * Refusing to install is a better answer than a reader that
+               * cannot work.
                */
               strict_min_version: `${MINIMUM_FIREFOX_VERSION}.0`,
               // Accurate, not boilerplate: the extension collects nothing and
