@@ -9,14 +9,14 @@
  * Run automatically via `postinstall`, `dev` and `build`.
  */
 import { cp, mkdir, rm, stat } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const modules = join(root, 'node_modules');
 const publicDir = join(root, 'public');
 
-/** @type {Array<{from: string, to: string, optional?: boolean}>} */
+/** @type {Array<{from: string, to: string, optional?: boolean, skip?: (name: string) => boolean}>} */
 const assets = [
   // NOTE: pdf-inspector's WASM module is NOT copied here. The worker imports
   // it with `?url`, so the bundler emits it once into `assets/`. Copying it
@@ -46,7 +46,16 @@ const assets = [
   },
   // Image decoders (JBIG2 / JPEG2000) and the colour-management module that
   // PDF.js v5+ ships as WebAssembly. Scanned PDFs frequently need these.
-  { from: join(modules, 'pdfjs-dist/wasm'), to: join(publicDir, 'pdfjs/wasm') },
+  //
+  // Not QuickJS (`quickjs-eval.*`, about 0.5 MB): only `pdf.sandbox` loads it,
+  // to run a PDF's own JavaScript, and this extension neither ships the
+  // sandbox nor enables scripting. Shipping it would be dead weight, and a
+  // third-party component the notices would have to answer for.
+  {
+    from: join(modules, 'pdfjs-dist/wasm'),
+    to: join(publicDir, 'pdfjs/wasm'),
+    skip: (name) => name.startsWith('quickjs-eval.'),
+  },
   // Apache-2.0 requires the license to travel with redistributions, and the
   // built extension is a redistribution.
   { from: join(modules, 'pdfjs-dist/LICENSE'), to: join(publicDir, 'pdfjs/LICENSE') },
@@ -74,7 +83,10 @@ for (const asset of assets) {
     );
   }
   await mkdir(dirname(asset.to), { recursive: true });
-  await cp(asset.from, asset.to, { recursive: true });
+  await cp(asset.from, asset.to, {
+    recursive: true,
+    ...(asset.skip ? { filter: (source) => !asset.skip(basename(source)) } : {}),
+  });
 }
 
 console.log('copy-assets: public/pdfjs and public/pdf-inspector are up to date.');

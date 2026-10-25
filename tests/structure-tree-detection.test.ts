@@ -2,7 +2,7 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+import * as pdfjs from 'pdfjs-dist';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { nodeToPlainText } from '../lib/pdf/document-model';
 import { readPdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
@@ -26,7 +26,7 @@ import { buildMinimalPdf, type MinimalPdfOptions } from './helpers/minimal-pdf';
 
 async function open(options: MinimalPdfOptions): Promise<PDFDocumentProxy> {
   (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
-    pathToFileURL(resolve('node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')).href;
+    pathToFileURL(resolve('node_modules/pdfjs-dist/build/pdf.worker.mjs')).href;
   return (
     pdfjs as unknown as { getDocument: (o: unknown) => { promise: Promise<PDFDocumentProxy> } }
   ).getDocument({ data: buildMinimalPdf(options) }).promise;

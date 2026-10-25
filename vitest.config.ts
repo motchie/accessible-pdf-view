@@ -31,8 +31,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     // PDF.js reads canvas globals while its display module is evaluated, so
-    // anything importing it needs these present before the test file loads.
-    setupFiles: ['tests/setup/jsdom-canvas.ts'],
+    // anything importing it needs these present before the test file loads;
+    // and it needs Math.sumPrecise, which Node lacks, to load embedded fonts.
+    setupFiles: ['tests/setup/math-sum-precise.ts', 'tests/setup/jsdom-canvas.ts'],
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', `${localSuites}/**/*.test.ts`],
   },
 });
