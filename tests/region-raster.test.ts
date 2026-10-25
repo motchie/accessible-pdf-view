@@ -23,7 +23,9 @@ describe('displayDpi', () => {
   it('caps the longer side of a thin, wide figure', () => {
     // PowerPoint's grouped route: 224 x 4pt.
     const dpi = displayDpi(box(224, 4));
-    expect(pixels(224, dpi)).toBeLessThanOrEqual(1200);
+    expect(pixels(224, dpi)).toBeCloseTo(1200);
+    // The cap wins over the 48-pixel aim: the thin side comes out narrower.
+    expect(pixels(4, dpi)).toBeCloseTo(21.4, 0);
     expect(dpi).toBeGreaterThanOrEqual(144);
   });
 });

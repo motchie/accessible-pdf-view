@@ -103,10 +103,11 @@ const MAX_ENLARGED_EDGE_PX = 1200;
  * Normally 144 DPI. A figure is drawn at its rendered pixel size, so at that
  * resolution a 10pt icon would be 20 pixels across: present, and too small to
  * make out. A figure shown although it is small (an author described it, #15)
- * is rendered finer instead, so its shorter side is at least 48 pixels — the
- * size a 24pt figure gets — and it stays sharp, because the content is drawn,
- * not scaled up. The longer side is capped, so a thin, wide figure such as a
- * route drawn as a 224 x 4pt group does not become an enormous image.
+ * is rendered finer instead, aiming for a shorter side of 48 pixels — the size
+ * a 24pt figure gets — and it stays sharp, because the content is drawn, not
+ * scaled up. The longer side is capped at 1200 pixels, and the cap wins: a
+ * thin, wide figure such as a route drawn as a 224 x 4pt group comes out about
+ * 1200 x 21 pixels rather than an enormous image.
  */
 export function displayDpi(bbox: BoundingBox): number {
   const shortPt = Math.min(bbox.width, bbox.height);

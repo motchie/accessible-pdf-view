@@ -29,10 +29,10 @@ export interface MinimalPdfOptions {
   cropBox?: [number, number, number, number];
   /**
    * With `tagged`, `Figure` elements drawn after each page's text, each a
-   * 100pt square. `alt` is written as `/Alt` when given, empty string
+   * 100pt square unless `width` and `height` say otherwise. `alt` is written as `/Alt` when given, empty string
    * included; leave it out for a figure with no `/Alt` at all.
    */
-  figures?: Array<{ alt?: string }>;
+  figures?: Array<{ alt?: string; width?: number; height?: number }>;
   /**
    * A line drawn after each page's text in a CID font from the Adobe-Japan1
    * collection that is neither embedded nor given a ToUnicode CMap, so the
@@ -122,7 +122,9 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
                 `<< /Type /StructElem /S /Figure /P ${structRootObj} 0 R /Pg ${pageObj} 0 R /K ${mcid}${alt} >>`;
               pageElements.push(elementObj);
               const x = 72 + figureIndex * 120;
-              return `/Figure << /MCID ${mcid} >> BDC 0 0 1 rg ${x} 300 100 100 re f EMC`;
+              const width = figure.width ?? 100;
+              const height = figure.height ?? 100;
+              return `/Figure << /MCID ${mcid} >> BDC 0 0 1 rg ${x} 300 ${width} ${height} re f EMC`;
             })
           : [],
       )
