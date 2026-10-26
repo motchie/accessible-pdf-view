@@ -406,8 +406,12 @@ export const en = {
     structureHint:
       'Which reading a tagged PDF opens with. You can switch per document. If the document does not offer the one chosen here, the next one is used — and an untagged PDF can only be inferred, so this setting is not used for it.',
     language: 'Language',
-    languageHint:
-      "The language of this extension's own interface. It does not change the document, and on its own it does not change the language generated text is written in — that is “Language of AI-generated text”, below.",
+    // The second sentence points at a section that only exists where there is
+    // a model, so it goes when that section does.
+    languageHint: (withAiLanguage: boolean): string =>
+      withAiLanguage
+        ? "The language of this extension's own interface. It does not change the document, and on its own it does not change the language generated text is written in — that is “Language of AI-generated text”, below."
+        : "The language of this extension's own interface. It does not change the document.",
     languageAuto: 'Follow the browser',
     languageAutoNote: (resolved: string) => `Currently: ${resolved}`,
     aiLanguage: 'Language of AI-generated text',

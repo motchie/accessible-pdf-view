@@ -48,6 +48,11 @@ export function SettingsPanel({
   onReset,
 }: SettingsPanelProps): JSX.Element {
   const m = useMessages();
+  const model = useModel();
+  // The language of generated text means nothing where nothing is generated:
+  // in Firefox, which has no model an extension can use, or on a machine the
+  // model cannot run on. The model section says which; this one just goes.
+  const hasModel = model.availability !== null && model.availability.status !== 'unavailable';
 
   return (
     <div className="apv-settings">
@@ -56,7 +61,7 @@ export function SettingsPanel({
       {/* First, because it changes the words of every control under it. */}
       <fieldset>
         <legend>{m.settings.language}</legend>
-        <p className="apv-settings__hint">{m.settings.languageHint}</p>
+        <p className="apv-settings__hint">{m.settings.languageHint(hasModel)}</p>
         <RadioGroup
           label={m.settings.language}
           labelHidden
@@ -152,39 +157,41 @@ export function SettingsPanel({
         <p className="apv-settings__hint">{m.settings.themeHint}</p>
       </fieldset>
 
-      <ModelSection />
+      <ModelSection model={model} />
 
       {/* Next to the model, because it is about what that model writes, and
           nowhere near the top because the default is right for most documents.
           It is the control to reach for when one particular PDF declares a
           language it is not written in. */}
-      <fieldset>
-        <legend>{m.settings.aiLanguage}</legend>
-        <p className="apv-settings__hint">{m.settings.aiLanguageHint}</p>
-        <RadioGroup
-          label={m.settings.aiLanguage}
-          labelHidden
-          value={settings.aiLanguage}
-          onChange={(aiLanguage) => onChange({ aiLanguage })}
-          choices={[
-            {
-              value: 'document',
-              label: m.settings.aiLanguageDocument,
-              note: m.settings.aiLanguageDocumentNote,
-            },
-            {
-              value: 'interface',
-              label: m.settings.aiLanguageInterface,
-              // Named rather than pointed at: "the interface language" is a
-              // reference to another control, and going to look it up to find
-              // out what this one would do is work worth saving.
-              note: m.settings.aiLanguageInterfaceNote(
-                UI_LANGUAGE_NAMES[resolveLocale(settings.uiLanguage)],
-              ),
-            },
-          ]}
-        />
-      </fieldset>
+      {hasModel ? (
+        <fieldset>
+          <legend>{m.settings.aiLanguage}</legend>
+          <p className="apv-settings__hint">{m.settings.aiLanguageHint}</p>
+          <RadioGroup
+            label={m.settings.aiLanguage}
+            labelHidden
+            value={settings.aiLanguage}
+            onChange={(aiLanguage) => onChange({ aiLanguage })}
+            choices={[
+              {
+                value: 'document',
+                label: m.settings.aiLanguageDocument,
+                note: m.settings.aiLanguageDocumentNote,
+              },
+              {
+                value: 'interface',
+                label: m.settings.aiLanguageInterface,
+                // Named rather than pointed at: "the interface language" is a
+                // reference to another control, and going to look it up to find
+                // out what this one would do is work worth saving.
+                note: m.settings.aiLanguageInterfaceNote(
+                  UI_LANGUAGE_NAMES[resolveLocale(settings.uiLanguage)],
+                ),
+              },
+            ]}
+          />
+        </fieldset>
+      ) : null}
 
       <fieldset>
         <legend>{m.structure.legend}</legend>
@@ -332,11 +339,16 @@ function PdfHandlerSection(): JSX.Element | null {
  * so the useful lever is not caching but *when* the wait starts — here, on
  * purpose, before a document is open.
  */
-function ModelSection(): JSX.Element | null {
-  const m = useMessages();
+interface Model {
+  /** `null` until the browser has answered. */
+  availability: DescriberAvailability | null;
+  setAvailability: (availability: DescriberAvailability) => void;
+  describer: { current: ChromeAiFigureDescriber | null };
+}
+
+/** The on-device model, asked once for the whole panel: two sections depend on it. */
+function useModel(): Model {
   const [availability, setAvailability] = useState<DescriberAvailability | null>(null);
-  const [progress, setProgress] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const describerRef = useRef<ChromeAiFigureDescriber | null>(null);
 
   useEffect(() => {
@@ -354,6 +366,15 @@ function ModelSection(): JSX.Element | null {
       describerRef.current = null;
     };
   }, []);
+
+  return { availability, setAvailability, describer: describerRef };
+}
+
+function ModelSection({ model }: { model: Model }): JSX.Element | null {
+  const m = useMessages();
+  const { availability, setAvailability, describer: describerRef } = model;
+  const [progress, setProgress] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (!availability) return null;
 

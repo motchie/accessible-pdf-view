@@ -343,8 +343,10 @@ export const ja: Messages = {
     structureHint:
       '構造タグを持つ PDF を開いたときに、最初に表示する読み取り方です。文書ごとに切り替えられます。その文書にない読み取り方を選んでいる場合は、次の候補が使われます。タグを持たない PDF は推測しかできないため、この設定は使われません。',
     language: '表示言語',
-    languageHint:
-      'この拡張機能の画面の言語です。文書そのものの言語は変わりません。AI が生成する文章の言語も、この設定だけでは変わりません（下の「AI が生成する文章の言語」で選びます）。',
+    languageHint: (withAiLanguage: boolean): string =>
+      withAiLanguage
+        ? 'この拡張機能の画面の言語です。文書そのものの言語は変わりません。AI が生成する文章の言語も、この設定だけでは変わりません（下の「AI が生成する文章の言語」で選びます）。'
+        : 'この拡張機能の画面の言語です。文書そのものの言語は変わりません。',
     languageAuto: 'ブラウザに従う',
     languageAutoNote: (resolved: string) => `現在: ${resolved}`,
     aiLanguage: 'AI が生成する文章の言語',
