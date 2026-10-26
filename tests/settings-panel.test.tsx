@@ -7,10 +7,16 @@ import { inLocale } from './helpers/messages';
 
 /**
  * "Language of AI-generated text" is a setting for the on-device model, and
- * offering it where there is no model is a control that does nothing — in
+ * offering it where there is no model API is a control that does nothing — in
  * Firefox, which has no model an extension can use, that is every time the
  * panel opens. The interface-language hint points at that section by name, so
  * it has to stop pointing when the section goes.
+ *
+ * Whether the section is there is decided by the API's presence, not by the
+ * model's availability, and the tests pin both halves of that: every
+ * availability the probe can report keeps the section, and the section is
+ * there before the probe has answered — so the panel never changes under
+ * someone already reading it.
  */
 declare global {
   // eslint-disable-next-line no-var
@@ -18,6 +24,7 @@ declare global {
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+const hadLanguageModel = 'LanguageModel' in globalThis;
 const originalLanguageModel = globalThis.LanguageModel;
 
 let container: HTMLDivElement;
@@ -32,12 +39,23 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
-  globalThis.LanguageModel = originalLanguageModel;
+  // Put back what was there, absence included: assigning `undefined` would
+  // leave the property behind for every later test in this worker.
+  if (hadLanguageModel) {
+    globalThis.LanguageModel = originalLanguageModel;
+  } else {
+    removeLanguageModel();
+  }
 });
 
-function stubLanguageModel(availability: 'available' | 'unavailable') {
+/** The Firefox case: no such global at all. */
+function removeLanguageModel(): void {
+  delete (globalThis as { LanguageModel?: unknown }).LanguageModel;
+}
+
+function stubLanguageModel(availability: () => Promise<string>): void {
   globalThis.LanguageModel = {
-    availability: vi.fn(async () => availability),
+    availability: vi.fn(availability),
     create: vi.fn(),
     params: vi.fn(async () => null),
   } as unknown as LanguageModelStatic;
@@ -60,11 +78,11 @@ function legends(): string[] {
 
 const AI_LANGUAGE = 'AI が生成する文章の言語';
 const INTERFACE_HINT = 'この拡張機能の画面の言語です。文書そのものの言語は変わりません。';
+const POINTER = `${INTERFACE_HINT}AI が生成する文章の言語も`;
 
 describe('the AI language section', () => {
   it('is left out where the browser has no model API (Firefox)', async () => {
-    // Removing the global is the Firefox case.
-    delete globalThis.LanguageModel;
+    removeLanguageModel();
     await mount();
 
     expect(legends()).not.toContain(AI_LANGUAGE);
@@ -72,19 +90,31 @@ describe('the AI language section', () => {
     expect(container.textContent).toContain(INTERFACE_HINT);
   });
 
-  it('is left out where the model cannot run', async () => {
-    stubLanguageModel('unavailable');
-    await mount();
+  it.each(['available', 'downloadable', 'downloading', 'unavailable'])(
+    'is offered, and pointed at, where the API exists and the model is %s',
+    async (availability) => {
+      stubLanguageModel(async () => availability);
+      await mount();
 
-    expect(legends()).not.toContain(AI_LANGUAGE);
-    expect(container.textContent).not.toContain(`「${AI_LANGUAGE}」`);
-  });
+      expect(legends()).toContain(AI_LANGUAGE);
+      expect(container.textContent).toContain(POINTER);
+    },
+  );
 
-  it('is offered, and pointed at, where the model can run', async () => {
-    stubLanguageModel('available');
+  it('is there from the first render, before the probe answers', async () => {
+    stubLanguageModel(() => new Promise<string>(() => {}));
     await mount();
 
     expect(legends()).toContain(AI_LANGUAGE);
-    expect(container.textContent).toContain(`${INTERFACE_HINT}AI が生成する文章の言語も`);
+    expect(container.textContent).toContain(POINTER);
+  });
+
+  it('stays when the probe fails', async () => {
+    stubLanguageModel(async () => {
+      throw new Error('model service busy');
+    });
+    await mount();
+
+    expect(legends()).toContain(AI_LANGUAGE);
   });
 });
