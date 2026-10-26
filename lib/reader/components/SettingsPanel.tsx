@@ -473,23 +473,32 @@ function RadioGroup<T extends string>({
       className="apv-settings__group"
     >
       {labelHidden ? null : <p className="apv-settings__label">{label}</p>}
+      {/* The note sits beside the <label>, not in it, for the reason given
+          in StructureSourcePicker: inside, it is part of the name and is
+          announced as clickable. */}
       {choices.map((choice) => (
-        <label key={choice.value} className="apv-settings__choice">
+        <div key={choice.value} className="apv-settings__choice">
           <input
             type="radio"
+            id={`${name}-${choice.value}`}
             name={name}
             value={choice.value}
             checked={value === choice.value}
             aria-disabled={busy}
+            aria-describedby={choice.note ? `${name}-${choice.value}-note` : undefined}
             onChange={() => onChange(choice.value)}
           />
           <span>
-            {choice.label}
+            <label htmlFor={`${name}-${choice.value}`}>{choice.label}</label>
             {choice.note ? (
-              <span className="apv-settings__choice-note"> — {choice.note}</span>
+              <span className="apv-settings__choice-note">
+                {' — '}
+                {/* The dash is punctuation for the eye; the description is the note. */}
+                <span id={`${name}-${choice.value}-note`}>{choice.note}</span>
+              </span>
             ) : null}
           </span>
-        </label>
+        </div>
       ))}
     </div>
   );

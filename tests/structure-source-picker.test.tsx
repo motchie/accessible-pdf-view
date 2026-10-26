@@ -106,6 +106,36 @@ describe('the structure source picker', () => {
     expect(details[2]).toContain('見出し 6 件');
   });
 
+  /**
+   * Issue #34. Inside the <label>, the description was part of each radio's
+   * name — the whole paragraph spoken as the name — and NVDA announced it as
+   * clickable, because a label is. The name is the short label; the
+   * description is a description.
+   */
+  it('names each radio by its label alone and describes it with the detail', () => {
+    mount({ headingCounts: { 'tagged-pdf': 0, 'pdf-inspector': 6 } });
+
+    for (const radio of radios()) {
+      const labels = [...(radio.labels ?? [])].map((label) => label.textContent);
+      expect(labels).toHaveLength(1);
+      expect(['PDF の構造タグ', 'レイアウトからの推測']).toContain(labels[0]);
+
+      const described = document.getElementById(radio.getAttribute('aria-describedby') ?? '');
+      expect(described?.classList.contains('apv-picker__detail')).toBe(true);
+      expect(described?.closest('label')).toBeNull();
+    }
+    expect(document.getElementById(radios()[1]!.getAttribute('aria-describedby')!)?.textContent)
+      .toContain('見出し 6 件');
+  });
+
+  it('still selects a reading when its name is clicked', () => {
+    mount();
+    act(() => {
+      radios()[1]!.labels![0]!.click();
+    });
+    expect(picked).toEqual(['pdf-inspector']);
+  });
+
   it('follows the active reading rather than its own state', () => {
     mount({ active: 'pdf-inspector' });
     expect(radios().map((radio) => radio.checked)).toEqual([false, true]);
