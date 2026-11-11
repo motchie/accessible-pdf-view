@@ -1,0 +1,100 @@
+# The reporting form named in ACCESSIBILITY.md.
+#
+# Only the first field is required. GitHub's guidance for an accessibility
+# statement is not to require disability disclosure, screenshots or recordings,
+# and a form that marks half its fields required asks for them by other means.
+name: Accessibility barrier
+description: Something in Accessible PDF View blocks you or gets in your way. 読み上げや操作の障壁の報告。
+labels: ['accessibility']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **English or Japanese, whichever you would rather write.** Both are read.
+        日本語でも英語でも、書きやすいほうでお書きください。
+
+        You do not need to say anything about yourself or your disability, and
+        no screenshot, recording or sample file is required. Only the first box
+        below is required; everything else helps, and an empty field costs you
+        nothing.
+        ご自身のことや障害について書く必要はありません。スクリーンショット・録画・
+        サンプルファイルも必須ではありません。必須は最初の欄だけです。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened / 何が起きましたか
+      description: >
+        What you were doing, and what the extension said or did. In your own
+        words is fine. / していたことと、拡張機能が言ったこと・したこと。
+        ご自身の言葉で書いていただくだけで十分です。
+      placeholder: |
+        e.g. In the Reader, every paragraph is announced as something to
+        double-tap, and double-tapping does nothing.
+        例: Reader で、段落のひとつひとつが「ダブルタップするもの」として読み上げ
+        られ、ダブルタップしても何も起きません。
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead / 代わりに期待していたこと
+      description: Optional. / 任意です。
+    validations:
+      required: false
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version / ブラウザーとバージョン
+      description: Optional. / 任意です。
+      placeholder: e.g. Firefox 158 / Chrome 149
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system / OS
+      description: Optional. / 任意です。
+      placeholder: e.g. Windows 11 / macOS 15 / Android 16
+    validations:
+      required: false
+
+  - type: input
+    id: assistive-technology
+    attributes:
+      label: Assistive technology and version / 支援技術とバージョン
+      description: >
+        Optional, and only if you use one — a screen reader, magnification,
+        voice control, a switch, anything. / 任意です。お使いの場合のみ。
+        スクリーンリーダー、拡大、音声操作、スイッチなど。
+      placeholder: e.g. NVDA 2026.1 / VoiceOver / TalkBack
+    validations:
+      required: false
+
+  - type: textarea
+    id: document
+    attributes:
+      label: The document / 対象の文書
+      description: >
+        Optional. A PDF this extension reads badly is the most useful report
+        there is — but most real documents cannot be shared. If you cannot share
+        it, say so and it will be labelled `needs-sample` while a stand-in is
+        looked for. A description of the document (tagged or not, scanned,
+        Japanese, how it was produced) is useful on its own. /
+        任意です。うまく読めない PDF はいちばん価値のある報告ですが、実在の文書は
+        たいてい共有できません。共有できない場合はそう書いてください。代わりに
+        なるものを探す間 `needs-sample` ラベルを付けます。文書の説明（タグ付きか、
+        スキャンか、日本語か、何で作られたか）だけでも役に立ちます。
+    validations:
+      required: false
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else / そのほか
+      description: Optional. / 任意です。
+    validations:
+      required: false
