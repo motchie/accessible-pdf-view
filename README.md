@@ -4,6 +4,10 @@
 
 Official website: <https://accessiblepdfview.org>
 
+Accessibility statement: [ACCESSIBILITY.md](ACCESSIBILITY.md) — what the
+project commits to, what it is known to get wrong, and how to report a
+barrier (日本語: [ACCESSIBILITY.ja.md](ACCESSIBILITY.ja.md)).
+
 ---
 
 ## What is Accessible PDF View?
