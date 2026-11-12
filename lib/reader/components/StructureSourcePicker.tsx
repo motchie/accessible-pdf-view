@@ -63,22 +63,32 @@ export function StructureSourcePicker({
       <fieldset className="apv-picker__choices">
         <legend id={`${groupName}-heading`}>{m.structure.legend}</legend>
 
+        {/* Only the name is inside the <label>. A description inside it
+            becomes part of the radio's name, so the whole paragraph is spoken
+            as the name every time the radio is reached, and a screen reader
+            in browse mode announces the description as clickable, because a
+            label is. Beside it, tied by aria-describedby, it is read as what
+            it is. */}
         {sources.map((origin) => (
-          <label key={origin} className="apv-picker__option">
+          <div key={origin} className="apv-picker__option">
             <input
               type="radio"
+              id={`${groupName}-${origin}`}
               name={groupName}
               checked={active === origin}
+              aria-describedby={`${groupName}-${origin}-detail`}
               onChange={() => onSelect(origin)}
             />
-            <span className="apv-picker__label">{m.structure.sources[origin].label}</span>
-            <span className="apv-picker__detail">
+            <label htmlFor={`${groupName}-${origin}`} className="apv-picker__label">
+              {m.structure.sources[origin].label}
+            </label>
+            <span id={`${groupName}-${origin}-detail`} className="apv-picker__detail">
               {m.structure.sources[origin].detail}
               {headingCounts?.[origin] !== undefined
                 ? m.structure.headingCount(headingCounts[origin]!)
                 : ''}
             </span>
-          </label>
+          </div>
         ))}
       </fieldset>
 

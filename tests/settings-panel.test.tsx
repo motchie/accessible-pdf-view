@@ -118,3 +118,54 @@ describe('the AI language section', () => {
     expect(legends()).toContain(AI_LANGUAGE);
   });
 });
+
+/** Issue #34, for the panel's radio groups: the note is beside the <label>, not in it. */
+describe('a radio with a note', () => {
+  function radioLabelled(name: string): HTMLInputElement {
+    const radio = [...container.querySelectorAll<HTMLInputElement>('input[type="radio"]')].find(
+      (input) => input.labels?.[0]?.textContent === name,
+    );
+    if (!radio) throw new Error(`no radio labelled ${name}`);
+    return radio;
+  }
+
+  it('is named by its label alone and described by its note', async () => {
+    removeLanguageModel();
+    await mount();
+
+    const radio = radioLabelled('BIZ UDPGothic');
+    expect(radio.labels).toHaveLength(1);
+    const note = document.getElementById(radio.getAttribute('aria-describedby') ?? '');
+    expect(note?.textContent).toBe('ユニバーサルデザイン書体。端末にある場合に使われます');
+    expect(note?.closest('label')).toBeNull();
+  });
+
+  it('has no description when it has no note', async () => {
+    removeLanguageModel();
+    await mount();
+
+    expect(radioLabelled('ライト').hasAttribute('aria-describedby')).toBe(false);
+  });
+
+  it('is still chosen by clicking its name', async () => {
+    removeLanguageModel();
+    const patches: unknown[] = [];
+    await act(async () => {
+      root.render(
+        inLocale(
+          'ja',
+          <SettingsPanel
+            settings={DEFAULT_SETTINGS}
+            onChange={(patch) => patches.push(patch)}
+            onReset={() => {}}
+          />,
+        ),
+      );
+    });
+
+    act(() => {
+      radioLabelled('ダーク').labels![0]!.click();
+    });
+    expect(patches).toContainEqual({ theme: 'dark' });
+  });
+});
