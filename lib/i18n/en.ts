@@ -75,8 +75,9 @@ export const en = {
     analyzing: 'Analysing the PDF.',
     loadFailed: 'The PDF could not be loaded.',
     // The page count in brackets rather than as a sentence of its own: "the
-    // PDF. 3 pages." put a full stop where most faces tuck it under the F's
-    // arm, so it read as "the PDF 3 pages", and "3 pages." is not a sentence.
+    // PDF. 3 pages." put a full stop where some faces, including the one it
+    // was noticed in, tuck it under the F's arm, so it read as "the PDF
+    // 3 pages"; and "3 pages." is not a sentence.
     ready: (pageCount: number) =>
       `Finished analysing the PDF (${pageCount} ${pageCount === 1 ? 'page' : 'pages'}).`,
     readyNeedsOcr: (pageCount: number) =>
