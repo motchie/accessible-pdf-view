@@ -238,6 +238,24 @@ describe('word-basic.pdf', () => {
   }, 60_000);
 });
 
+describe('the title heading (#42)', () => {
+  /**
+   * The document's own title is document text: read with the interface in
+   * English, a Japanese PDF's title still says it is Japanese, while the page
+   * around it is English.
+   */
+  it("keeps the document's language when the interface is in another", async () => {
+    const pdf = resolve(import.meta.dirname, 'fixtures/word/word-basic.pdf');
+    const reading = await readPdfAsReader(new Uint8Array(await readFile(pdf)));
+    rendered = renderReader(reading, { locale: 'en' });
+
+    expect(document.documentElement.lang).toBe('en');
+    const heading = rendered.container.querySelector('h1.apv-title')!;
+    expect(heading.textContent).toBe('アクセシビリティ検証用文書 その1');
+    expect(heading.getAttribute('lang')).toBe('ja');
+  }, 60_000);
+});
+
 describe('word-small-figures.pdf', () => {
   it('matches its hand-written outline (#15)', async () => {
     const pdf = resolve(import.meta.dirname, 'fixtures/word/word-small-figures.pdf');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readerTabTitle } from '../lib/reader/document-title';
+import { readerTabTitle, titleHeadingLanguage } from '../lib/reader/document-title';
 import { en } from '../lib/i18n/en';
 import { ja } from '../lib/i18n/ja';
 
@@ -76,5 +76,28 @@ describe('the tab title', () => {
     expect(readerTabTitle(en, { phase: 'analyzing', view: 'reader', name: 'report.pdf' })).toBe(
       'report.pdf (Analysing…) — Accessible PDF View',
     );
+  });
+});
+
+/**
+ * #42: the title heading is document text when it is the document's own title,
+ * and takes the document's language; anything else takes the interface's.
+ */
+describe('titleHeadingLanguage', () => {
+  it("is the document's language when the heading is the document's own title", () => {
+    expect(titleHeadingLanguage({ title: '事業報告', language: 'ja' })).toBe('ja');
+    expect(titleHeadingLanguage({ title: 'Annual Report', language: 'en-GB' })).toBe('en-GB');
+  });
+
+  it('is nothing when the document declares no language', () => {
+    expect(titleHeadingLanguage({ title: '事業報告' })).toBeUndefined();
+    expect(titleHeadingLanguage({ title: '事業報告', language: '  ' })).toBeUndefined();
+  });
+
+  it('is nothing when there is no title of its own, whatever the document declares', () => {
+    // The heading is then the file name or the extension's name.
+    expect(titleHeadingLanguage({ language: 'ja' })).toBeUndefined();
+    expect(titleHeadingLanguage({ title: '   ', language: 'ja' })).toBeUndefined();
+    expect(titleHeadingLanguage(undefined)).toBeUndefined();
   });
 });

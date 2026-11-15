@@ -11,7 +11,9 @@
 # Absent by intent: the rule marked Decorative.
 document lang=ja title="小さな図の検証用文書（リーダー） — Accessible PDF View"
   banner
-    heading level=1 "小さな図の検証用文書"
+    # The document's own title, so the document's language (#42), not the
+    # interface's — the same here, but they need not be.
+    heading level=1 lang=ja "小さな図の検証用文書"
   main
     region "リーダー"
       article lang=ja

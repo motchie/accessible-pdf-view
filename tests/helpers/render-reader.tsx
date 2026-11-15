@@ -7,7 +7,7 @@ import {
   PageRequiresOcrNotice,
   RecoveredPageNotice,
 } from '../../lib/reader/components/Notices';
-import { readerTabTitle } from '../../lib/reader/document-title';
+import { readerTabTitle, titleHeadingLanguage } from '../../lib/reader/document-title';
 import { fileNameFromUrl } from '../../lib/reader/params';
 import { DocumentView } from '../../lib/reader/renderer';
 import { betterHeadings } from '../../lib/reader/structure-source';
@@ -103,7 +103,9 @@ function ReaderDocumentArea({
   return (
     <>
       <header className="apv-header">
-        <h1 className="apv-title">{title}</h1>
+        <h1 className="apv-title" lang={titleHeadingLanguage(reading.document.metadata)}>
+          {title}
+        </h1>
       </header>
       <main id="apv-main" className="apv-main">
         <section id="apv-panel-reader" aria-label={m.views.readerPanelLabel} tabIndex={0}>

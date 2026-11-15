@@ -1,4 +1,5 @@
 import type { Messages } from '../i18n';
+import type { DocumentMetadata } from '../pdf/document-model';
 import type { ViewMode } from './components/ReaderToolbar';
 
 import type { AnalysisPhase } from './use-pdf-analysis';
@@ -52,4 +53,26 @@ export function readerTabTitle(
 
 function titled(m: Messages, name: string | null, note: string): string {
   return `${name ? m.app.documentNote(name, note) : note} — ${m.app.name}`;
+}
+
+/**
+ * The `lang` for the page's title heading, or nothing to take the interface's.
+ *
+ * The heading is the document's own title when it declares one, and that is
+ * document text: a Japanese title in a Reader whose interface is English is
+ * still Japanese, and a screen reader that switches voices by language should
+ * read it with a Japanese one. So it takes the language the document declares,
+ * as the article below it does (#42). A file name, the extension's name, or a
+ * document that declares no language has nothing better to offer than the
+ * interface's, so those leave `lang` off and inherit it.
+ *
+ * Whoever renders the heading has to create a new element when this changes,
+ * not update the attribute: Firefox passes screen readers the language an
+ * element was created with (#40).
+ */
+export function titleHeadingLanguage(
+  metadata: Pick<DocumentMetadata, 'title' | 'language'> | undefined,
+): string | undefined {
+  if (!metadata?.title?.trim()) return undefined;
+  return metadata.language?.trim() || undefined;
 }
