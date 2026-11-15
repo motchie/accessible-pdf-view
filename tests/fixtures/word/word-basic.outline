@@ -22,7 +22,9 @@
 # (フッター N), and the decorative divider — no img and no empty figure.
 document lang=ja title="アクセシビリティ検証用文書 その1（リーダー） — Accessible PDF View"
   banner
-    heading level=1 "アクセシビリティ検証用文書 その1"
+    # The document's own title, so the document's language (#42), not the
+    # interface's — the same here, but they need not be.
+    heading level=1 lang=ja "アクセシビリティ検証用文書 その1"
   main
     region "リーダー"
       article lang=ja

@@ -31,7 +31,7 @@ import {
   type Messages,
 } from "../../lib/i18n";
 import { fileNameFromUrl, readParams } from "../../lib/reader/params";
-import { readerTabTitle } from "../../lib/reader/document-title";
+import { readerTabTitle, titleHeadingLanguage } from "../../lib/reader/document-title";
 import { betterHeadings } from "../../lib/reader/structure-source";
 
 /**
@@ -131,6 +131,7 @@ export default function App(): JSX.Element {
   const documentName =
     analysis.document?.metadata.title?.trim() || fileNameFromUrl(params.sourceUrl) || null;
   const title = documentName ?? m.app.name;
+  const titleLanguage = titleHeadingLanguage(analysis.document?.metadata);
 
   useEffect(() => {
     // Keeping the tab title in sync is how a screen reader user confirms which
@@ -190,7 +191,11 @@ export default function App(): JSX.Element {
       />
 
       <header className="apv-header">
-        <h1 className="apv-title">{title}</h1>
+        {/* The document's language when the title is the document's own
+            (#42); keyed, so a change makes a new element (#40). */}
+        <h1 key={titleLanguage ?? ""} className="apv-title" lang={titleLanguage}>
+          {title}
+        </h1>
         <StatusRegion message={statusMessage(analysis, m)} />
 
         <DocumentInfoPanel
