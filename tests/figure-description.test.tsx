@@ -746,6 +746,8 @@ describe('the describe panel’s language note', () => {
     });
     expect(note).toContain('説明は日本語で生成されます。');
     expect(note).toContain('ja-JP');
+    // Joined as Japanese joins sentences, with 「：」 inside the brackets.
+    expect(note).toBe('説明は日本語で生成されます。（この文書の言語：ja-JP）');
   });
 
   it('says a guess is a guess when the document declares nothing', () => {

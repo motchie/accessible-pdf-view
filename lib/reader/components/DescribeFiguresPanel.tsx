@@ -276,7 +276,7 @@ export function DescribeFiguresPanel({
  * Exported so the wording can be checked without a browser.
  */
 export function describeLanguageNote(m: Messages, choice: OutputLanguageChoice): string {
-  return `${m.describePanel.languageIs(m.languages[choice.language])} ${languageSource(m, choice)}`;
+  return m.joinSentences(m.describePanel.languageIs(m.languages[choice.language]), languageSource(m, choice));
 }
 
 function languageSource(m: Messages, choice: OutputLanguageChoice): string {

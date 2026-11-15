@@ -245,8 +245,9 @@ export function OcrPanel({
         <>
           <p>{m.ocrPanel.unavailable(pages.length)}</p>
           <p className="apv-panel__caveat">
-            {m.ocrPanel.unavailableWhy}
-            {viewingOriginal ? null : ` ${m.notices.ocrRequired.originalHint}`}
+            {viewingOriginal
+              ? m.ocrPanel.unavailableWhy
+              : m.joinSentences(m.ocrPanel.unavailableWhy, m.notices.ocrRequired.originalHint)}
           </p>
         </>
       ) : (

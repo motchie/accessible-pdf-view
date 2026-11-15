@@ -474,14 +474,14 @@ describe('the OCR-required notice', () => {
   it('offers the original view from everywhere else', () => {
     const html = inJapanese(createElement(OcrRequiredNotice, { capabilities, viewingOriginal: false }));
     expect(html).toContain('OCR が必要です');
-    expect(html).toContain('オリジナルタブ');
+    expect(html).toContain('「表示」で「オリジナル」を選ぶと');
   });
 
   it('does not send the reader to the view they are already in', () => {
     const html = inJapanese(createElement(OcrRequiredNotice, { capabilities, viewingOriginal: true }));
     // Everything else it has to say is still said.
     expect(html).toContain('3, 4 ページ');
-    expect(html).not.toContain('オリジナルタブ');
+    expect(html).not.toContain('「オリジナル」を選ぶと');
   });
 });
 

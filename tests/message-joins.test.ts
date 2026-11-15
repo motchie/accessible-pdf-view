@@ -13,6 +13,11 @@ import { describe, expect, it } from 'vitest';
  * with message text on either side of it, i.e. an expression that reads from
  * the catalogue (`m.…`). A space between an element and something else, such
  * as a button and the note beside it, is layout and is left alone.
+ *
+ * And the same inside template strings, in any module but the catalogue
+ * itself: `${…} ${…}` with a message on either side, or a message written
+ * after a leading space. Two of the joins hid there, after the JSX ones had
+ * been fixed and this test said there were none.
  */
 const root = resolve(import.meta.dirname, '..');
 
@@ -20,7 +25,7 @@ function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return sources(path);
-    return path.endsWith('.tsx') ? [path] : [];
+    return /\.tsx?$/.test(path) ? [path] : [];
   });
 }
 
@@ -39,20 +44,44 @@ export function literalJoins(text: string): string[] {
   return found;
 }
 
+/** The same, inside template strings. */
+export function templateJoins(text: string): string[] {
+  const found: string[] = [];
+  const message = /\bm[.,)]/;
+  // `${a} ${b}`, either reading from the catalogue.
+  for (const match of text.matchAll(/\$\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\} +\$\{([^{}]*)/g)) {
+    if (message.test(match[1]!) || message.test(match[2]!)) found.push(match[0].slice(0, 80));
+  }
+  // `` ` ${m.…}` ``: a message appended to something with a leading space.
+  for (const match of text.matchAll(/`[ \t]+\$\{([^{}]*)/g)) {
+    if (message.test(match[1]!)) found.push(match[0].slice(0, 80));
+  }
+  return found;
+}
+
 describe('message joins in JSX', () => {
   it('finds the shapes this was written for', () => {
     // As they were before #46.
     expect(literalJoins("{m.settings.modelUnavailable} {m.settings.modelUnavailableReason[r]}")).toHaveLength(1);
     expect(literalJoins('{scope} {m.notices.ocrRequired.mayHelp}')).toHaveLength(1);
     expect(literalJoins("{reading ? m.markdown.a(reading) : m.markdown.b}{' '}\n            {m.markdown.c}")).toHaveLength(1);
+    expect(templateJoins('return `${m.describePanel.languageIs(x)} ${languageSource(m, choice)}`;')).toHaveLength(1);
+    expect(templateJoins('{viewingOriginal ? null : ` ${m.notices.ocrRequired.originalHint}`}')).toHaveLength(1);
+    // A separator that is not a bare space is the message's own design.
+    expect(templateJoins('`${name} — ${m.app.name}`')).toHaveLength(0);
     // And leaves layout alone.
     expect(literalJoins("</button>{' '}\n<span>{m.ocrPanel.note}</span>")).toHaveLength(0);
     expect(literalJoins('{m.joinSentences(a, b)}')).toHaveLength(0);
   });
 
   it('happens nowhere in the components', () => {
+    const catalogue = resolve(root, 'lib/i18n');
     const offenders = [...sources(resolve(root, 'lib')), ...sources(resolve(root, 'entrypoints'))]
-      .flatMap((file) => literalJoins(readFileSync(file, 'utf8')).map((join) => `${relative(root, file)}: ${join}`));
+      .filter((file) => !file.startsWith(catalogue))
+      .flatMap((file) => {
+        const text = readFileSync(file, 'utf8');
+        return [...literalJoins(text), ...templateJoins(text)].map((join) => `${relative(root, file)}: ${join}`);
+      });
     expect(offenders).toEqual([]);
   });
 });

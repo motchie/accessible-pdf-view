@@ -157,7 +157,7 @@ export const ja: Messages = {
     copied: 'マークダウンをコピーしました。',
     copyFailed: 'コピーできませんでした。テキストを選択してコピーしてください。',
     emptyNoText:
-      'この PDF からはマークダウンが生成されませんでした。テキストを含まないページのみで構成されている場合に起こります。オリジナルタブで元のページを確認できます。',
+      'この PDF からはマークダウンが生成されませんでした。テキストを含まないページのみで構成されている場合に起こります。「表示」で「オリジナル」を選ぶと、元のページを確認できます。',
     empty: '表示できる内容がありません。',
   },
 
@@ -166,7 +166,7 @@ export const ja: Messages = {
     pageImageOnly: (pageNumber: number) =>
       `${pageNumber} ページ。このページは画像として表示されています。現在テキストを取得できません。`,
     pageNormal: (pageNumber: number) =>
-      `${pageNumber} ページ。元の PDF の見た目を表示しています。テキストはリーダータブで読めます。`,
+      `${pageNumber} ページ。元の PDF の見た目を表示しています。テキストは「表示」で「リーダー」を選ぶと読めます。`,
     rendering: 'このページを描画しています…',
   },
 
@@ -198,7 +198,7 @@ export const ja: Messages = {
       pages: (pageList: string) =>
         `この PDF の次のページには読み取り可能なテキストが含まれていません: ${pageList} ページ。`,
       mayHelp: 'OCR（文字認識）を行うと読めるようになる可能性があります。',
-      originalHint: 'オリジナルタブでは元のページの見た目を確認できます。',
+      originalHint: '「表示」で「オリジナル」を選ぶと、元のページの見た目を確認できます。',
       encodingIssue:
         'なお、この PDF には文字コードの問題が検出されています。抽出されたテキストが正しく読めない場合があります。',
     },
@@ -270,7 +270,7 @@ export const ja: Messages = {
     caveat:
       '生成された説明は**AIによる推測**であり、文書の作成者によるものではありません。誤りを含む可能性があります。リーダー上では「AIによる自動生成の説明」と明示されます。処理はすべてこの端末内で行われ、画像が外部へ送信されることはありません。',
     languageIs: (language: string) => `説明は${language}で生成されます。`,
-    languageFromDocument: (tag: string) => `（この文書の言語: ${tag}）`,
+    languageFromDocument: (tag: string) => `（この文書の言語：${tag}）`,
     languageUnsupported: (tag: string) =>
       `この文書の言語（${tag}）には対応していないため、英語になります。対応しているのは ドイツ語・英語・スペイン語・フランス語・日本語 です。`,
     languageFromSetting:
