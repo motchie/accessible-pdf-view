@@ -250,8 +250,11 @@ export function DescribeFiguresPanel({
           <ul>
             {run.outcomes.map((outcome, index) => (
               <li key={index}>
-                {m.describePanel.outcomeLine(outcome.pageNumber, outcome.indexOnPage + 1)} —{' '}
-                {outcomeLabel(m, outcome.outcome)}: {outcome.detail}
+                {m.describePanel.outcomeEntry(
+                  m.describePanel.outcomeLine(outcome.pageNumber, outcome.indexOnPage + 1),
+                  outcomeLabel(m, outcome.outcome),
+                  outcome.detail,
+                )}
               </li>
             ))}
           </ul>

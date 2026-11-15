@@ -360,6 +360,11 @@ export const en = {
     outcomeDescribed: 'description generated',
     outcomeDecorative: 'judged decorative by the AI',
     outcomeFailed: 'failed',
+    // Which image, what became of it, and the model's own words or the error.
+    // A label and its value rather than two sentences, so not joinSentences:
+    // the colon is the language's too.
+    outcomeEntry: (line: string, label: string, detail: string): string =>
+      `${line} — ${label}: ${detail}`,
   },
 
   /**

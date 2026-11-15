@@ -300,6 +300,8 @@ export const ja: Messages = {
     outcomeDescribed: '説明を生成',
     outcomeDecorative: 'AIが装飾的と判定',
     outcomeFailed: '失敗',
+    outcomeEntry: (line: string, label: string, detail: string): string =>
+      `${line} — ${label}：${detail}`,
   },
 
   siteAccess: {

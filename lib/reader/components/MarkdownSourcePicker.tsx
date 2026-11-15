@@ -51,10 +51,10 @@ export function MarkdownSourcePicker({
           />
           <span className="apv-picker__label">{m.markdown.sameAsReader}</span>
           <span className="apv-picker__detail">
-            {reading
-              ? m.markdown.sameAsReaderDetail(reading)
-              : m.markdown.sameAsReaderDetailPlain}{' '}
-            {m.markdown.generatedAreMarked}
+            {m.joinSentences(
+              reading ? m.markdown.sameAsReaderDetail(reading) : m.markdown.sameAsReaderDetailPlain,
+              m.markdown.generatedAreMarked,
+            )}
           </span>
         </label>
 

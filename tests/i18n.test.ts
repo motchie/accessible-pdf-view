@@ -147,6 +147,9 @@ describe('joinSentences', () => {
       m.notices.ocrRequired.onePage(3),
       m.notices.ocrRequired.pages('3, 4'),
       m.notices.ocrRequired.mayHelp,
+      m.markdown.sameAsReaderDetail('PDF の構造タグ'),
+      m.markdown.sameAsReaderDetailPlain,
+      m.markdown.generatedAreMarked,
     ];
     for (const sentence of joined) expect(sentence, sentence).toMatch(ends);
   });
