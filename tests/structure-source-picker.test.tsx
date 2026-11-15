@@ -181,12 +181,26 @@ describe('the structure source picker', () => {
       else delete (globalThis as { LanguageModel?: unknown }).LanguageModel;
     });
 
-    it('is there where the browser has the model API', () => {
+    function stubModel(availability: string): void {
       globalThis.LanguageModel = {
-        availability: async () => 'available',
+        availability: async () => availability,
         create: async () => { throw new Error('not in this test'); },
         params: async () => null,
       } as unknown as LanguageModelStatic;
+    }
+
+    it('is there where the browser has the model API', () => {
+      stubModel('available');
+      mount();
+      expect(container.textContent).toContain(NOTE);
+    });
+
+    // The browser is asked, not this machine's model: on a Chrome machine the
+    // model cannot run on, the note stays, as the AI-language setting does.
+    // Gating on availability instead would make the note appear or vanish
+    // after a probe answers, under someone already reading.
+    it('stays where the API exists but the model cannot run', () => {
+      stubModel('unavailable');
       mount();
       expect(container.textContent).toContain(NOTE);
     });

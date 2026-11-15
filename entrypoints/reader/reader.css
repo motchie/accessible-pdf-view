@@ -807,10 +807,6 @@ body {
   color: var(--apv-muted);
 }
 
-.apv-picker__note:empty {
-  display: none;
-}
-
 /**
  * Collapsed, never `display: none`.
  *

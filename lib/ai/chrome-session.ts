@@ -1,3 +1,4 @@
+import { canGenerateText } from './generation-support';
 import {
   resolveOutputLanguage,
   type SupportedOutputLanguage,
@@ -66,7 +67,7 @@ export class ChromeAiSession {
 
   /** True when the API exists at all. Every other method assumes it might not. */
   static get supported(): boolean {
-    return typeof LanguageModel !== 'undefined';
+    return canGenerateText();
   }
 
   /**

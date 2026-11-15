@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type JSX } from 'react';
-import { ChromeAiSession } from '../../ai/chrome-session';
+import { canGenerateText } from '../../ai/generation-support';
 import { ChromeAiFigureDescriber } from '../../pdf/describe/chrome-ai-describer';
 import type { DescriberAvailability } from '../../pdf/describe/provider';
 import type { ReaderSettings } from '../settings';
@@ -50,13 +50,10 @@ export function SettingsPanel({
 }: SettingsPanelProps): JSX.Element {
   const m = useMessages();
   // The language of generated text means nothing where nothing can be
-  // generated, and in Firefox, which has no model an extension can use, that is
-  // always. Asked of the API's presence rather than of the model's availability:
-  // presence is known at the first render, so the panel does not change under
-  // someone already reading it, and a probe that fails once cannot take the
-  // setting away. A Chrome machine the model cannot run on keeps it — the model
-  // section says why nothing is generated there.
-  const canGenerate = ChromeAiSession.supported;
+  // generated: in Firefox, which has no model an extension can use, the
+  // setting and the hint's pointer to it go. See `canGenerateText` for why
+  // presence rather than availability.
+  const canGenerate = canGenerateText();
 
   return (
     <div className="apv-settings">
