@@ -21,6 +21,13 @@ export interface MinimalPdfOptions {
    * rest as untagged content — a tree that covers part of the page.
    */
   taggedLines?: number;
+  /**
+   * With `tagged`, `false` leaves `/ParentTree` out of the StructTreeRoot. The
+   * marked content still carries its MCIDs and the pages their
+   * `/StructParents`; only the reverse map is missing, as some producers write
+   * it. PDF.js before 6.5 returned no structure tree for such a file.
+   */
+  parentTree?: boolean;
   /** Raw content-stream operators drawn after each page's text. */
   drawing?: string;
   /** The page's `/Rotate`. */
@@ -153,8 +160,11 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
 
   if (options.tagged) {
     objects[structRootObj] =
-      `<< /Type /StructTreeRoot /K [${elements.map((obj) => `${obj} 0 R`).join(' ')}] ` +
-      `/ParentTree ${parentTreeObj} 0 R >>`;
+      `<< /Type /StructTreeRoot /K [${elements.map((obj) => `${obj} 0 R`).join(' ')}]` +
+      (options.parentTree === false ? '' : ` /ParentTree ${parentTreeObj} 0 R`) +
+      ` >>`;
+    // Still written when left out of the root, so object numbers stay the
+    // same either way; nothing refers to it.
     objects[parentTreeObj] = `<< /Nums [${parentTreeNums.join(' ')}] >>`;
   }
 

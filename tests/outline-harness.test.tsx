@@ -174,6 +174,31 @@ document lang=ja title="Annual Report（リーダー） — Accessible PDF View"
     );
   }, 30_000);
 
+  /**
+   * PDF.js 6.5 builds a structure tree for a StructTreeRoot without a
+   * /ParentTree (upstream #22115); 6.4 returned none, so such a file had only
+   * the inferred reading. Measured when moving to 6.5: the same file with and
+   * without the /ParentTree now gives the same readings and the same outline,
+   * figure and alt text included. Pinned, because which readings a PDF offers
+   * is the one thing in that update that changes what a reader sees.
+   */
+  it('reads a tagged PDF without a /ParentTree as it reads one with it', async () => {
+    const options = {
+      title: 'Annual Report',
+      pages: [['Annual Report', BODY_1]],
+      tagged: 'declared' as const,
+      figures: [{ alt: 'A blue square on a white page.' }],
+    };
+    const withTree = await readerOutline(buildMinimalPdf(options));
+    rendered?.unmount();
+    rendered = null;
+    const withoutTree = await readerOutline(buildMinimalPdf({ ...options, parentTree: false }));
+
+    expect(withoutTree.reading.availableSources).toEqual(['combined', 'tagged-pdf', 'pdf-inspector']);
+    expect(withoutTree.reading.headingCounts).toEqual(withTree.reading.headingCounts);
+    expectOutline(withoutTree.outline, withTree.outline);
+  }, 30_000);
+
   it('reports a wrong expectation as a numbered diff', async () => {
     const { outline } = await readerOutline(
       buildMinimalPdf({ title: 'Annual Report', pages: [['Annual Report', BODY_1]] }),
