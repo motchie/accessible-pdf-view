@@ -85,7 +85,10 @@ export function StructureSourcePicker({
             </label>
             <span id={`${groupName}-${origin}-detail`} className="apv-picker__detail">
               {headingCounts?.[origin] !== undefined
-                ? m.structure.withHeadingCount(m.structure.sources[origin].detail, headingCounts[origin]!)
+                ? m.joinSentences(
+                    m.structure.sources[origin].detail,
+                    m.structure.headingCount(headingCounts[origin]!),
+                  )
                 : m.structure.sources[origin].detail}
             </span>
           </div>

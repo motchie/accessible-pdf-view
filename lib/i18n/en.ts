@@ -21,6 +21,17 @@
  *   - `**emphasis**` is the only markup, rendered by `rich()`.
  */
 export const en = {
+  /**
+   * Sentences written next to each other, joined as the language joins them:
+   * with a space in English, with nothing in Japanese. Anything that puts one
+   * message after another in the same text goes through this rather than
+   * through a literal space in JSX, which was right for one language only:
+   * "…they wrote.6 headings." in English before this, 「…できません。 この…」 in
+   * Japanese. Every part has to be a whole sentence, ending in its own
+   * punctuation; tests/i18n.test.ts checks the messages joined this way.
+   */
+  joinSentences: (...sentences: string[]): string => sentences.join(' '),
+
   app: {
     /**
      * The BCP-47 tag for this catalogue, for `Intl` and for `lang`.
@@ -63,10 +74,13 @@ export const en = {
     fetching: 'Fetching the PDF.',
     analyzing: 'Analysing the PDF.',
     loadFailed: 'The PDF could not be loaded.',
+    // The page count in brackets rather than as a sentence of its own: "the
+    // PDF. 3 pages." put a full stop where most faces tuck it under the F's
+    // arm, so it read as "the PDF 3 pages", and "3 pages." is not a sentence.
     ready: (pageCount: number) =>
-      `Finished analysing the PDF. ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}.`,
+      `Finished analysing the PDF (${pageCount} ${pageCount === 1 ? 'page' : 'pages'}).`,
     readyNeedsOcr: (pageCount: number) =>
-      `Finished analysing the PDF. ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}. ` +
+      `Finished analysing the PDF (${pageCount} ${pageCount === 1 ? 'page' : 'pages'}). ` +
       'Some pages contain no readable text. OCR is needed.',
   },
 
@@ -129,11 +143,7 @@ export const en = {
         detail: 'The text alone, from pages whose structure could not be read.',
       },
     },
-    // The reading's description, then how many headings it gives. Joined here
-    // rather than by the caller, because the space between two sentences is
-    // the language's: English has one, Japanese does not.
-    withHeadingCount: (detail: string, count: number): string =>
-      `${detail} ${count} ${count === 1 ? 'heading' : 'headings'}.`,
+    headingCount: (count: number) => `${count} ${count === 1 ? 'heading' : 'headings'}.`,
     reloading: (label: string) => `Re-reading as “${label}”.`,
     reloadFailed: (detail: string) => `Could not re-read. ${detail}`,
     staysWithReading:
