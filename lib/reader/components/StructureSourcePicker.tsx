@@ -1,5 +1,6 @@
 import { useId, type JSX } from 'react';
 import type { DocumentOrigin } from '../../pdf/document-model';
+import { ChromeAiSession } from '../../ai/chrome-session';
 import { useMessages } from '../../i18n';
 
 /**
@@ -104,7 +105,14 @@ export function StructureSourcePicker({
         </p>
       ) : null}
 
-      <p className="apv-picker__note">{m.structure.staysWithReading}</p>
+      {/* About generated descriptions and OCR results, so only where they can
+          be generated. Firefox has no model an extension can use, and there the
+          sentence describes something that cannot happen. Decided by the API's
+          presence, as the settings panel does, so the note is there or not from
+          the first render. */}
+      {ChromeAiSession.supported ? (
+        <p className="apv-picker__note">{m.structure.staysWithReading}</p>
+      ) : null}
     </section>
   );
 }
