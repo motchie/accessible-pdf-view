@@ -167,6 +167,15 @@ export default function App(): JSX.Element {
 
   return (
     <MessagesProvider locale={locale}>
+      {/* The interface's language, on an element that has it from the moment
+          it exists, and a new element when it changes: Firefox does not pass a
+          changed `lang` on to screen readers, only the one an element was
+          created with (#40). /document-language.js gets <html> right before
+          the body is parsed; this keeps it right when the language is switched
+          with the page open. The `key` is what makes it a new element. Panel
+          results live in `analysis`, above this, and survive; an OCR or
+          description run still in progress at that moment is cancelled. */}
+      <div key={locale} lang={locale}>
       <a className="apv-skip-link" href="#apv-main">
         {m.app.skipToContent}
       </a>
@@ -412,6 +421,7 @@ export default function App(): JSX.Element {
           </a>
         </p>
       </footer>
+      </div>
     </MessagesProvider>
   );
 }

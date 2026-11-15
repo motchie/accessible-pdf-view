@@ -5,6 +5,7 @@ import {
   withDefaults,
   type ReaderSettings,
 } from './settings';
+import { rememberUiLanguage } from '../i18n/document-language';
 import { readerSettings } from './settings-storage';
 
 /**
@@ -59,6 +60,14 @@ export function useReaderSettings(): {
     setSettings(DEFAULT_SETTINGS);
     void readerSettings.setValue(DEFAULT_SETTINGS);
   }, []);
+
+  // A copy of the interface language for the next page to start in, before
+  // storage has answered (see `document-language.ts`). Only once the stored
+  // value is known: the defaults painted before it would overwrite a real
+  // choice with `auto`.
+  useEffect(() => {
+    if (loaded) rememberUiLanguage(settings.uiLanguage);
+  }, [loaded, settings.uiLanguage]);
 
   return { settings, update, reset, loaded };
 }

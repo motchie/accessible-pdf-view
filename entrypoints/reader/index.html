@@ -1,10 +1,12 @@
 <!doctype html>
-<!-- The base language. `main.tsx` rewrites it to the resolved UI locale as
-     soon as the setting is known: a page that says `lang="en"` while showing
-     Japanese is read aloud by an English voice. -->
+<!-- The base language, replaced with the interface language by
+     /document-language.js before the body is parsed: a `lang` changed any
+     later is not passed on to screen readers by Firefox (#40). -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <!-- First, and not a module: it has to run before the body exists. -->
+    <script src="/document-language.js"></script>
     <!-- No `user-scalable=no` and no `maximum-scale`: pinch zoom and browser
          zoom must both keep working. -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
