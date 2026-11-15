@@ -17,7 +17,12 @@ import { describe, expect, it } from 'vitest';
  * And the same inside template strings, in any module but the catalogue
  * itself: `${…} ${…}` with a message on either side, or a message written
  * after a leading space. Two of the joins hid there, after the JSX ones had
- * been fixed and this test said there were none.
+ * been fixed and this test said there were none. *
+ * It recognises message text by the catalogue's name, `m` — `const m =
+ * useMessages()` in every component, and the `m` that helpers take. That is
+ * the convention this test depends on: a component that names it otherwise,
+ * or destructures it (`const { notices } = m`), joins sentences this test
+ * cannot see. Keep the name, or teach the patterns below the new one.
  */
 const root = resolve(import.meta.dirname, '..');
 
