@@ -114,3 +114,50 @@ describe('emphasis inside a message', () => {
     expect(rich('nothing to emphasise')).toEqual(['nothing to emphasise']);
   });
 });
+
+/**
+ * Sentences next to each other are joined by the catalogue, because the space
+ * between them is the language's: "…wrote. 6 headings." in English,
+ * 「…含みます。見出し 6 件。」 in Japanese. Both had been wrong in one language,
+ * each the mirror of the other.
+ */
+describe('joinSentences', () => {
+  it('joins with a space in English and with nothing in Japanese', () => {
+    expect(en.joinSentences('One.', 'Two.')).toBe('One. Two.');
+    expect(ja.joinSentences('一つ目。', '二つ目。')).toBe('一つ目。二つ目。');
+  });
+
+  /**
+   * It only works if each part is a whole sentence with its own punctuation;
+   * otherwise English runs words together across the join and Japanese runs
+   * clauses together. So every message that is joined this way is checked.
+   */
+  it.each([
+    ['en', en],
+    ['ja', ja],
+  ] as const)('is given whole sentences in %s', (_, m) => {
+    const ends = /[.。!！?？)）]$/;
+    const joined = [
+      ...Object.values(m.structure.sources).map((source) => source.detail),
+      m.structure.headingCount(1),
+      m.structure.headingCount(6),
+      m.settings.modelUnavailable,
+      ...Object.values(m.settings.modelUnavailableReason),
+      m.notices.ocrRequired.wholeDocument,
+      m.notices.ocrRequired.onePage(3),
+      m.notices.ocrRequired.pages('3, 4'),
+      m.notices.ocrRequired.mayHelp,
+    ];
+    for (const sentence of joined) expect(sentence, sentence).toMatch(ends);
+  });
+});
+
+describe('the ready status in English', () => {
+  // "the PDF. 3 pages." read as "the PDF 3 pages" in faces that tuck a full
+  // stop under the F, and "3 pages." is not a sentence.
+  it('gives the page count in brackets, not as a sentence after "PDF."', () => {
+    expect(en.status.ready(3)).toBe('Finished analysing the PDF (3 pages).');
+    expect(en.status.ready(1)).toBe('Finished analysing the PDF (1 page).');
+    expect(en.status.readyNeedsOcr(2)).toMatch(/^Finished analysing the PDF \(2 pages\)\. Some pages/);
+  });
+});

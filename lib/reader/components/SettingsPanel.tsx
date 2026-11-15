@@ -397,7 +397,10 @@ function ModelSection(): JSX.Element | null {
         // Not hidden. Without seeing the whole screen, there is no way to tell
         // a missing feature from one that was simply not found.
         <p className="apv-settings__note">
-          {m.settings.modelUnavailable} {m.settings.modelUnavailableReason[availability.reason]}
+          {m.joinSentences(
+            m.settings.modelUnavailable,
+            m.settings.modelUnavailableReason[availability.reason],
+          )}
         </p>
       ) : availability.status === 'available' ? (
         <p className="apv-settings__note">{m.settings.modelReady}</p>

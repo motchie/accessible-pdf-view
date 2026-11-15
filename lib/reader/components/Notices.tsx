@@ -99,7 +99,7 @@ export function OcrRequiredNotice({
     <div className="apv-notice apv-notice--info">
       <p className="apv-notice__title">{m.notices.ocrRequired.title}</p>
       <p>
-        {scope} {m.notices.ocrRequired.mayHelp}
+        {m.joinSentences(scope, m.notices.ocrRequired.mayHelp)}
       </p>
       {/* Whether an OCR engine is actually usable is the OCR panel's business —
           it is the thing that knows. This notice used to assert flatly that the

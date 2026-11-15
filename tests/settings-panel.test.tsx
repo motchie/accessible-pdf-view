@@ -109,6 +109,14 @@ describe('the AI language section', () => {
     expect(container.textContent).toContain(POINTER);
   });
 
+  // The two sentences are joined as Japanese joins them, with no space after
+  // 「。」 — a literal space in the JSX gave 「…できません。 このブラウザは…」.
+  it('says why the model is unavailable without a space between the sentences', async () => {
+    removeLanguageModel();
+    await mount();
+    expect(container.textContent).toContain('この端末では利用できません。このブラウザは');
+  });
+
   it('stays when the probe fails', async () => {
     stubLanguageModel(async () => {
       throw new Error('model service busy');
