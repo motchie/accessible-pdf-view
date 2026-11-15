@@ -1,7 +1,8 @@
 <!doctype html>
-<!-- The base language. `main.tsx` rewrites it to the resolved UI locale as
-     soon as the setting is known: a page that says `lang="en"` while showing
-     Japanese is read aloud by an English voice. -->
+<!-- The base language. `main.tsx` replaces it with the interface language
+     before React starts, while the page is still loading: a page that says
+     `lang="en"` while showing Japanese is read aloud as English, and a `lang`
+     changed after load is not picked up by the screen reader (#40). -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
