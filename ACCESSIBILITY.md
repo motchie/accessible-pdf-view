@@ -186,17 +186,6 @@ label](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Ao
   Chrome 147 to 154 is not a way round it: #19 was closed because Chrome
   changed, not because this extension did, so with VoiceOver the same cause is
   still announced there.
-- **Up to 0.2.4: a radio's description is spoken as part of its name** in the
-  structure picker and the settings panel
-  ([#34](https://github.com/motchie/accessible-pdf-view/issues/34)), so the
-  whole explanation is repeated every time the radio is reached. **Fixed in
-  0.3.0**; until a store has published 0.3.0, the version it installs still
-  does this.
-- **Up to 0.2.4, in Firefox: the Japanese interface is announced as English**
-  ([#40](https://github.com/motchie/accessible-pdf-view/issues/40)). With NVDA,
-  「英語」 comes before the interface's text, and with automatic language
-  switching an English voice may read it. **Fixed in 0.3.0**, with the same
-  caveat about the stores.
 - **A tagged PDF whose tags carry no headings gives a flat outline.** The
   combined reading recovers headings where it can verify them against the page,
   but it cannot invent a level. This is the common case in business documents,
@@ -223,7 +212,7 @@ a team. This file, and the practices in it, are reviewed at each release;
 anything in it that has gone stale is a bug in the file and worth reporting as
 one.
 
-**Last reviewed: 2026-11-15, against version 0.3.0.**
+**Last reviewed: 2026-11-15, against version 0.3.1.**
 
 ## Feedback and improvements
 
