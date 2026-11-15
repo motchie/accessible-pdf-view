@@ -252,9 +252,10 @@ reader, a keyboard or a magnifier, moving focus is how you read.
 
 In order: the interface language; text size, line spacing and column width;
 typeface; theme; the on-device AI and whether to get its download out of the
-way; which language AI-generated text is written in; which reading a tagged PDF
-opens with; which viewer opens a PDF; and resetting it all. The first is first
-because it changes the words of everything under it.
+way; which language AI-generated text is written in (not in Firefox, which has
+no model an extension can use); which reading a tagged PDF opens with; which
+viewer opens a PDF; and resetting it all. The first is first because it changes
+the words of everything under it.
 
 The theme choice selects the palette through a `data-apv-theme` attribute on
 the root element rather than through `color-scheme` and `light-dark()`. That was

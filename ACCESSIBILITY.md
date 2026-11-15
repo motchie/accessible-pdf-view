@@ -130,7 +130,7 @@ what can actually be delivered:
 | | |
 | --- | --- |
 | Chrome, Edge | **147 or later**, Manifest V3 |
-| Firefox (desktop) | **144 or later**, Manifest V3 |
+| Firefox (desktop) | **144 or later**, Manifest V3, [on Firefox Add-ons](https://addons.mozilla.org/firefox/addon/accessible-pdf-view/) |
 
 The floor is declared in the manifest and listed in
 `lib/browser/minimum-versions.ts`: it is what the bundled PDF.js calls without
@@ -156,7 +156,8 @@ What that support actually amounts to:
   it was used in:
   **NVDA** with Firefox on Windows
   ([#33](https://github.com/motchie/accessible-pdf-view/issues/33),
-  [#34](https://github.com/motchie/accessible-pdf-view/issues/34)),
+  [#34](https://github.com/motchie/accessible-pdf-view/issues/34),
+  [#40](https://github.com/motchie/accessible-pdf-view/issues/40)),
   **VoiceOver** with Chrome on macOS
   ([#19](https://github.com/motchie/accessible-pdf-view/issues/19)), and
   **TalkBack** with Firefox for Android
@@ -185,11 +186,6 @@ label](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Ao
   Chrome 147 to 154 is not a way round it: #19 was closed because Chrome
   changed, not because this extension did, so with VoiceOver the same cause is
   still announced there.
-- **A radio's description is spoken as part of its name** in the structure
-  picker and the settings panel
-  ([#34](https://github.com/motchie/accessible-pdf-view/issues/34)), so the
-  whole explanation is repeated every time the radio is reached. A fix is open
-  as [#35](https://github.com/motchie/accessible-pdf-view/pull/35).
 - **A tagged PDF whose tags carry no headings gives a flat outline.** The
   combined reading recovers headings where it can verify them against the page,
   but it cannot invent a level. This is the common case in business documents,
@@ -216,7 +212,7 @@ a team. This file, and the practices in it, are reviewed at each release;
 anything in it that has gone stale is a bug in the file and worth reporting as
 one.
 
-**Last reviewed: 2026-11-11, against version 0.2.4.**
+**Last reviewed: 2026-11-15, against version 0.3.0.**
 
 ## Feedback and improvements
 
