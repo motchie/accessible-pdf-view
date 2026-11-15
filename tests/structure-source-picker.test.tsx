@@ -163,8 +163,40 @@ describe('the structure source picker', () => {
 
     expect(text).toContain('作成者が指定した構造');
     expect(text).toContain('代替テキストは読み取れず');
-    // And that work done on one reading does not follow the user to the other.
-    expect(text).toContain('適用した読み取り方にのみ残ります');
+  });
+
+  /**
+   * That work done on one reading does not follow the user to the other — but
+   * the work is generated descriptions and OCR, so the sentence belongs only
+   * where they can be generated. In Firefox there is no model API, and there
+   * it would describe something that cannot happen.
+   */
+  describe('the note on generated results', () => {
+    const NOTE = '適用した読み取り方にのみ残ります';
+    const hadLanguageModel = 'LanguageModel' in globalThis;
+    const originalLanguageModel = globalThis.LanguageModel;
+
+    afterEach(() => {
+      if (hadLanguageModel) globalThis.LanguageModel = originalLanguageModel;
+      else delete (globalThis as { LanguageModel?: unknown }).LanguageModel;
+    });
+
+    it('is there where the browser has the model API', () => {
+      globalThis.LanguageModel = {
+        availability: async () => 'available',
+        create: async () => { throw new Error('not in this test'); },
+        params: async () => null,
+      } as unknown as LanguageModelStatic;
+      mount();
+      expect(container.textContent).toContain(NOTE);
+    });
+
+    it('is left out where it has none (Firefox)', () => {
+      delete (globalThis as { LanguageModel?: unknown }).LanguageModel;
+      mount();
+      expect(container.textContent).not.toContain(NOTE);
+      expect(container.querySelector('.apv-picker__note')).toBeNull();
+    });
   });
 
   it('announces a preparation in a region that was already there', () => {
