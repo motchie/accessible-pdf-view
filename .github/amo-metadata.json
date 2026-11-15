@@ -1,0 +1,5 @@
+{
+  "version": {
+    "approval_notes": "Build instructions (the submitted package is rebuilt byte for byte from the sources zip):\n\n1. Node.js 26 and npm 11.\n2. In the root of the sources zip:\n     npm ci\n     npm run build:firefox\n3. The extension is in .output/firefox-mv3.\n\n`npm ci` runs scripts/copy-assets.mjs, which copies PDF.js's worker, CMaps, fonts and WASM decoders from node_modules into public/.\n\nvendor/pdf-inspector-wasm/ is a build of pdf-inspector 1.25.2 plus an upstream bug fix (firecrawl/pdf-inspector#594) that is not yet on npm. Its source commit, build command and the .wasm SHA-256 are in vendor/pdf-inspector-wasm/README.md.\n\nValidator warnings about document().write, innerHTML and import() are in third-party code: micromark's tokenizer API (not DOM document.write), React DOM's dangerouslySetInnerHTML handler (the extension never uses it), and PDF.js loading its own packaged worker and decoders. No remote code is loaded; every import resolves to a file in the package.\n\nSource: https://github.com/motchie/accessible-pdf-view"
+  }
+}
