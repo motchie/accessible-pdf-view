@@ -10,7 +10,7 @@ These are packaged into the built extension and distributed to users.
 | Component | Version | License | Notes |
 | --- | --- | --- | --- |
 | [pdf-inspector](https://github.com/firecrawl/pdf-inspector) (`@firecrawl/pdf-inspector-wasm`) | 1.25.2, **modified** | MIT | The Rust core compiled to WebAssembly. Built from 1.25.2 plus one fix in two commits, not taken from npm; see below. |
-| [PDF.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) | 6.4.299 | Apache-2.0 | Library, worker, CMaps, standard fonts, and the image-decoder WebAssembly modules are shipped. |
+| [PDF.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) | 6.5.438 | Apache-2.0 | Library, worker, CMaps, standard fonts, and the image-decoder WebAssembly modules are shipped. |
 | [React](https://github.com/facebook/react) (`react`, `react-dom`) | 19.3 | MIT | |
 | [mdast-util-from-markdown](https://github.com/syntax-tree/mdast-util-from-markdown) (`mdast-util-from-markdown`) | 2.1 | MIT | |
 | [mdast-util-gfm-table](https://github.com/syntax-tree/mdast-util-gfm-table) (`mdast-util-gfm-table`) | 2.0 | MIT | |
@@ -35,7 +35,7 @@ disagree.
 | `dequal` | 2.0 | MIT |
 | `devlop` | 1.1 | MIT |
 | `longest-streak` | 3.1 | MIT |
-| `markdown-table` | 3.0 | MIT |
+| `markdown-table` | 3.1 | MIT |
 | `mdast-util-phrasing` | 4.1 | MIT |
 | `mdast-util-to-markdown` | 2.2 | MIT |
 | `mdast-util-to-string` | 4.0 | MIT |
@@ -106,8 +106,9 @@ licence, and `scripts/copy-assets.mjs` copies it into every build as
 
 `scripts/copy-assets.mjs` vendors the following from `pdfjs-dist` into
 `public/pdfjs/`, each retaining its upstream license file in the build output.
-QuickJS (`wasm/quickjs-eval.*`) is in the package but deliberately not copied:
-only PDF.js's scripting sandbox uses it, and the extension ships neither.
+QuickJS (`wasm/quickjs-eval.*`) and its licence files (`wasm/LICENSE_QUICKJS`,
+`wasm/LICENSE_PDFJS_QUICKJS`) are in the package but deliberately not copied:
+only PDF.js's scripting sandbox uses QuickJS, and the extension ships neither.
 
 | Asset | License file in build |
 | --- | --- |
@@ -127,7 +128,7 @@ Not distributed to users.
 | Component | Version | License |
 | --- | --- | --- |
 | [WXT](https://github.com/wxt-dev/wxt) | 0.21 | MIT |
-| [Vitest](https://github.com/vitest-dev/vitest) | 5.0 | MIT |
+| [Vitest](https://github.com/vitest-dev/vitest) | 5.1 | MIT |
 | [TypeScript](https://github.com/microsoft/TypeScript) | 7.0 | Apache-2.0 |
 
 ---

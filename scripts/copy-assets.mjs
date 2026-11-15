@@ -51,10 +51,14 @@ const assets = [
   // to run a PDF's own JavaScript, and this extension neither ships the
   // sandbox nor enables scripting. Shipping it would be dead weight, and a
   // third-party component the notices would have to answer for.
+  //
+  // Nor its licence files, which PDF.js 6.5 put beside it (`LICENSE_QUICKJS`,
+  // `LICENSE_PDFJS_QUICKJS`): a licence for a component that is not in the
+  // package says something about the package that is not true.
   {
     from: join(modules, 'pdfjs-dist/wasm'),
     to: join(publicDir, 'pdfjs/wasm'),
-    skip: (name) => name.startsWith('quickjs-eval.'),
+    skip: (name) => name.startsWith('quickjs-eval.') || /^LICENSE(_PDFJS)?_QUICKJS$/.test(name),
   },
   // Apache-2.0 requires the license to travel with redistributions, and the
   // built extension is a redistribution.
