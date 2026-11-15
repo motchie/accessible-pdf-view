@@ -125,7 +125,7 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
 | | |
 | --- | --- |
 | Chrome、Edge | **147 以降**、Manifest V3 |
-| Firefox（デスクトップ） | **144 以降**、Manifest V3 |
+| Firefox（デスクトップ） | **144 以降**、Manifest V3、[Firefox アドオンで公開](https://addons.mozilla.org/firefox/addon/accessible-pdf-view/) |
 
 この下限はマニフェストで宣言され、`lib/browser/minimum-versions.ts` に一覧があり
 ます。同梱の PDF.js が存在を確認せずに呼ぶものがそれで、古いブラウザーではきれい
@@ -147,7 +147,7 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
   パネルは自分を出さず、その理由を表示します。
 - **これまでに確認に使った支援技術**（定期的にではなく、具体的な疑問が必要とした
   ときに）。使ったブラウザーと組みで書きます。
-  Windows の Firefox と **NVDA**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)、[#34](https://github.com/motchie/accessible-pdf-view/issues/34)）、
+  Windows の Firefox と **NVDA**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)、[#34](https://github.com/motchie/accessible-pdf-view/issues/34)、[#40](https://github.com/motchie/accessible-pdf-view/issues/40)）、
   macOS の Chrome と **VoiceOver**（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）、
   Firefox for Android と **TalkBack**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)）。
 - **リリースごとのスクリーンリーダー試験マトリクスはありません。** すべての変更で
@@ -174,11 +174,6 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
   Chrome 147〜154 は回避先になりません。
   #19 が閉じたのは Chrome が変わったからで、この拡張機能が変わったからではないた
   め、VoiceOver では同じ原因が今も読み上げられます。
-- **ラジオボタンの説明文が名前の一部として読み上げられます。** 構造の読み取り方の
-  選択と設定パネルで起きます
-  （[#34](https://github.com/motchie/accessible-pdf-view/issues/34)）。そのため、
-  そのラジオに到達するたびに説明文全体が繰り返されます。修正は
-  [#35](https://github.com/motchie/accessible-pdf-view/pull/35) で出ています。
 - **タグに見出しがないタグ付き PDF では、アウトラインが平らになります。** 組み合わ
   せた読み取りは、ページ上で裏づけが取れる見出しは復元しますが、レベルを創作する
   ことはできません。これはビジネス文書では例外ではなく、ごく普通の場合です。
@@ -201,7 +196,7 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
 このファイルとここに書かれた実践は、リリースごとに見直します。古くなった記述はこ
 のファイルの不具合であり、不具合として報告していただく価値があります。
 
-**最終確認: 2026-11-11、バージョン 0.2.4 に対して。**
+**最終確認: 2026-11-15、バージョン 0.3.0 に対して。**
 
 ## 改善の提案
 
