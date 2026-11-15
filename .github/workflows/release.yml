@@ -20,9 +20,10 @@
 # (`--dry-run`), which is how to find out a secret is wrong without spending a
 # version number on it.
 #
-# Chrome only, for now. Firefox is Manifest V3 and builds, but it has no AMO
-# listing yet; when it does, it needs `wxt zip -b firefox`, which also produces
-# the sources zip AMO requires, and its own credentials below.
+# Chrome only, for now. Firefox is listed on AMO, but its versions are still
+# uploaded by hand through the Developer Hub. Submitting from here needs
+# `wxt zip -b firefox`, which also produces the sources zip AMO requires, and
+# its own credentials below.
 name: Release
 
 on:

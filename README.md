@@ -78,13 +78,14 @@ Additional behaviour worth knowing:
 
 [**Accessible PDF View on the Chrome Web Store**](https://chromewebstore.google.com/detail/accessible-pdf-view/gcoebmifedejfelponipkphjndofofil)
 is the built extension for Chrome, and
-[**Accessible PDF View on Firefox Add-ons**](https://addons.mozilla.org/en-US/firefox/addon/accessible-pdf-view/)
+[**Accessible PDF View on Firefox Add-ons**](https://addons.mozilla.org/firefox/addon/accessible-pdf-view/)
 is the one for Firefox on desktop.
 
-It needs **Chrome 147 or later** (Edge 147), or **Firefox 144 or later**. That
-is what the bundled PDF.js calls without checking for it first; in an older
-browser it would not fail cleanly, so the manifest declares the floor and the
-store will not install the extension there
+It needs **Chrome 147 or later** (Edge 147), or **Firefox 144 or later on
+desktop**; Firefox for Android is not supported. The version floor is what the
+bundled PDF.js calls without checking for it first; in an older browser it
+would not fail cleanly, so the manifest declares the floor and an older browser
+is refused the install rather than given an extension that breaks
 ([#23](https://github.com/motchie/accessible-pdf-view/issues/23),
 `lib/browser/minimum-versions.ts`).
 
