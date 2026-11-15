@@ -77,8 +77,9 @@ Additional behaviour worth knowing:
 ## Installation
 
 [**Accessible PDF View on the Chrome Web Store**](https://chromewebstore.google.com/detail/accessible-pdf-view/gcoebmifedejfelponipkphjndofofil)
-is the built extension for Chrome. Firefox is not listed yet — its build is
-below, and a listing on the add-on site is still to come.
+is the built extension for Chrome, and
+[**Accessible PDF View on Firefox Add-ons**](https://addons.mozilla.org/en-US/firefox/addon/accessible-pdf-view/)
+is the one for Firefox on desktop.
 
 It needs **Chrome 147 or later** (Edge 147), or **Firefox 144 or later**. That
 is what the bundled PDF.js calls without checking for it first; in an older
