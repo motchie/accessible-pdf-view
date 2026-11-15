@@ -186,11 +186,23 @@ describe('THIRD_PARTY_NOTICES.md', () => {
       expect(['pdf.worker.min.mjs', 'LICENSE'], `pdfjs/${entry.name} is copied but not accounted for`).toContain(entry.name);
     }
 
-    // As an asset (`wasm/x`) or as a licence file (`pdfjs/wasm/x`). QuickJS,
-    // for one, is in the package and must not be here: it runs a PDF's own
-    // JavaScript in PDF.js's sandbox, which this extension does not ship.
+    // As an asset (`wasm/x`) or as a licence file (`pdfjs/wasm/x`).
     for (const name of readdirSync(resolve(pdfjs, 'wasm'))) {
       expect(table, `wasm/${name} is copied but not listed`).toContain(`wasm/${name}\``);
     }
+  });
+
+  /**
+   * QuickJS is in the package and must not be in the build: it runs a PDF's
+   * own JavaScript in PDF.js's sandbox, which this extension does not ship. Not
+   * left to the check above, which a row added to the notices would satisfy —
+   * listing it would not make shipping it right.
+   */
+  it('copies nothing of QuickJS', () => {
+    const wasm = resolve(root, 'public/pdfjs/wasm');
+    expect(existsSync(wasm), 'run copy-assets (npm install does)').toBe(true);
+    // The package does have it, so a pass here means it was left out.
+    expect(readdirSync(resolve(root, 'node_modules/pdfjs-dist/wasm')).some((name) => /quickjs/i.test(name))).toBe(true);
+    expect(readdirSync(wasm).filter((name) => /quickjs/i.test(name))).toEqual([]);
   });
 });

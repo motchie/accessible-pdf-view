@@ -52,13 +52,15 @@ const assets = [
   // sandbox nor enables scripting. Shipping it would be dead weight, and a
   // third-party component the notices would have to answer for.
   //
-  // Nor its licence files, which PDF.js 6.5 put beside it (`LICENSE_QUICKJS`,
-  // `LICENSE_PDFJS_QUICKJS`): a licence for a component that is not in the
-  // package says something about the package that is not true.
+  // Nor anything else of QuickJS's — PDF.js 6.5 put its licence files beside
+  // it (`LICENSE_QUICKJS`, `LICENSE_PDFJS_QUICKJS`), and a licence for a
+  // component that is not in the package says something about the package that
+  // is not true. One pattern, so the next file PDF.js adds for it is left out
+  // too; tests/third-party-notices.test.ts checks that none got through.
   {
     from: join(modules, 'pdfjs-dist/wasm'),
     to: join(publicDir, 'pdfjs/wasm'),
-    skip: (name) => name.startsWith('quickjs-eval.') || /^LICENSE(_PDFJS)?_QUICKJS$/.test(name),
+    skip: (name) => /quickjs/i.test(name),
   },
   // Apache-2.0 requires the license to travel with redistributions, and the
   // built extension is a redistribution.
