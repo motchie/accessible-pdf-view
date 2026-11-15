@@ -136,6 +136,38 @@ describe('the structure source picker', () => {
     expect(picked).toEqual(['pdf-inspector']);
   });
 
+  /**
+   * The count follows the description as a second sentence, and the space
+   * between two sentences is the language's. English had none: the picker
+   * read "…any alternative text they wrote.6 headings."
+   */
+  it('separates the count from the description as each language does', () => {
+    const counts = { 'tagged-pdf': 6, 'pdf-inspector': 1 } as const;
+
+    mount({ headingCounts: counts });
+    const ja = [...container.querySelectorAll('.apv-picker__detail')].map((el) => el.textContent);
+    expect(ja[0]).toMatch(/含みます。見出し 6 件。$/);
+
+    act(() => {
+      root.render(
+        inLocale(
+          'en',
+          <StructureSourcePicker
+            sources={BOTH}
+            active="tagged-pdf"
+            preparing={null}
+            error={null}
+            headingCounts={counts}
+            onSelect={() => {}}
+          />,
+        ),
+      );
+    });
+    const en = [...container.querySelectorAll('.apv-picker__detail')].map((el) => el.textContent);
+    expect(en[0]).toMatch(/they wrote\. 6 headings\.$/);
+    expect(en[1]).toMatch(/into the body\. 1 heading\.$/);
+  });
+
   it('follows the active reading rather than its own state', () => {
     mount({ active: 'pdf-inspector' });
     expect(radios().map((radio) => radio.checked)).toEqual([false, true]);

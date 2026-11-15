@@ -129,7 +129,11 @@ export const en = {
         detail: 'The text alone, from pages whose structure could not be read.',
       },
     },
-    headingCount: (count: number) => `${count} ${count === 1 ? 'heading' : 'headings'}.`,
+    // The reading's description, then how many headings it gives. Joined here
+    // rather than by the caller, because the space between two sentences is
+    // the language's: English has one, Japanese does not.
+    withHeadingCount: (detail: string, count: number): string =>
+      `${detail} ${count} ${count === 1 ? 'heading' : 'headings'}.`,
     reloading: (label: string) => `Re-reading as “${label}”.`,
     reloadFailed: (detail: string) => `Could not re-read. ${detail}`,
     staysWithReading:

@@ -102,7 +102,7 @@ export const ja: Messages = {
         detail: '構造を読み取れなかったページから、文字だけを取り出したもの。',
       },
     },
-    headingCount: (count: number) => `見出し ${count} 件。`,
+    withHeadingCount: (detail: string, count: number): string => `${detail}見出し ${count} 件。`,
     reloading: (label: string) => `${label}で読み直しています。`,
     reloadFailed: (detail: string) => `読み直せませんでした。${detail}`,
     staysWithReading:
