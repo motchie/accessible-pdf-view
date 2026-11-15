@@ -26,7 +26,9 @@ export default function App(): JSX.Element {
 
   return (
     <MessagesProvider locale={locale}>
-      <main className="apv-sidepanel" aria-busy={!loaded}>
+      {/* A new element, created with the language, whenever it changes —
+          Firefox keeps the one an element was created with (#40). */}
+      <main key={locale} lang={locale} className="apv-sidepanel" aria-busy={!loaded}>
         <SettingsPanel settings={settings} onChange={update} onReset={reset} />
       </main>
     </MessagesProvider>
