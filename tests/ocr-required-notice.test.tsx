@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it } from 'vitest';
+import type { PdfCapabilities } from '../lib/pdf/document-model';
 import { OcrRequiredNotice } from '../lib/reader/components/Notices';
 import { inLocale } from './helpers/messages';
 
@@ -13,6 +14,16 @@ declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Every field, so a new one the notice reads has to be given a value here.
+const CAPABILITIES: PdfCapabilities = {
+  hasExtractableText: true,
+  requiresOcr: true,
+  ocrPages: [3],
+  isScanned: false,
+  isImageBased: false,
+  isMixed: true,
+};
 
 let container: HTMLDivElement;
 let root: Root;
@@ -34,7 +45,7 @@ function render(locale: 'en' | 'ja'): string {
       inLocale(
         locale,
         <OcrRequiredNotice
-          capabilities={{ requiresOcr: true, ocrPages: [3] } as never}
+          capabilities={CAPABILITIES}
           viewingOriginal={false}
         />,
       ),
