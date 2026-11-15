@@ -1,4 +1,5 @@
-# Builds, tests and submits the extension to the Chrome Web Store.
+# Builds, tests and submits the extension to the Chrome Web Store and to
+# Firefox Add-ons (AMO).
 #
 # A release is a tag. The version lives in package.json, which is where WXT
 # reads the manifest's `version` from, so the tag is made from it rather than
@@ -16,14 +17,14 @@
 # name a release that is not the one that shipped.
 #
 # Running it by hand (Actions → Release → Run workflow) never submits. It builds
-# and tests the current ref and asks the store to check the credentials
+# and tests the current ref and asks each store to check the credentials
 # (`--dry-run`), which is how to find out a secret is wrong without spending a
 # version number on it.
 #
-# Chrome only, for now. Firefox is listed on AMO, but its versions are still
-# uploaded by hand through the Developer Hub. Submitting from here needs
-# `wxt zip -b firefox`, which also produces the sources zip AMO requires, and
-# its own credentials below.
+# The two stores are separate jobs with separate environments, so neither can
+# read the other's credentials, and one failing does not stop the other. The
+# GitHub release waits for both: a tag is a release only once it has gone to
+# both stores.
 name: Release
 
 on:
@@ -68,6 +69,9 @@ jobs:
       - run: npm run compile
       - run: npm test
       - run: npm run zip
+      # Firefox's zip, and the sources zip AMO requires because the extension
+      # is bundled: the reviewers rebuild it from that.
+      - run: npx wxt zip -b firefox
 
       # `include-hidden-files` because WXT writes to `.output`, and a path
       # component beginning with a dot is hidden: without this the action
@@ -77,6 +81,15 @@ jobs:
         with:
           name: chrome-zip
           path: .output/*-chrome.zip
+          include-hidden-files: true
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: firefox-zip
+          path: |
+            .output/*-firefox.zip
+            .output/*-sources.zip
           include-hidden-files: true
           if-no-files-found: error
 
@@ -121,8 +134,50 @@ jobs:
           # a cancelled review is a version the store was about to publish.
           CHROME_CANCEL_PENDING: false
 
+  submit-firefox:
+    needs: build
+    runs-on: ubuntu-latest
+    # Its own environment, as for Chrome: only this job can read the AMO
+    # credentials.
+    environment: firefox-add-ons
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+
+      # Only for the `wxt` binary; nothing is built here.
+      - run: npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: firefox-zip
+          path: dist
+
+      # The metadata file carries the notes to AMO's reviewers — how to build
+      # the extension from the sources zip, and what the vendored WebAssembly
+      # is — onto every version, not only the first one, which was submitted
+      # by hand with the same notes.
+      - name: Submit to Firefox Add-ons
+        run: |
+          zip="$(ls dist/*-firefox.zip)"
+          sources="$(ls dist/*-sources.zip)"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            npx wxt submit --firefox-zip "$zip" --firefox-sources-zip "$sources"
+          else
+            npx wxt submit --firefox-zip "$zip" --firefox-sources-zip "$sources" --dry-run
+          fi
+        env:
+          FIREFOX_EXTENSION_ID: accessible-pdf-view@accessiblepdfview.org
+          FIREFOX_CHANNEL: listed
+          FIREFOX_AMO_METADATA_FILE: .github/amo-metadata.json
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+
   release:
-    needs: [build, submit]
+    needs: [build, submit, submit-firefox]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
@@ -139,7 +194,12 @@ jobs:
           name: chrome-zip
           path: dist
 
-      # The same zip the store was given, so what is attached here is what is
+      - uses: actions/download-artifact@v8
+        with:
+          name: firefox-zip
+          path: dist
+
+      # The same zips the stores were given, so what is attached here is what is
       # under review — not a rebuild of it.
       #
       # The notes are `releases/<tag>.md`, written and reviewed with the change
@@ -149,10 +209,10 @@ jobs:
         run: |
           notes="releases/$GITHUB_REF_NAME.md"
           if [ -f "$notes" ]; then
-            gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes-file "$notes"
+            gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip dist/*-firefox.zip dist/*-sources.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes-file "$notes"
           else
             echo "::warning::No $notes; the release notes are GitHub's generated list."
-            gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+            gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip dist/*-firefox.zip dist/*-sources.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
           fi
         env:
           GH_TOKEN: ${{ github.token }}
