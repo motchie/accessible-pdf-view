@@ -150,6 +150,14 @@ describe('joinSentences', () => {
       m.markdown.sameAsReaderDetail('PDF の構造タグ'),
       m.markdown.sameAsReaderDetailPlain,
       m.markdown.generatedAreMarked,
+      m.describePanel.languageIs('日本語'),
+      m.describePanel.languageFromDocument('ja-JP'),
+      m.describePanel.languageUnsupported('ko'),
+      m.describePanel.languageFromSetting,
+      m.describePanel.languageFromBrowser,
+      m.describePanel.languageFallback,
+      m.ocrPanel.unavailableWhy,
+      m.notices.ocrRequired.originalHint,
     ];
     for (const sentence of joined) expect(sentence, sentence).toMatch(ends);
   });
