@@ -417,6 +417,10 @@ neither is one whose text cannot be in the declared language — Japanese text
 declared English, or Han characters declared Chinese inside Japanese. The
 inferred reading has no way to see any of this.
 
+The Reader's own words inside the document — a page label, a link's "opens in
+a new tab", a figure's notice — are marked with the interface's language where
+it differs from the text around them.
+
 None of this is sent anywhere. It is read from the bytes already in the tab.
 
 ## The Markdown view has two sources

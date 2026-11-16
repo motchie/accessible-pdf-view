@@ -7,6 +7,7 @@ import type {
   InlineNode,
   TableRow as ModelTableRow,
 } from '../pdf/document-model';
+import { sameLanguage } from '../pdf/declared-language';
 import { dropRepeatedTitle } from '../pdf/repeated-title';
 
 /**
@@ -56,7 +57,9 @@ export function DocumentView({
     <>
       {pages.map((page, pageIndex) => (
         <div className="apv-page" key={page.pageNumber} data-page={page.pageNumber}>
-          {showPageBreaks && pageIndex > 0 ? <PageBreak pageNumber={page.pageNumber} /> : null}
+          {showPageBreaks && pageIndex > 0 ? (
+            <PageBreak pageNumber={page.pageNumber} language={language} />
+          ) : null}
           {page.nodes.map((node, index) => (
             <BlockNode key={index} node={node} headingOffset={headingOffset} language={language} />
           ))}
@@ -72,25 +75,47 @@ export function DocumentView({
  * furniture, and putting them in the heading outline would bury the document's
  * real structure under one entry per page.
  */
-function PageBreak({ pageNumber }: { pageNumber: number }): JSX.Element {
+function PageBreak({
+  pageNumber,
+  language,
+}: {
+  pageNumber: number;
+  language: string | undefined;
+}): JSX.Element {
   const m = useMessages();
   return (
     <p className="apv-page-break">
-      <span className="apv-page-break__label">{m.figures.pageLabel(pageNumber)}</span>
+      <span className="apv-page-break__label" {...interfaceLang(m, language)}>
+        {m.figures.pageLabel(pageNumber)}
+      </span>
     </p>
   );
 }
 
 /**
- * The `lang` attribute for text declared in `declared`, inside an element
- * whose language is `enclosing`: present only where the two differ, so the
- * attribute marks a change of language rather than repeating the one in force.
+ * The `lang` attribute for text in `declared`, inside an element whose
+ * language is `enclosing`: present only where the two differ, so the attribute
+ * marks a change of language rather than repeating the one in force.
+ *
+ * Also used for the interface's own words inside the document — a page
+ * label, a link's "opens in a new tab", a figure notice. They are in the
+ * interface's language wherever they sit, and inside a paragraph marked
+ * English, a Japanese notice would otherwise be read in an English voice.
  */
 function langFor(
   declared: string | undefined,
   enclosing: string | undefined,
 ): { lang?: string } {
-  return declared && declared !== enclosing ? { lang: declared } : {};
+  return declared && !sameLanguage(declared, enclosing) ? { lang: declared } : {};
+}
+
+/**
+ * The `lang` for the interface's own words inside the document. An article
+ * with no language of its own inherits the page's, which is the interface's,
+ * so there is nothing to mark there.
+ */
+function interfaceLang(m: Messages, language: string | undefined): { lang?: string } {
+  return langFor(m.app.locale, language ?? m.app.locale);
 }
 
 function BlockNode({
@@ -212,7 +237,7 @@ function BlockNode({
       return <hr />;
 
     case 'figure':
-      return <Figure node={node} />;
+      return <Figure node={node} language={language} />;
   }
 }
 
@@ -263,8 +288,10 @@ function Row({
 
 function Figure({
   node,
+  language,
 }: {
   node: Extract<DocumentNode, { type: 'figure' }>;
+  language: string | undefined;
 }): JSX.Element {
   const m = useMessages();
   const source = node.source;
@@ -297,7 +324,16 @@ function Figure({
         />
       ) : null}
       {showsNotice ? (
-        <p className="apv-figure__placeholder">{figurePlaceholderText(m, node)}</p>
+        <p
+          className="apv-figure__placeholder"
+          // Without alternative text the notice is the interface's words
+          // alone. With it, the notice wraps the document's or a model's text
+          // in a sentence of the interface's, and no one `lang` fits both, so
+          // it is left to the language around it.
+          {...(node.alternativeText ? {} : interfaceLang(m, language))}
+        >
+          {figurePlaceholderText(m, node)}
+        </p>
       ) : null}
       {node.caption ? <figcaption>{node.caption}</figcaption> : null}
     </figure>
@@ -419,7 +455,9 @@ function InlineNodeView({
           <Inline nodes={node.content} language={language} />
           {/* Links leave the Reader, so say so. Announcing it only in the
               accessible name keeps the visual layout unchanged. */}
-          <span className="apv-visually-hidden">{m.app.openInNewTab}</span>
+          <span className="apv-visually-hidden" {...interfaceLang(m, language)}>
+            {m.app.openInNewTab}
+          </span>
         </a>
       );
   }
