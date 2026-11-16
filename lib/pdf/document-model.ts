@@ -191,6 +191,25 @@ export interface DocumentPage {
  * Block-level nodes
  * ---------------------------------------------------------------------- */
 
+/**
+ * The language of a piece of text, when the PDF declared one for it.
+ *
+ * A Tagged PDF can declare a language on any structure element (`/Lang`), and
+ * the element's value wins over the catalog's for everything inside it. Word
+ * relies on that: it declares the catalog's language from the editing
+ * settings and puts each run's own language on its `Span`. An English
+ * document exported from a Japanese Word says `ja` for the whole file and `en`
+ * on every run, and reading it with the catalog's value alone gives a screen
+ * reader the wrong voice for every word (GitHub issue #49).
+ *
+ * A BCP-47 tag. Absent means the text is in whatever language encloses it:
+ * the block's, then the document's (`DocumentMetadata.language`). Only the
+ * tagged reading sets it; layout inference has no way to see a language.
+ */
+export interface DeclaredLanguage {
+  language?: string;
+}
+
 export type DocumentNode =
   | HeadingNode
   | ParagraphNode
@@ -204,13 +223,13 @@ export type DocumentNode =
 
 /** Heading levels are clamped to 2..6 by the renderer, which owns `<h1>` for
  * the document title, so that the rendered heading hierarchy stays logical. */
-export interface HeadingNode extends NodeProvenance {
+export interface HeadingNode extends NodeProvenance, DeclaredLanguage {
   type: 'heading';
   level: 1 | 2 | 3 | 4 | 5 | 6;
   content: InlineNode[];
 }
 
-export interface ParagraphNode extends NodeProvenance {
+export interface ParagraphNode extends NodeProvenance, DeclaredLanguage {
   type: 'paragraph';
   content: InlineNode[];
 }
@@ -240,7 +259,7 @@ export interface TableRow {
   cells: TableCell[];
 }
 
-export interface TableCell {
+export interface TableCell extends DeclaredLanguage {
   header: boolean;
   content: InlineNode[];
   /**
@@ -398,7 +417,7 @@ export interface ThematicBreakNode extends NodeProvenance {
 
 /** Content we could not classify. Rendered as a paragraph rather than dropped,
  * so no text is ever silently lost. */
-export interface UnknownNode extends NodeProvenance {
+export interface UnknownNode extends NodeProvenance, DeclaredLanguage {
   type: 'unknown';
   content: InlineNode[];
 }
@@ -416,7 +435,7 @@ export interface UnknownNode extends NodeProvenance {
  */
 export type InlineNode = TextNode | LinkNode | LineBreakNode;
 
-export interface TextNode {
+export interface TextNode extends DeclaredLanguage {
   type: 'text';
   text: string;
   /** Native emphasis only — `<strong>`, `<em>`, `<code>`. */

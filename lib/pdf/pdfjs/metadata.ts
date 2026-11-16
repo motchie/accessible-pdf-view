@@ -143,7 +143,7 @@ function boolean(value: unknown): boolean | undefined {
  * `/Lang` is a BCP-47 tag, but producers are inconsistent about case and some
  * write a locale with an underscore.
  */
-function normalizeLanguage(value: string | undefined): string | undefined {
+export function normalizeLanguage(value: string | undefined): string | undefined {
   if (!value) return undefined;
   const tag = value.replace(/_/g, '-').trim();
   if (!/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(tag)) return undefined;

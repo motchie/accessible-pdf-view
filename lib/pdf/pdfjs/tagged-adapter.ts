@@ -5,6 +5,7 @@ import type {
   DocumentPage,
   InlineNode,
   ListItem,
+  TextNode,
   TableCell,
   TableRow,
 } from '../document-model';
@@ -19,7 +20,7 @@ import {
   type BoundingBox,
   type PageTextIndex,
 } from './page-text-index';
-import type { PdfDocumentInfo } from './metadata';
+import { normalizeLanguage, type PdfDocumentInfo } from './metadata';
 
 /**
  * Tagged PDF structure -> Document Model.
@@ -87,7 +88,11 @@ export async function extractTaggedDocument(
 
     const index = await buildPageTextIndex(page);
     pageTextLength += index.textLength;
-    const context: Context = { index, roles };
+    const context: Context = {
+      index,
+      roles,
+      ...(options.info?.language ? { documentLanguage: options.info.language } : {}),
+    };
     const nodes = blocksFrom(tree, context);
 
     pages.push({
@@ -225,13 +230,35 @@ const HEADING_ROLE = /^H([1-6])$/;
 interface Context {
   index: PageTextIndex;
   roles: Record<string, number>;
+  /**
+   * The language the structure tree declares for the element being read: its
+   * own `/Lang`, else its nearest ancestor's. Undefined when no element above
+   * it declares one, so the catalog's language applies.
+   */
+  language?: string;
+  /** The catalog's `/Lang`: the language of anything nothing else declares. */
+  documentLanguage?: string;
+}
+
+/**
+ * The context for reading `node`: the same, with the language `node` declares
+ * if it declares one.
+ *
+ * A structure element's `/Lang` covers everything inside it, so it is carried
+ * down rather than looked up. A value that is not a language tag is ignored,
+ * as the catalog's is, and the enclosing language stays in force.
+ */
+function enter(node: StructNode, context: Context): Context {
+  const language = normalizeLanguage(node.lang);
+  return language && language !== context.language ? { ...context, language } : context;
 }
 
 /* -------------------------------------------------------------------------
  * Block conversion
  * ---------------------------------------------------------------------- */
 
-function blocksFrom(node: StructNode, context: Context): DocumentNode[] {
+function blocksFrom(node: StructNode, outer: Context): DocumentNode[] {
+  const context = enter(node, outer);
   const role = node.role;
   if (role) context.roles[role] = (context.roles[role] ?? 0) + 1;
 
@@ -241,28 +268,28 @@ function blocksFrom(node: StructNode, context: Context): DocumentNode[] {
 
   const headingMatch = HEADING_ROLE.exec(role);
   if (headingMatch) {
-    const content = inlineFrom(node, context);
-    if (content.length === 0) return [];
-    return [{ type: 'heading', level: Number(headingMatch[1]) as 1 | 2 | 3 | 4 | 5 | 6, content }];
+    const text = textBlockFrom(node, context);
+    if (!text) return [];
+    return [{ type: 'heading', level: Number(headingMatch[1]) as 1 | 2 | 3 | 4 | 5 | 6, ...text }];
   }
 
   switch (role) {
     case 'Title': {
-      const content = inlineFrom(node, context);
-      return content.length === 0 ? [] : [{ type: 'heading', level: 1, content }];
+      const text = textBlockFrom(node, context);
+      return text ? [{ type: 'heading', level: 1, ...text }] : [];
     }
 
     // An untyped `H` has no level of its own; the renderer places it below the
     // page title, which is the most that can be claimed truthfully.
     case 'H': {
-      const content = inlineFrom(node, context);
-      return content.length === 0 ? [] : [{ type: 'heading', level: 1, content }];
+      const text = textBlockFrom(node, context);
+      return text ? [{ type: 'heading', level: 1, ...text }] : [];
     }
 
     case 'P':
     case 'Caption': {
-      const content = inlineFrom(node, context);
-      return content.length === 0 ? [] : [{ type: 'paragraph', content }];
+      const text = textBlockFrom(node, context);
+      return text ? [{ type: 'paragraph', ...text }] : [];
     }
 
     case 'L':
@@ -282,8 +309,8 @@ function blocksFrom(node: StructNode, context: Context): DocumentNode[] {
     case 'Formula': {
       // Rendered as text rather than dropped. A formula's tagged text is
       // whatever the author supplied, which is better than silence.
-      const content = inlineFrom(node, context);
-      return content.length === 0 ? [] : [{ type: 'paragraph', content }];
+      const text = textBlockFrom(node, context);
+      return text ? [{ type: 'paragraph', ...text }] : [];
     }
 
     case 'TOC':
@@ -295,11 +322,11 @@ function blocksFrom(node: StructNode, context: Context): DocumentNode[] {
     default: {
       // An inline element appearing where a block was expected still has text.
       if (INLINE_ROLES.has(role)) {
-        const content = inlineFrom(node, context);
-        return content.length === 0 ? [] : [{ type: 'paragraph', content }];
+        const text = textBlockFrom(node, context);
+        return text ? [{ type: 'paragraph', ...text }] : [];
       }
-      const content = inlineFrom(node, context);
-      return content.length === 0 ? [] : [{ type: 'unknown', content }];
+      const text = textBlockFrom(node, context);
+      return text ? [{ type: 'unknown', ...text }] : [];
     }
   }
 }
@@ -316,8 +343,8 @@ function blocksFromContainer(node: StructNode, context: Context): DocumentNode[]
   let loose: InlineNode[] = [];
 
   const flush = () => {
-    const content = merge(loose);
-    if (content.length > 0) out.push({ type: 'paragraph', content });
+    const text = settleLanguage(merge(loose), context);
+    if (text) out.push({ type: 'paragraph', ...text });
     loose = [];
   };
 
@@ -353,18 +380,19 @@ function listFrom(node: StructNode, context: Context): DocumentNode {
 
     const blocks: DocumentNode[] = [];
     let label: ListLabel | null = null;
+    const itemContext = enter(child, context);
 
     for (const part of childElements(child)) {
       if (part.role === 'Lbl') {
         // The label is the bullet or number. `<ol>`/`<ul>` render their own, so
         // repeating it would double it up — but it tells us which list type to
         // use, and where an ordered list starts counting.
-        label = parseListLabel(textOf(part, context));
+        label = parseListLabel(textOf(part, itemContext));
         if (label.ordered) ordered = true;
         if (label.number !== undefined && items.length === 0) start = label.number;
         continue;
       }
-      blocks.push(...blocksFrom(part, context));
+      blocks.push(...blocksFrom(part, itemContext));
     }
 
     if (label?.ordered) stripLeadingDelimiter(blocks);
@@ -429,15 +457,16 @@ function tableFrom(node: StructNode, context: Context): DocumentNode {
   const bodyRows: TableRow[] = [];
   let caption: string | undefined;
 
-  const visit = (candidate: StructNode, inHead: boolean) => {
+  const visit = (candidate: StructNode, inHead: boolean, at: Context) => {
     for (const child of childElements(candidate)) {
-      if (child.role === 'THead') visit(child, true);
-      else if (child.role === 'TBody' || child.role === 'TFoot') visit(child, false);
-      else if (child.role === 'TR') (inHead ? headerRows : bodyRows).push(rowFrom(child, context));
-      else if (child.role === 'Caption') caption ??= textOf(child, context) || undefined;
+      const inner = enter(child, at);
+      if (child.role === 'THead') visit(child, true, inner);
+      else if (child.role === 'TBody' || child.role === 'TFoot') visit(child, false, inner);
+      else if (child.role === 'TR') (inHead ? headerRows : bodyRows).push(rowFrom(child, inner));
+      else if (child.role === 'Caption') caption ??= textOf(child, inner) || undefined;
     }
   };
-  visit(node, false);
+  visit(node, false, context);
 
   // Without an explicit THead, an all-header first row is still a header row.
   if (headerRows.length === 0 && bodyRows.length > 0) {
@@ -463,10 +492,13 @@ function rowFrom(node: StructNode, context: Context): TableRow {
   for (const child of childElements(node)) {
     if (child.role !== 'TH' && child.role !== 'TD') continue;
 
-    const blocks = collectCellBlocks(child, context);
+    const cellContext = enter(child, context);
+    const blocks = collectCellBlocks(child, cellContext);
+    const text = settleLanguage(inlineFrom(child, cellContext), cellContext);
     cells.push({
       header: child.role === 'TH',
-      content: inlineFrom(child, context),
+      content: text?.content ?? [],
+      ...(text?.language ? { language: text.language } : {}),
       ...(blocks.length > 0 ? { blocks } : {}),
     });
   }
@@ -487,16 +519,16 @@ const CELL_BLOCK_ROLES = new Set(['Figure', 'Table', 'L']);
 function collectCellBlocks(cell: StructNode, context: Context): DocumentNode[] {
   const blocks: DocumentNode[] = [];
 
-  const walk = (node: StructNode) => {
+  const walk = (node: StructNode, at: Context) => {
     for (const child of childElements(node)) {
       if (child.role && CELL_BLOCK_ROLES.has(child.role)) {
-        blocks.push(...blocksFrom(child, context));
+        blocks.push(...blocksFrom(child, at));
         continue;
       }
-      walk(child);
+      walk(child, enter(child, at));
     }
   };
-  walk(cell);
+  walk(cell, context);
 
   return blocks;
 }
@@ -560,6 +592,135 @@ function collectContentIds(node: StructNode): string[] {
  * Inline conversion
  * ---------------------------------------------------------------------- */
 
+/**
+ * A text block's content and language, or null when it has no text.
+ *
+ * `context` is the block element's own, so its language is the one the
+ * element declares or inherits.
+ */
+function textBlockFrom(
+  node: StructNode,
+  context: Context,
+): { content: InlineNode[]; language?: string } | null {
+  return settleLanguage(inlineFrom(node, context), context);
+}
+
+/**
+ * Decides which language a block of text is in, and which of its runs differ.
+ *
+ * Word declares languages on runs, not on paragraphs: a `P` with no `/Lang`
+ * holding `Span`s that each say `en`. Taken literally, every paragraph would
+ * be in the catalog's language with all of its text overridden run by run. So
+ * when every run with text agrees, that language becomes the block's — which
+ * is what the author's settings meant, and gives one `lang` on the `<p>`
+ * rather than one per span. When the runs disagree, the block keeps the
+ * language its element declares or inherits, and only the runs that differ
+ * from it carry their own.
+ *
+ * A run with no letters — whitespace, digits, punctuation — has no language
+ * worth stating, so it never decides the question and never keeps a `lang` of
+ * its own.
+ *
+ * Returns null for a block with no content, so callers can drop it.
+ */
+function settleLanguage(
+  content: InlineNode[],
+  context: Context,
+): { content: InlineNode[]; language?: string } | null {
+  if (content.length === 0) return null;
+  const enclosing = context.language;
+  const base = enclosing ?? context.documentLanguage;
+
+  // What each run is worth saying it is in, after the corrections in
+  // `voicedLanguage`. Undefined means the run takes whatever surrounds it and
+  // has no say in what that is.
+  const voiced = (node: TextNode): string | undefined =>
+    voicedLanguage(node.text, node.language, base);
+
+  const declared = new Set<string | undefined>();
+  const collect = (nodes: InlineNode[]) => {
+    for (const node of nodes) {
+      if (node.type === 'text' && LETTER.test(node.text)) declared.add(voiced(node));
+      else if (node.type === 'link') collect(node.content);
+    }
+  };
+  collect(content);
+
+  const language = declared.size === 1 ? ([...declared][0] ?? enclosing) : enclosing;
+  const strip = (nodes: InlineNode[]): InlineNode[] =>
+    merge(
+      nodes.map((node): InlineNode => {
+        if (node.type === 'link') return { ...node, content: strip(node.content) };
+        if (node.type !== 'text' || node.language === undefined) return node;
+        const own = voiced(node);
+        if (own !== undefined && own !== (language ?? context.documentLanguage)) {
+          return own === node.language ? node : { ...node, language: own };
+        }
+        const { language: _settled, ...rest } = node;
+        return rest;
+      }),
+    );
+
+  return { content: strip(content), ...(language ? { language } : {}) };
+}
+
+/** A letter of any script. Text without one has no language to speak in. */
+const LETTER = /\p{L}/u;
+const KANA = /[\p{Script=Hiragana}\p{Script=Katakana}]/u;
+const HANGUL = /\p{Script=Hangul}/u;
+/** Letters of the scripts Chinese, Japanese and Korean write in, and no others. */
+const CJK_LETTERS_ONLY =
+  /^(?:[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|\P{L})*$/u;
+const CJK = new Set(['ja', 'zh', 'ko']);
+
+/**
+ * The language a run is worth marking as, given what the PDF declares for it
+ * and the language around it (`base`). Undefined: the run takes its
+ * surroundings'.
+ *
+ * Word declares a language on every run, and in a Japanese document the
+ * declarations are not all ones an author made. Measured on this project's
+ * Japanese Word fixtures: every run of half-width digits says `en`
+ * (「2026」, 「31」, 「1,567」), and runs of plain Japanese say `zh` (「年」,
+ * 「日時点）」, 「見本商事株式会社」). Marked as declared, a screen reader
+ * that follows `lang` would read 「2026 年 5 月 31 日」 in three voices. Three
+ * corrections, each limited to what the text itself shows:
+ *
+ *   - A run with no letters — digits, punctuation, symbols — is not marked.
+ *     It is read the same in the language around it, and a change of voice for
+ *     a number is the most common way these declarations go wrong.
+ *   - Where the run and its surroundings are both declared Chinese, Japanese
+ *     or Korean, and the run's text has nothing only the declared language
+ *     writes — kana for Japanese, hangul for Korean, and for Chinese nothing at
+ *     all, since its Han characters are Japanese and Korean too — the run takes
+ *     the surrounding language. The declaration may be right, but the text
+ *     cannot show it, and Word declares it where it is not.
+ *   - A run written only in those scripts and declared any other language is
+ *     not marked: 「営業」 cannot be English. A Japanese Word document whose
+ *     default language was English declares `en` on its Japanese headings and
+ *     table cells.
+ *
+ * Runs in another script keep their declaration: 「Accessible PDF View」
+ * marked `en` in a Japanese document is the case the attribute exists for.
+ */
+function voicedLanguage(
+  text: string,
+  declared: string | undefined,
+  base: string | undefined,
+): string | undefined {
+  if (!LETTER.test(text) || !declared) return undefined;
+  const declaredPrimary = declared.split('-')[0]!;
+  if (!CJK.has(declaredPrimary) && CJK_LETTERS_ONLY.test(text)) return undefined;
+  if (!base || declared === base) return declared;
+  const basePrimary = base.split('-')[0]!;
+  if (declaredPrimary === basePrimary || !CJK.has(declaredPrimary) || !CJK.has(basePrimary)) {
+    return declared;
+  }
+  const shown =
+    (declaredPrimary === 'ja' && KANA.test(text)) || (declaredPrimary === 'ko' && HANGUL.test(text));
+  return shown ? declared : undefined;
+}
+
 function inlineFrom(node: StructNode, context: Context): InlineNode[] {
   const out: InlineNode[] = [];
   collectInline(node, context, out);
@@ -573,12 +734,14 @@ function collectInline(node: StructNode, context: Context, out: InlineNode[]): v
 }
 
 /** Appends one structure child to a run of inline content. */
-function appendInline(child: StructNode, context: Context, out: InlineNode[]): void {
+function appendInline(child: StructNode, outer: Context, out: InlineNode[]): void {
   if (child.type === 'content' && child.id) {
-    const marked = context.index.get(child.id);
-    if (marked) pushText(out, marked.text);
+    const marked = outer.index.get(child.id);
+    if (marked) pushText(out, marked.text, outer.language);
     return;
   }
+
+  const context = enter(child, outer);
 
   if (child.role === 'Link') {
     const link = linkFrom(child, context);
@@ -655,13 +818,15 @@ function textOf(node: StructNode, context: Context): string {
   return inlineToPlainText(inlineFrom(node, context)).trim();
 }
 
-function pushText(out: InlineNode[], raw: string): void {
+function pushText(out: InlineNode[], raw: string, language: string | undefined): void {
   if (raw === '') return;
   // Deliberately not normalised here. A tagged PDF puts each glyph run in its
   // own marked-content section, so this receives "2", "0", "2", "6", " 年" as
   // separate calls — there is no adjacent pair to inspect yet. Normalisation
   // happens in `merge`, once the fragments have been joined.
-  out.push({ type: 'text', text: raw });
+  // Every run records the language in force where it sits. Which of these
+  // need saying in the output is settled per block, in `settleLanguage`.
+  out.push({ type: 'text', text: raw, ...(language ? { language } : {}) });
 }
 
 function merge(nodes: InlineNode[]): InlineNode[] {
@@ -672,7 +837,8 @@ function merge(nodes: InlineNode[]): InlineNode[] {
     if (
       node.type === 'text' &&
       previous?.type === 'text' &&
-      (previous.emphasis ?? []).join('|') === (node.emphasis ?? []).join('|')
+      (previous.emphasis ?? []).join('|') === (node.emphasis ?? []).join('|') &&
+      previous.language === node.language
     ) {
       previous.text += node.text;
       continue;

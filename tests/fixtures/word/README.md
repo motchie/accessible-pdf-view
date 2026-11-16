@@ -20,6 +20,14 @@ suites use, they can be published.
   drawn from 4pt dots, rules marked Decorative and not, and a 30pt icon and a
   chart for contrast. Made the same way as `word-basic`, exported by the same
   Word. Word places each inline icon after its paragraph in the tag tree.
+- `word-columns.docx`, `.pdf` and `.outline` — reading order across columns,
+  and the language of structure elements (#48, #49). An English document: a
+  single-column introduction, two columns, a ruled table across both, two
+  columns again and a closing paragraph, each paragraph and cell numbered
+  [1]–[26] in reading order. Written by a script with python-docx, then saved
+  by Word for Microsoft 365 on Windows and exported with tags on; the exact
+  version was not recorded. The PDF's catalog says `/Lang (ja)`, from the
+  exporting Word's editing settings, while every run's `Span` says `en`.
 - `known-gaps.ts` — where the reading is known to fall short of an outline,
   and whether the cause is in the PDF (`producer`) or in the Reader
   (`reader`). The outline keeps the ideal; a gap says what is exposed instead.

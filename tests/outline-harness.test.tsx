@@ -256,6 +256,22 @@ describe('the title heading (#42)', () => {
   }, 60_000);
 });
 
+describe('word-columns.pdf', () => {
+  /**
+   * An English document whose catalog says ja and whose runs each say en
+   * (#49). The headings, paragraphs and cells are marked en; the article keeps
+   * the catalog's ja. The order across the columns and the table is the
+   * author's, from the tags.
+   */
+  it('matches its hand-written outline (#49)', async () => {
+    const pdf = resolve(import.meta.dirname, 'fixtures/word/word-columns.pdf');
+    const outlinePath = resolve(import.meta.dirname, 'fixtures/word/word-columns.outline');
+    const { outline, reading } = await readerOutline(new Uint8Array(await readFile(pdf)));
+    expect(reading.structureSource).toBe('tagged-pdf');
+    expectOutline(outline, await readFile(outlinePath, 'utf8'));
+  }, 60_000);
+});
+
 describe('word-small-figures.pdf', () => {
   it('matches its hand-written outline (#15)', async () => {
     const pdf = resolve(import.meta.dirname, 'fixtures/word/word-small-figures.pdf');
