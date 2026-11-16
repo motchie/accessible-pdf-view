@@ -10,6 +10,7 @@ import { combineReadings } from '../pdf/combined-reading';
 import { documentWithoutControlCharacters } from '../pdf/control-characters';
 import { promoteMergedHeadings } from '../pdf/inspector/heading-promotion';
 import { attachFigureRegions } from '../pdf/pdfjs/figure-regions';
+import { settleDeclaredLanguages } from '../pdf/declared-language';
 import { detectLanguage, detectScriptLanguage } from '../pdf/pdfjs/language';
 import { readPdfDocumentInfo } from '../pdf/pdfjs/metadata';
 import { materializeFigureImages } from '../pdf/pdfjs/region-raster';
@@ -195,10 +196,13 @@ export interface DocumentFacts {
  * the same.
  */
 export function decorate(document: AccessibleDocument, facts: DocumentFacts): AccessibleDocument {
+  // Which declared languages are worth marking depends on the document's own,
+  // so it is decided here, where that is known — detection included (#49).
+  const settled = settleDeclaredLanguages(document, facts.language ?? document.metadata.language);
   return documentWithoutControlCharacters({
-    ...document,
+    ...settled,
     metadata: {
-      ...document.metadata,
+      ...settled.metadata,
       // The document's own title and language beat anything inferred.
       title: facts.info.title ?? document.metadata.title,
       ...(facts.language ? { language: facts.language } : {}),
@@ -206,8 +210,8 @@ export function decorate(document: AccessibleDocument, facts: DocumentFacts): Ac
     },
     pages:
       facts.kinds.size === 0
-        ? document.pages
-        : document.pages.map((page) => {
+        ? settled.pages
+        : settled.pages.map((page) => {
             const kind = facts.kinds.get(page.pageNumber);
             return kind ? { ...page, contentKind: kind } : page;
           }),

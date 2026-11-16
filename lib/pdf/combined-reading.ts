@@ -131,12 +131,9 @@ export function overlayHeadings(
     const target = nodes[index];
     if (!target || !isTextBlock(target) || replacements.has(index)) continue;
 
-    // The words, and the language the author declared for them, are the
-    // tagged node's; only the claim that they head a section is inferred.
-    const language = target.language ? { language: target.language } : {};
     if (!hit.endsMidLine) {
       replacements.set(index, [
-        { type: 'heading', level: heading.level, content: target.content, origin: 'pdf-inspector', ...language },
+        { type: 'heading', level: heading.level, content: target.content, origin: 'pdf-inspector' },
       ]);
       continue;
     }
@@ -144,8 +141,8 @@ export function overlayHeadings(
     const split = splitInline(target.content, aligner.offsetInLine(index, hit.endInLine));
     if (!split) continue;
     replacements.set(index, [
-      { type: 'heading', level: heading.level, content: split.head, origin: 'pdf-inspector', ...language },
-      { type: 'paragraph', content: split.tail, ...language },
+      { type: 'heading', level: heading.level, content: split.head, origin: 'pdf-inspector' },
+      { type: 'paragraph', content: split.tail },
     ]);
   }
 

@@ -1,7 +1,7 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { overlayHeadings } from '../lib/pdf/combined-reading';
+import { settleDeclaredLanguages } from '../lib/pdf/declared-language';
 import type { AccessibleDocument, DocumentNode } from '../lib/pdf/document-model';
 import type { PdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
 import { extractTaggedDocument } from '../lib/pdf/pdfjs/tagged-adapter';
@@ -33,8 +33,20 @@ const el = (role: string, ...kids: Kid[]): El => ({ role, kids });
 const inLang = (lang: string, element: El): El => ({ ...element, lang });
 const span = (lang: string, text: string): El => inLang(lang, el('Span', text));
 
-/** A one-page document with this tree, read by the tagged adapter. */
+/**
+ * A one-page document with this tree, read by the tagged adapter and settled
+ * as `decorate` settles it: against the catalog's language, or `detected` when
+ * the catalog has none.
+ */
 async function read(catalogLanguage: string | undefined, ...kids: El[]): Promise<AccessibleDocument> {
+  return readDetected(catalogLanguage, catalogLanguage, ...kids);
+}
+
+async function readDetected(
+  catalogLanguage: string | undefined,
+  detected: string | undefined,
+  ...kids: El[]
+): Promise<AccessibleDocument> {
   const items: unknown[] = [];
   let next = 0;
   const toNode = (kid: Kid): unknown => {
@@ -69,7 +81,12 @@ async function read(catalogLanguage: string | undefined, ...kids: El[]): Promise
   } as PdfDocumentInfo;
 
   const extraction = await extractTaggedDocument(pdf, { info });
-  return extraction!.document;
+  const document = extraction!.document;
+  const settled = settleDeclaredLanguages(document, detected);
+  return {
+    ...settled,
+    metadata: { ...settled.metadata, ...(detected ? { language: detected } : {}) },
+  };
 }
 
 function nodes(document: AccessibleDocument): DocumentNode[] {
@@ -144,8 +161,18 @@ describe('a language declared on structure elements (#49)', () => {
   it('says nothing where the element declares the language already in force', async () => {
     const document = await read('en', el('P', span('en', 'Plain English.')));
 
-    expect(nodes(document)[0]).toMatchObject({ language: 'en' });
+    expect(nodes(document)[0]).not.toHaveProperty('language');
     expect(html(document)).toBe('<p>Plain English.</p>');
+  });
+
+  it('treats a regional tag as the same language as its base', async () => {
+    const document = await read(
+      'en-US',
+      el('P', span('en-US', 'One run'), span('en', ' and another.')),
+      el('P', span('en-GB', 'Colour.')),
+    );
+
+    expect(html(document)).toBe('<p>One run and another.</p><p lang="en-GB">Colour.</p>');
   });
 
   it('lets a whitespace run neither split a block nor carry a language', async () => {
@@ -205,6 +232,26 @@ describe('declarations a Japanese Word document makes but the text cannot show',
     expect(markup).toContain('<td>営業</td>');
   });
 
+  it('does not mark Japanese text whose block element declares English', async () => {
+    const document = await read(
+      'ja',
+      inLang('en', el('P', '営業の状況')),
+      inLang('en', el('H1', '概要')),
+      el('Table', el('TR', inLang('en', el('TD', '部門')))),
+    );
+
+    expect(html(document)).toBe(
+      '<p>営業の状況</p><h2>概要</h2>' +
+        '<div class="apv-table-scroll" role="region" aria-label="表" tabindex="0"><table><tbody><tr><td>部門</td></tr></tbody></table>',
+    );
+  });
+
+  it('does not mark a run declared English that mixes Latin and Japanese', async () => {
+    const document = await read('ja', el('P', span('en', 'PDFを開く'), span('ja', '。')));
+
+    expect(html(document)).toBe('<p>PDFを開く。</p>');
+  });
+
   it('marks Latin words declared English inside Japanese', async () => {
     const document = await read(
       'ja',
@@ -223,27 +270,58 @@ describe('declarations a Japanese Word document makes but the text cannot show',
   });
 });
 
-describe('the combined reading', () => {
-  it("keeps the tagged node's language when it makes the node a heading", () => {
-    const overlaid = overlayHeadings(
-      [
-        { type: 'paragraph', language: 'en', content: [{ type: 'text', text: 'Introduction' }] },
-        {
-          type: 'paragraph',
-          language: 'en',
-          content: [{ type: 'text', text: 'Background The project began in spring.' }],
-        },
-      ],
-      [
-        { type: 'heading', level: 2, content: [{ type: 'text', text: 'Introduction' }] },
-        { type: 'heading', level: 2, content: [{ type: 'text', text: 'Background' }] },
-      ],
+describe('settling', () => {
+  it('gives a settled document back unchanged, as decorate runs more than once', async () => {
+    const document = await read(
+      'ja',
+      el('P', span('ja', '名前は'), span('en', 'Accessible PDF View'), span('ja', 'です。')),
+      el('P', span('en', 'All English.')),
+      el('P', span('en', '2026'), span('zh', ' 年')),
     );
 
-    expect(overlaid).toEqual([
-      expect.objectContaining({ type: 'heading', language: 'en' }),
-      expect.objectContaining({ type: 'heading', language: 'en' }),
-      expect.objectContaining({ type: 'paragraph', language: 'en' }),
-    ]);
+    expect(settleDeclaredLanguages(document, 'ja')).toEqual(document);
+  });
+
+  it("decides against the detected language when the catalog declares none", async () => {
+    const document = await readDetected(undefined, 'ja', el('P', span('ja', '本日'), span('zh', '各位')));
+
+    expect(html(document)).toBe('<p>本日各位</p>');
+  });
+});
+
+/** The interface's own words inside the document (review of #50). */
+describe("the interface's words inside a block in another language", () => {
+  it("marks a link's new-tab notice in the interface language", async () => {
+    const document = await read('ja', el('P', span('en', 'https://example.com/')));
+    const withLink: AccessibleDocument = {
+      ...document,
+      pages: document.pages.map((page) => ({
+        ...page,
+        nodes: page.nodes.map((node) =>
+          node.type === 'paragraph'
+            ? { ...node, content: [{ type: 'link', href: 'https://example.com/', content: node.content }] }
+            : node,
+        ),
+      })),
+    };
+
+    expect(html(withLink)).toBe(
+      '<p lang="en"><a href="https://example.com/" target="_blank" rel="noopener noreferrer">' +
+        'https://example.com/<span class="apv-visually-hidden" lang="ja">（新しいタブで開きます）</span></a></p>',
+    );
+  });
+
+  it("marks a figure's notice in a cell of another language, but not one carrying alt text", async () => {
+    const document = await read('ja', el('Table', el('TR', el('TD', span('en', 'Chart'), el('Figure')))));
+
+    const markup = html(document);
+    expect(markup).toContain('<td lang="en">Chart<figure');
+    expect(markup).toContain('<p class="apv-figure__placeholder" lang="ja">');
+  });
+
+  it('leaves the notice unmarked where the document has no language', async () => {
+    const document = await read(undefined, el('Figure'));
+
+    expect(html(document)).toContain('<p class="apv-figure__placeholder">');
   });
 });
