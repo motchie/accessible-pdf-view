@@ -21,7 +21,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
  * clipboard, inside line 5 of 2,180.
  */
 describe('withoutControlCharacters', () => {
-  it('removes NUL and the other controls that stand for nothing', () => {
+  it('removes NUL and the other C0 controls, and DEL', () => {
     expect(withoutControlCharacters('logo\u0000')).toBe('logo');
     expect(withoutControlCharacters('a\u0001b\u001Fc\u007Fd')).toBe('abcd');
   });
