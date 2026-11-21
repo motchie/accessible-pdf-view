@@ -61,5 +61,10 @@ describe('copying the Markdown', () => {
     });
 
     expect(writeText).toHaveBeenCalledWith('# Title\n\n![Logo](image)\n\nThe rest of the document.');
+    // And what is shown is the same text, so a selection copied by hand is
+    // whole too.
+    expect(container.querySelector('pre')!.textContent).toBe(
+      '# Title\n\n![Logo](image)\n\nThe rest of the document.',
+    );
   });
 });

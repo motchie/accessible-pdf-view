@@ -28,9 +28,12 @@ import type { MarkdownSource } from './MarkdownSourcePicker';
  * Shown as text, never rendered as markup. The `<pre>` is focusable because it
  * scrolls, and the copy result is announced rather than signalled by colour.
  *
- * The copy is the text shown, less control characters
- * (`withoutControlCharacters`), which are not text and do not show; for the
- * raw source, that is the one change made to the parser's output.
+ * Both sources are shown, and copied, without control characters
+ * (`withoutControlCharacters`). A NUL anywhere in the text ends a paste
+ * through the Windows clipboard right there, and the alternative text is not
+ * the only place one can come from; cleaning what is shown, not only what the
+ * button copies, keeps a selection copied by hand whole too. For the raw
+ * source, that is the one change made to the parser's output.
  */
 export interface MarkdownViewProps {
   document: AccessibleDocument | null;
@@ -52,15 +55,16 @@ export function MarkdownView({ document, rawMarkdown, source }: MarkdownViewProp
     [document],
   );
 
-  const text = source === 'document' ? documentMarkdown : rawMarkdown;
+  const chosen = source === 'document' ? documentMarkdown : rawMarkdown;
+  const text = useMemo(
+    () => (chosen === null ? null : withoutControlCharacters(chosen)),
+    [chosen],
+  );
 
   async function copy() {
     if (!text) return;
     try {
-      // Control characters out, from either source: a NUL anywhere in the
-      // text ends a paste through the Windows clipboard right there, and the
-      // alternative text is not the only place one can come from.
-      await navigator.clipboard.writeText(withoutControlCharacters(text));
+      await navigator.clipboard.writeText(text);
       setCopyStatus(m.markdown.copied);
     } catch {
       setCopyStatus(m.markdown.copyFailed);
