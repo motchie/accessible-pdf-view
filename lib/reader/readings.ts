@@ -7,6 +7,7 @@ import type {
 } from '../pdf/document-model';
 import { countHeadings, documentToPlainText } from '../pdf/document-model';
 import { combineReadings } from '../pdf/combined-reading';
+import { documentWithoutControlCharacters } from '../pdf/control-characters';
 import { promoteMergedHeadings } from '../pdf/inspector/heading-promotion';
 import { attachFigureRegions } from '../pdf/pdfjs/figure-regions';
 import { detectLanguage, detectScriptLanguage } from '../pdf/pdfjs/language';
@@ -177,9 +178,15 @@ export interface DocumentFacts {
 /**
  * Folds in what belongs to the PDF rather than to a producer: its own title and
  * language, and what its text-less pages actually draw.
+ *
+ * Also where control characters leave the text (#52): every reading passes
+ * through here before it is first shown, recovered pages and figure regions
+ * included, so this is the one place that covers them all. What arrives later
+ * — OCR, generated descriptions — goes through `replaceDocument`, which does
+ * the same.
  */
 export function decorate(document: AccessibleDocument, facts: DocumentFacts): AccessibleDocument {
-  return {
+  return documentWithoutControlCharacters({
     ...document,
     metadata: {
       ...document.metadata,
@@ -195,7 +202,7 @@ export function decorate(document: AccessibleDocument, facts: DocumentFacts): Ac
             const kind = facts.kinds.get(page.pageNumber);
             return kind ? { ...page, contentKind: kind } : page;
           }),
-  };
+  });
 }
 
 /**

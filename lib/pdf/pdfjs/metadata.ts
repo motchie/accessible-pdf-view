@@ -1,5 +1,6 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { PdfFileInfo } from '../document-model';
+import { withoutControlCharacters } from '../control-characters';
 
 /**
  * Reads the PDF's own description of itself.
@@ -128,7 +129,9 @@ function optional<K extends string, V>(key: K, value: V | undefined | null) {
 
 function text(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
+  // The Info dictionary is shown in the document information panel and gives
+  // the document its title; control characters are not text there either (#52).
+  const trimmed = withoutControlCharacters(value).trim();
   return trimmed === '' ? undefined : trimmed;
 }
 

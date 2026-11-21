@@ -33,7 +33,10 @@ import type { MarkdownSource } from './MarkdownSourcePicker';
  * through the Windows clipboard right there, and the alternative text is not
  * the only place one can come from; cleaning what is shown, not only what the
  * button copies, keeps a selection copied by hand whole too. For the raw
- * source, that is the one change made to the parser's output.
+ * source, that is the one change made to the parser's output, and the reason
+ * this call stays: the raw Markdown does not pass through the document model.
+ * The document source already has none, since the Reader cleans the model
+ * itself (`documentWithoutControlCharacters`, #52); here that is a no-op.
  */
 export interface MarkdownViewProps {
   document: AccessibleDocument | null;

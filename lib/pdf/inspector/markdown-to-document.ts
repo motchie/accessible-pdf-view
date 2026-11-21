@@ -16,6 +16,7 @@ import type {
   TableCell as ModelTableCell,
   TableRow as ModelTableRow,
 } from '../document-model';
+import { withoutControlCharacters } from '../control-characters';
 import { sanitizeHref } from '../sanitize-url';
 
 /**
@@ -252,7 +253,11 @@ function convertRow(
   };
 }
 
-function toFigure(alt: string | undefined, title: string | undefined): ModelNode {
+function toFigure(rawAlt: string | undefined, title: string | undefined): ModelNode {
+  // Control characters out before deciding whether there is a description: an
+  // alt of nothing but NUL is no description (#52), and the document-wide pass
+  // that runs later only cleans strings, it does not change a figure's status.
+  const alt = rawAlt === undefined ? undefined : withoutControlCharacters(rawAlt);
   const hasRealAlt = Boolean(alt && alt.trim() && !PLACEHOLDER_ALT.test(alt));
 
   return {
