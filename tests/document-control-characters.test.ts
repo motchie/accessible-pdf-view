@@ -1,10 +1,13 @@
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import * as pdfjs from 'pdfjs-dist';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { AccessibleDocument, DocumentNode, FigureNode } from '../lib/pdf/document-model';
 import { documentToPlainText } from '../lib/pdf/document-model';
 import { documentWithoutControlCharacters } from '../lib/pdf/control-characters';
 import { markdownToPages } from '../lib/pdf/inspector/markdown-to-document';
 import { readPdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
+import { extractTaggedDocument } from '../lib/pdf/pdfjs/tagged-adapter';
 import { decorate } from '../lib/reader/readings';
 import { buildMinimalPdf } from './helpers/minimal-pdf';
 import { readPdfAsReader } from './helpers/read-pdf';
@@ -111,13 +114,42 @@ describe('documentWithoutControlCharacters', () => {
 describe('where control characters enter', () => {
   it('a NUL in a tagged PDF\'s page text does not reach the Reader', async () => {
     // Synthetic: no real document with NUL in its page text has been seen.
-    // PDF.js passes the character code through, so the tagged reading has it.
+    // PDF.js passes the character code through, so the tag tree's text has it.
     const bytes = buildMinimalPdf({ pages: [['Heading', 'Body\u0000text here.']], tagged: 'declared' });
+    // The reader first: it also points PDF.js at its worker.
     const reading = await readPdfAsReader(bytes, { preferred: 'tagged-pdf' });
+    const pdf = await pdfjs.getDocument({
+      data: bytes.slice(0),
+      standardFontDataUrl: `${resolve('node_modules/pdfjs-dist/standard_fonts')}/`,
+    }).promise;
+    const extracted = await extractTaggedDocument(pdf, { info: await readPdfDocumentInfo(pdf) });
+    expect(documentToPlainText(extracted!.document)).toContain('Body\u0000text');
 
     expect(reading.structureSource).toBe('tagged-pdf');
-    expect(documentToPlainText(reading.raw['tagged-pdf']!)).toContain('Body\u0000text');
+    // Neither the reading as built nor the document shown keeps it.
+    expect(documentToPlainText(reading.raw['tagged-pdf']!)).toContain('Bodytext here.');
     expect(documentToPlainText(reading.document)).toContain('Bodytext here.');
+  });
+
+  it('a NUL in the title and its heading changes neither the readings nor their heading counts', async () => {
+    // The Info title is cleaned when it is read, so the readings must be too
+    // before anything asks whether a first heading only repeats the title:
+    // `combineReadings` and the picker's heading counts both do.
+    const pdfWith = (mark: string) =>
+      buildMinimalPdf({
+        pages: [[`Report${mark}`, 'Body text.']],
+        title: `Report${mark}`,
+        tagged: 'declared',
+        headingLines: 1,
+      });
+    const [clean, dirty] = await Promise.all([
+      readPdfAsReader(pdfWith('')),
+      readPdfAsReader(pdfWith('\u0000')),
+    ]);
+
+    expect(dirty.availableSources).toEqual(clean.availableSources);
+    expect(dirty.headingCounts).toEqual(clean.headingCounts);
+    expect(dirty.info.title).toBe('Report');
   });
 
   it('pdf-inspector: an alt of nothing but control characters is no description', () => {
