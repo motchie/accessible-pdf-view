@@ -2,7 +2,11 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { withoutControlCharacters } from '../lib/pdf/control-characters';
+import type { AccessibleDocument, DocumentNode } from '../lib/pdf/document-model';
+import { en } from '../lib/i18n/en';
+import { ja } from '../lib/i18n/ja';
 import { MarkdownView } from '../lib/reader/components/MarkdownView';
+import { figurePlaceholderText } from '../lib/reader/renderer';
 import { inLocale } from './helpers/messages';
 
 declare global {
@@ -42,18 +46,23 @@ describe('copying the Markdown', () => {
   let container: HTMLDivElement;
   let root: Root;
   let writeText: ReturnType<typeof vi.fn>;
+  // jsdom's own, put back afterwards so no later test sees this mock.
+  let ownClipboard: PropertyDescriptor | undefined;
 
   beforeEach(() => {
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
     writeText = vi.fn().mockResolvedValue(undefined);
+    ownClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
   });
 
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+    if (ownClipboard) Object.defineProperty(navigator, 'clipboard', ownClipboard);
+    else Reflect.deleteProperty(navigator, 'clipboard');
   });
 
   it('copies the raw source whole, less the NUL that would end a paste', async () => {
@@ -72,5 +81,29 @@ describe('copying the Markdown', () => {
     expect(container.querySelector('pre')!.textContent).toBe(
       '# Title\n\n![Logo](image)\n\nThe rest of the document.',
     );
+  });
+
+  /** The serializer writes the Reader's own words in the UI language, so a
+   * change of language has to reach the Markdown without a new document. */
+  it('writes the Markdown again when the UI language changes', () => {
+    const figure: Extract<DocumentNode, { type: 'figure' }> = {
+      type: 'figure',
+      status: 'missing-alt',
+      altTextFieldRead: true,
+    };
+    const pdf: AccessibleDocument = {
+      metadata: { sourceUrl: null, pageCount: 1, producedBy: ['tagged-pdf'] },
+      pages: [{ pageNumber: 1, origin: 'tagged-pdf', status: 'available', nodes: [figure] }],
+    };
+    const view = (locale: 'ja' | 'en') =>
+      inLocale(locale, <MarkdownView document={pdf} rawMarkdown={null} source="document" />);
+
+    act(() => root.render(view('ja')));
+    expect(container.querySelector('pre')!.textContent).toContain(figurePlaceholderText(ja, figure));
+
+    act(() => root.render(view('en')));
+    const shown = container.querySelector('pre')!.textContent!;
+    expect(shown).toContain(figurePlaceholderText(en, figure));
+    expect(shown).not.toContain(figurePlaceholderText(ja, figure));
   });
 });
