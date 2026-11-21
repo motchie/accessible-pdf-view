@@ -52,7 +52,9 @@ export function MarkdownView({ document, rawMarkdown, source }: MarkdownViewProp
 
   const documentMarkdown = useMemo(
     () => (document ? documentToMarkdown(document, m) : null),
-    [document],
+    // `m` too: the serializer writes the Reader's own words (a figure's
+    // placeholder, the label on a generated description) in the UI language.
+    [document, m],
   );
 
   const chosen = source === 'document' ? documentMarkdown : rawMarkdown;
