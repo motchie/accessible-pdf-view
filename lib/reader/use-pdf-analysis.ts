@@ -7,6 +7,7 @@ import type {
   PdfCapabilities,
   PdfFileInfo,
 } from '../pdf/document-model';
+import { documentWithoutControlCharacters } from '../pdf/control-characters';
 import { PdfError, isPdfError } from '../pdf/errors';
 import { InspectorClient } from '../pdf/inspector/client';
 import { READER_PROCESS_OPTIONS } from '../pdf/inspector/protocol';
@@ -323,7 +324,10 @@ export function usePdfAnalysis(
 
   useEffect(() => () => clientRef.current?.terminate(), []);
 
-  const replaceDocument = useCallback((document: AccessibleDocument) => {
+  const replaceDocument = useCallback((replacement: AccessibleDocument) => {
+    // OCR text and generated descriptions arrive here, after `decorate`, so
+    // control characters leave them here (#52).
+    const document = documentWithoutControlCharacters(replacement);
     const runtime = runtimeRef.current;
     const shown = shownRef.current;
     const entry = shown ? runtime?.entries.get(shown) : undefined;
