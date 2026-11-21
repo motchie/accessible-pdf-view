@@ -52,6 +52,20 @@ const MACHINE_MARKERS: RegExp[] = [
  */
 const PRODUCER_SUFFIXES: RegExp[] = [/\s*\(グループ化されたオブジェクト\)$/];
 
+/**
+ * Control characters, which are never part of a description: C0 except tab,
+ * line feed and carriage return (whitespace, collapsed below), DEL, and C1.
+ *
+ * A 91-page export from Word for Microsoft 365 ends both of its logos' `/Alt`
+ * strings with a NUL byte, in the file itself, not added in decoding. Left in,
+ * it travels into the Reader's `alt` and into the Markdown, and a paste
+ * through the Windows clipboard, which takes NUL as the end of the text, stops
+ * there: copying the whole document pasted as its first four lines. Removed
+ * rather than replaced with a space, because where it was seen it stood for
+ * nothing. Other producers have not been measured.
+ */
+const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g;
+
 export interface AlternativeTextOrigin {
   /** The description with any boilerplate removed. Empty when nothing is left. */
   text: string;
@@ -67,10 +81,12 @@ export interface AlternativeTextOrigin {
  * image in the document, so a screen reader user would hear the same sentence
  * after every single figure — and the Reader already says the text is
  * machine-written, in its own words, at the point of reading. Only the exact
- * known boilerplate is removed; the description itself is never edited.
+ * known boilerplate is removed; the description itself is never edited,
+ * beyond dropping control characters (`CONTROL_CHARACTERS`), which are not
+ * text.
  */
 export function classifyAlternativeText(raw: string | undefined): AlternativeTextOrigin {
-  const alt = withoutProducerSuffixes(raw?.trim() ?? '');
+  const alt = withoutProducerSuffixes(withoutControlCharacters(raw ?? '').trim());
   if (alt === '') return { text: '', machineWritten: false };
 
   let machineWritten = false;
@@ -89,6 +105,10 @@ export function classifyAlternativeText(raw: string | undefined): AlternativeTex
     text: withoutProducerSuffixes(text.replace(/\s+/g, ' ').trim()),
     machineWritten,
   };
+}
+
+function withoutControlCharacters(text: string): string {
+  return text.replace(CONTROL_CHARACTERS, '');
 }
 
 function withoutProducerSuffixes(text: string): string {

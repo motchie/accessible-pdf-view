@@ -365,6 +365,19 @@ describe("telling a person's alternative text from their word processor's", () =
     );
   });
 
+  it('drops control characters, and still finds what follows them', () => {
+    // Word for Microsoft 365 ends some /Alt strings with NUL.
+    expect(classifyAlternativeText('Company logo\u0000')).toEqual({ text: 'Company logo', machineWritten: false });
+    expect(classifyAlternativeText('\u0000')).toEqual({ text: '', machineWritten: false });
+    // The group suffix is anchored at the end, so a trailing NUL would hide it.
+    expect(classifyAlternativeText('道順の図 (グループ化されたオブジェクト)\u0000')).toEqual({
+      text: '道順の図',
+      machineWritten: false,
+    });
+    // C1 and DEL too; tab and newline are whitespace, collapsed as before.
+    expect(classifyAlternativeText('a\u0007b\u007Fc\u0085d\te\nf').text).toBe('abcd e f');
+  });
+
   it('keeps the description when the disclaimer is all there is to remove', () => {
     expect(classifyAlternativeText('AI 生成コンテンツは誤りを含む可能性があります。')).toEqual({
       text: '',

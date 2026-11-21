@@ -59,6 +59,19 @@ describe('tagged figures and their /Alt', () => {
     expect(blank).toMatchObject({ status: 'missing-alt' });
     expect(blank!.alternativeText).toBeUndefined();
   });
+
+  /**
+   * A Word for Microsoft 365 export ended both logos' `/Alt` with a NUL byte.
+   * Kept, it reached the Markdown, and a paste through the Windows clipboard
+   * stopped at it: the whole 91-page document pasted as four lines.
+   */
+  it('drops the NUL byte Word leaves at the end of an /Alt', async () => {
+    const [logo, nothingElse] = await figuresOf([{ alt: 'Company logo\u0000' }, { alt: '\u0000' }]);
+
+    expect(logo).toMatchObject({ alternativeText: 'Company logo', alternativeTextSource: 'author' });
+    expect(nothingElse).toMatchObject({ status: 'missing-alt' });
+    expect(nothingElse!.alternativeText).toBeUndefined();
+  });
 });
 
 /**
