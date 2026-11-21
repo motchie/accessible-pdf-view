@@ -366,7 +366,7 @@ describe("telling a person's alternative text from their word processor's", () =
   });
 
   it('drops control characters, and still finds what follows them', () => {
-    // Word for Microsoft 365 ends some /Alt strings with NUL.
+    // One Word for Microsoft 365 export ended its logos' /Alt with NUL.
     expect(classifyAlternativeText('Company logo\u0000')).toEqual({ text: 'Company logo', machineWritten: false });
     expect(classifyAlternativeText('\u0000')).toEqual({ text: '', machineWritten: false });
     // The group suffix is anchored at the end, so a trailing NUL would hide it.
