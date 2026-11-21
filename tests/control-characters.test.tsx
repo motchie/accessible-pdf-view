@@ -19,11 +19,17 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 describe('withoutControlCharacters', () => {
   it('removes NUL and the other controls that stand for nothing', () => {
     expect(withoutControlCharacters('logo\u0000')).toBe('logo');
-    expect(withoutControlCharacters('a\u0001b\u001Fc\u007Fd\u0085e\u009Ff')).toBe('abcdef');
+    expect(withoutControlCharacters('a\u0001b\u001Fc\u007Fd')).toBe('abcd');
   });
 
   it('turns vertical tab and form feed into spaces, because they separate words', () => {
     expect(withoutControlCharacters('one\u000Btwo\u000Cthree')).toBe('one two three');
+  });
+
+  it('leaves C1 alone, because it can be punctuation decoded wrongly', () => {
+    // U+0085, U+0093 and U+0097 are ellipsis, quotation mark and dash in Windows-1252.
+    const text = 'a\u0085b\u0093c\u0097d\u0080\u009F';
+    expect(withoutControlCharacters(text)).toBe(text);
   });
 
   it('leaves tab, line feed, carriage return and ordinary text alone', () => {

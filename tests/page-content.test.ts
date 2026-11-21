@@ -374,8 +374,8 @@ describe("telling a person's alternative text from their word processor's", () =
       text: '道順の図',
       machineWritten: false,
     });
-    // C1 and DEL too; tab and newline are whitespace, collapsed as before.
-    expect(classifyAlternativeText('a\u0007b\u007Fc\u0085d\te\nf').text).toBe('abcd e f');
+    // DEL too, but not C1; tab and newline are whitespace, collapsed as before.
+    expect(classifyAlternativeText('a\u0007b\u007Fc\u0085d\te\nf').text).toBe('abc\u0085d e f');
     // Vertical tab and form feed separate words: Word's manual line break is U+000B.
     expect(classifyAlternativeText('Line one\u000BLine two\u000Cend').text).toBe('Line one Line two end');
   });
