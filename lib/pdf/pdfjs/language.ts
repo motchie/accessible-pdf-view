@@ -40,8 +40,8 @@ const MAX_SAMPLE_LENGTH = 4000;
  * Chinese, Japanese and Korean, and guessing wrong commits a screen reader to
  * the wrong pronunciation for the whole document — worse than no guess.
  */
-const KANA = /[぀-ゟ゠-ヿ]/;
-const HANGUL = /[가-힯ᄀ-ᇿ]/;
+export const KANA = /[\p{Script=Hiragana}\p{Script=Katakana}]/u;
+export const HANGUL = /\p{Script=Hangul}/u;
 
 export function detectScriptLanguage(sample: string): string | null {
   if (KANA.test(sample)) return 'ja';

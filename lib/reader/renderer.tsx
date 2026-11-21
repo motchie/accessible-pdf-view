@@ -7,6 +7,7 @@ import type {
   InlineNode,
   TableRow as ModelTableRow,
 } from '../pdf/document-model';
+import { sameLanguage } from '../pdf/declared-language';
 import { dropRepeatedTitle } from '../pdf/repeated-title';
 
 /**
@@ -48,14 +49,19 @@ export function DocumentView({
   // A heading in the body that merely repeats the title would be read twice and
   // would sit at the same level as the page's `<h1>`.
   const { pages } = dropRepeatedTitle(document);
+  // The `<article>` around this carries the document's language; anything
+  // declared differently inside it says so on its own element.
+  const language = document.metadata.language;
 
   return (
     <>
       {pages.map((page, pageIndex) => (
         <div className="apv-page" key={page.pageNumber} data-page={page.pageNumber}>
-          {showPageBreaks && pageIndex > 0 ? <PageBreak pageNumber={page.pageNumber} /> : null}
+          {showPageBreaks && pageIndex > 0 ? (
+            <PageBreak pageNumber={page.pageNumber} language={language} />
+          ) : null}
           {page.nodes.map((node, index) => (
-            <BlockNode key={index} node={node} headingOffset={headingOffset} />
+            <BlockNode key={index} node={node} headingOffset={headingOffset} language={language} />
           ))}
           {page.nodes.length === 0 ? renderPageNotice?.(page) : null}
         </div>
@@ -69,21 +75,58 @@ export function DocumentView({
  * furniture, and putting them in the heading outline would bury the document's
  * real structure under one entry per page.
  */
-function PageBreak({ pageNumber }: { pageNumber: number }): JSX.Element {
+function PageBreak({
+  pageNumber,
+  language,
+}: {
+  pageNumber: number;
+  language: string | undefined;
+}): JSX.Element {
   const m = useMessages();
   return (
     <p className="apv-page-break">
-      <span className="apv-page-break__label">{m.figures.pageLabel(pageNumber)}</span>
+      <span className="apv-page-break__label" {...interfaceLang(m, language)}>
+        {m.figures.pageLabel(pageNumber)}
+      </span>
     </p>
   );
+}
+
+/**
+ * The `lang` attribute for text in `declared`, inside an element whose
+ * language is `enclosing`: present only where the two differ, so the attribute
+ * marks a change of language rather than repeating the one in force.
+ *
+ * Also used for the interface's own words inside the document — a page
+ * label, a link's "opens in a new tab", a figure notice. They are in the
+ * interface's language wherever they sit, and inside a paragraph marked
+ * English, a Japanese notice would otherwise be read in an English voice.
+ */
+function langFor(
+  declared: string | undefined,
+  enclosing: string | undefined,
+): { lang?: string } {
+  return declared && !sameLanguage(declared, enclosing) ? { lang: declared } : {};
+}
+
+/**
+ * The `lang` for the interface's own words inside the document. An article
+ * with no language of its own inherits the page's, which is the interface's,
+ * so there is nothing to mark there.
+ */
+function interfaceLang(m: Messages, language: string | undefined): { lang?: string } {
+  return langFor(m.app.locale, language ?? m.app.locale);
 }
 
 function BlockNode({
   node,
   headingOffset,
+  language,
 }: {
   node: DocumentNode;
   headingOffset: number;
+  /** The language in force around this block. */
+  language: string | undefined;
 }): JSX.Element | null {
   const m = useMessages();
   switch (node.type) {
@@ -98,16 +141,22 @@ function BlockNode({
       // navigating by `H` would hear the same caveat at every stop — so it
       // sits where a stylesheet or a tester can find it.
       return (
-        <Heading {...(node.origin ? { 'data-origin': node.origin } : {})}>
-          <Inline nodes={node.content} />
+        <Heading
+          {...(node.origin ? { 'data-origin': node.origin } : {})}
+          {...langFor(node.language, language)}
+        >
+          <Inline nodes={node.content} language={node.language ?? language} />
         </Heading>
       );
     }
 
     case 'paragraph':
       return (
-        <p {...(node.origin ? { 'data-origin': node.origin } : {})}>
-          <Inline nodes={node.content} />
+        <p
+          {...(node.origin ? { 'data-origin': node.origin } : {})}
+          {...langFor(node.language, language)}
+        >
+          <Inline nodes={node.content} language={node.language ?? language} />
         </p>
       );
 
@@ -115,8 +164,8 @@ function BlockNode({
       // Unclassified content is still content; rendering it as a paragraph
       // means nothing the PDF contained is silently dropped.
       return (
-        <p>
-          <Inline nodes={node.content} />
+        <p {...langFor(node.language, language)}>
+          <Inline nodes={node.content} language={node.language ?? language} />
         </p>
       );
 
@@ -127,7 +176,12 @@ function BlockNode({
           {node.items.map((item, index) => (
             <li key={index}>
               {item.blocks.map((block, blockIndex) => (
-                <BlockNode key={blockIndex} node={block} headingOffset={headingOffset} />
+                <BlockNode
+                  key={blockIndex}
+                  node={block}
+                  headingOffset={headingOffset}
+                  language={language}
+                />
               ))}
             </li>
           ))}
@@ -151,12 +205,12 @@ function BlockNode({
             {node.caption ? <caption>{node.caption}</caption> : null}
             {node.header ? (
               <thead>
-                <Row row={node.header} defaultHeader scope="col" />
+                <Row row={node.header} defaultHeader scope="col" language={language} />
               </thead>
             ) : null}
             <tbody>
               {node.rows.map((row, index) => (
-                <Row key={index} row={row} scope="row" />
+                <Row key={index} row={row} scope="row" language={language} />
               ))}
             </tbody>
           </table>
@@ -167,7 +221,7 @@ function BlockNode({
       return (
         <blockquote>
           {node.blocks.map((block, index) => (
-            <BlockNode key={index} node={block} headingOffset={headingOffset} />
+            <BlockNode key={index} node={block} headingOffset={headingOffset} language={language} />
           ))}
         </blockquote>
       );
@@ -183,7 +237,7 @@ function BlockNode({
       return <hr />;
 
     case 'figure':
-      return <Figure node={node} />;
+      return <Figure node={node} language={language} />;
   }
 }
 
@@ -191,10 +245,12 @@ function Row({
   row,
   defaultHeader = false,
   scope,
+  language,
 }: {
   row: ModelTableRow;
   defaultHeader?: boolean;
   scope: 'col' | 'row';
+  language: string | undefined;
 }): JSX.Element {
   return (
     <tr>
@@ -203,13 +259,15 @@ function Row({
         const span = {
           ...(cell.colSpan && cell.colSpan > 1 ? { colSpan: cell.colSpan } : {}),
           ...(cell.rowSpan && cell.rowSpan > 1 ? { rowSpan: cell.rowSpan } : {}),
+          ...langFor(cell.language, language),
         };
+        const cellLanguage = cell.language ?? language;
         // A cell can hold a figure or a nested list as well as text.
         const body = (
           <>
-            <Inline nodes={cell.content} />
+            <Inline nodes={cell.content} language={cellLanguage} />
             {cell.blocks?.map((block, blockIndex) => (
-              <BlockNode key={blockIndex} node={block} headingOffset={0} />
+              <BlockNode key={blockIndex} node={block} headingOffset={0} language={cellLanguage} />
             ))}
           </>
         );
@@ -230,8 +288,10 @@ function Row({
 
 function Figure({
   node,
+  language,
 }: {
   node: Extract<DocumentNode, { type: 'figure' }>;
+  language: string | undefined;
 }): JSX.Element {
   const m = useMessages();
   const source = node.source;
@@ -264,7 +324,16 @@ function Figure({
         />
       ) : null}
       {showsNotice ? (
-        <p className="apv-figure__placeholder">{figurePlaceholderText(m, node)}</p>
+        <p
+          className="apv-figure__placeholder"
+          // Without alternative text the notice is the interface's words
+          // alone. With it, the notice wraps the document's or a model's text
+          // in a sentence of the interface's, and no one `lang` fits both, so
+          // it is left to the language around it.
+          {...(node.alternativeText ? {} : interfaceLang(m, language))}
+        >
+          {figurePlaceholderText(m, node)}
+        </p>
       ) : null}
       {node.caption ? <figcaption>{node.caption}</figcaption> : null}
     </figure>
@@ -343,21 +412,39 @@ export function figurePlaceholderText(
   return m.figures.noAlt;
 }
 
-function Inline({ nodes }: { nodes: InlineNode[] }): JSX.Element {
+function Inline({
+  nodes,
+  language,
+}: {
+  nodes: InlineNode[];
+  /** The language of the element the text sits in. */
+  language: string | undefined;
+}): JSX.Element {
   return (
     <>
       {nodes.map((node, index) => (
-        <InlineNodeView key={index} node={node} />
+        <InlineNodeView key={index} node={node} language={language} />
       ))}
     </>
   );
 }
 
-function InlineNodeView({ node }: { node: InlineNode }): JSX.Element | null {
+function InlineNodeView({
+  node,
+  language,
+}: {
+  node: InlineNode;
+  language: string | undefined;
+}): JSX.Element | null {
   const m = useMessages();
   switch (node.type) {
-    case 'text':
-      return <>{applyEmphasis(node.text, node.emphasis ?? [])}</>;
+    case 'text': {
+      const text = applyEmphasis(node.text, node.emphasis ?? []);
+      // A run in another language than its block gets a `<span lang>`, the
+      // one element HTML has for saying only that.
+      const lang = langFor(node.language, language);
+      return lang.lang ? <span {...lang}>{text}</span> : <>{text}</>;
+    }
 
     case 'line-break':
       return <br />;
@@ -365,10 +452,12 @@ function InlineNodeView({ node }: { node: InlineNode }): JSX.Element | null {
     case 'link':
       return (
         <a href={node.href} target="_blank" rel="noopener noreferrer">
-          <Inline nodes={node.content} />
+          <Inline nodes={node.content} language={language} />
           {/* Links leave the Reader, so say so. Announcing it only in the
               accessible name keeps the visual layout unchanged. */}
-          <span className="apv-visually-hidden">{m.app.openInNewTab}</span>
+          <span className="apv-visually-hidden" {...interfaceLang(m, language)}>
+            {m.app.openInNewTab}
+          </span>
         </a>
       );
   }

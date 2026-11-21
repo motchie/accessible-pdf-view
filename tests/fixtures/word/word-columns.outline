@@ -1,0 +1,58 @@
+# What the Reader should expose for word-columns.pdf, written from what the
+# document means. Every paragraph and cell starts with its place in the reading
+# order, [1] to [26]: a single-column introduction, two columns, a table across
+# both, two columns again, and a closing paragraph.
+#
+# Language (#49): the text is English, but the PDF's catalog says /Lang (ja) —
+# set from the editing settings of the Word that exported it. Word declares
+# en on every run's Span, and a structure element's /Lang wins over the
+# catalog's for what it contains, so every heading, paragraph and cell is
+# marked en. The article keeps the catalog's ja: that is the file's own
+# declaration, and nothing in the file contradicts it for the article as a
+# whole.
+#
+# The page title and its heading come from the document's /Title, which has no
+# language of its own, so they take the catalog's ja (#42). That is the
+# file's error, not the Reader's.
+#
+#   - The table's first column is row headers: Word's "Table Grid" style has
+#     "First Column" on, and Word tags those cells TH.
+#   - Every table sits in a region named 表, so it can scroll by keyboard.
+document lang=ja title="Reading order across columns（リーダー） — Accessible PDF View"
+  banner
+    heading level=1 lang=ja "Reading order across columns"
+  main
+    region "リーダー"
+      article lang=ja
+        heading level=2 lang=en "[1] Reading order across columns"
+        paragraph lang=en "[2] Each paragraph starts with its place in the reading order. Two columns follow, then a table across both columns, then two columns again."
+        heading level=2 lang=en "[3] Left column"
+        paragraph lang=en "[4] The first paragraph of the left column. This sentence is here to give the paragraph some length, so that the column holds several lines of text and its position on the page is unambiguous."
+        paragraph lang=en "[5] The second paragraph of the left column. This sentence is here to give the paragraph some length, so that the column holds several lines of text and its position on the page is unambiguous."
+        heading level=2 lang=en "[6] Right column"
+        paragraph lang=en "[7] The first paragraph of the right column. This sentence is here to give the paragraph some length, so that the column holds several lines of text and its position on the page is unambiguous."
+        paragraph lang=en "[8] The second paragraph of the right column. This sentence is here to give the paragraph some length, so that the column holds several lines of text and its position on the page is unambiguous."
+        heading level=2 lang=en "[9] A table across both columns"
+        region "表"
+          table
+            row
+              columnheader lang=en "[10] Step"
+              columnheader lang=en "[11] What happens"
+              columnheader lang=en "[12] Where it is"
+            row
+              rowheader lang=en "[13] One"
+              cell lang=en "[14] The table is read after the right column."
+              cell lang=en "[15] Across both columns"
+            row
+              rowheader lang=en "[16] Two"
+              cell lang=en "[17] Each row is read left to right."
+              cell lang=en "[18] Across both columns"
+            row
+              rowheader lang=en "[19] Three"
+              cell lang=en "[20] The text after the table comes next."
+              cell lang=en "[21] Across both columns"
+        heading level=2 lang=en "[22] Left column again"
+        paragraph lang=en "[23] The left column after the table. This sentence is here to give the paragraph some length, so that the column holds several lines of text and its position on the page is unambiguous."
+        heading level=2 lang=en "[24] Right column again"
+        paragraph lang=en "[25] The right column after the table. This sentence is here to give the paragraph some length, so that the column holds several lines of text and its position on the page is unambiguous."
+        paragraph lang=en "[26] The last paragraph, after the columns."

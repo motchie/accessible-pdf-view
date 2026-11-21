@@ -227,7 +227,7 @@ Three languages meet here and only the first is this setting:
 | | What it is | Where it comes from |
 | --- | --- | --- |
 | Interface | The Reader's own chrome | this setting, or the browser |
-| Document | `lang` on the article | the PDF's `/Lang`, detection, script |
+| Document | `lang` on the article, and on any heading, paragraph, cell or run tagged in another language | the PDF's `/Lang`, detection, script; the tags' own `/Lang` |
 | Description | What the model writes in | the document, your browser, or a setting |
 
 The **names of the three views are katakana in Japanese** — リーダー,
@@ -406,6 +406,20 @@ The field that matters most is `/Lang`. Without it the Reader cannot set a
 `lang` attribute, and a screen reader may read a Japanese document with an
 English voice. pdf-inspector does not report a language; PDF.js does, and the
 Reader applies it to the rendered article.
+
+A tagged PDF can also declare a language on any structure element, and that
+declaration wins for what the element contains. The tagged readings carry it to
+the heading, paragraph, table cell or run it covers, as `lang` where it differs
+from the language around it. Word declares one on every run, and not every
+declaration is one the author made: in Japanese documents digits say English and
+plain Japanese says Chinese. So a run with no letters is never marked, and
+neither is one whose text cannot be in the declared language — Japanese text
+declared English, or Han characters declared Chinese inside Japanese. The
+inferred reading has no way to see any of this.
+
+The Reader's own words inside the document — a page label, a link's "opens in
+a new tab", a figure's notice — are marked with the interface's language where
+it differs from the text around them.
 
 None of this is sent anywhere. It is read from the bytes already in the tab.
 
