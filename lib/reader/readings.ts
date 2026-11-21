@@ -57,7 +57,17 @@ export async function buildReadings(
   // back apart at the line break PDF.js still has. Done here, before the
   // documents are counted or shown, so the heading count the Reader offers for
   // this reading is the one it will actually navigate.
-  const inferred = await promoteMergedHeadings(inspectorDocument, pdf, { signal });
+  //
+  // Control characters leave each reading here (#52), once it is built and
+  // before anything compares it with the document's title, which
+  // `readPdfDocumentInfo` has already cleaned: `combineReadings` and the
+  // heading counts both ask whether a first heading only repeats the title,
+  // and a NUL on one side only would answer no. Not before: heading promotion
+  // and the coverage check compare a reading with PDF.js's own text, which
+  // still has them.
+  const inferred = documentWithoutControlCharacters(
+    await promoteMergedHeadings(inspectorDocument, pdf, { signal }),
+  );
   signal?.throwIfAborted();
   const info = await readPdfDocumentInfo(pdf);
   signal?.throwIfAborted();
@@ -72,16 +82,13 @@ export async function buildReadings(
     const tagged = await extractTaggedDocument(pdf, { sourceUrl, info, signal });
     signal?.throwIfAborted();
     if (isUsable(tagged) && (info.isTagged || coversPageText(tagged!))) {
+      const author = documentWithoutControlCharacters(tagged!.document);
       // The author's structure, plus the headings the inferred reading can show
       // it lacks. Null for most documents: any heading tag of the author's own,
       // or nothing verifiable to add, and there is no third reading to offer.
-      const combined = combineReadings(
-        tagged!.document,
-        inferred,
-        info.title ?? tagged!.document.metadata.title,
-      );
+      const combined = combineReadings(author, inferred, info.title ?? author.metadata.title);
       if (combined) raw.set('combined', combined);
-      raw.set('tagged-pdf', tagged!.document);
+      raw.set('tagged-pdf', author);
     }
   }
   raw.set('pdf-inspector', inferred);
@@ -181,7 +188,9 @@ export interface DocumentFacts {
  *
  * Also where control characters leave the text (#52): every reading passes
  * through here before it is first shown, recovered pages and figure regions
- * included, so this is the one place that covers them all. What arrives later
+ * included, so this is the one place that covers them all. (`buildReadings`
+ * has cleaned the readings once already, for the comparisons it makes; what
+ * `prepareReading` added since is what is left to clean here.) What arrives later
  * — OCR, generated descriptions — goes through `replaceDocument`, which does
  * the same.
  */

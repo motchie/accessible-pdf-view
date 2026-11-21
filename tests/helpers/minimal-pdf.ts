@@ -21,6 +21,8 @@ export interface MinimalPdfOptions {
    * rest as untagged content — a tree that covers part of the page.
    */
   taggedLines?: number;
+  /** With `tagged`, tag each page's first this-many lines as `H1` rather than `P`. */
+  headingLines?: number;
   /**
    * With `tagged`, `false` leaves `/ParentTree` out of the StructTreeRoot. The
    * marked content still carries its MCIDs and the pages their
@@ -115,7 +117,7 @@ export function buildMinimalPdf(options: MinimalPdfOptions): Uint8Array {
 
         const elementObj = nextElementObj++;
         objects[elementObj] =
-          `<< /Type /StructElem /S /P /P ${structRootObj} 0 R /Pg ${pageObj} 0 R /K ${lineIndex} >>`;
+          `<< /Type /StructElem /S /${lineIndex < (options.headingLines ?? 0) ? 'H1' : 'P'} /P ${structRootObj} 0 R /Pg ${pageObj} 0 R /K ${lineIndex} >>`;
         pageElements.push(elementObj);
         return `/P << /MCID ${lineIndex} >> BDC ${text} EMC`;
       })
