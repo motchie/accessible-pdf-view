@@ -354,7 +354,7 @@ describe("the interface's words inside a block in another language", () => {
 describe("the title's language", () => {
   async function titleLanguage(catalog: string, title: string, ...kids: El[]) {
     const document = await read(catalog, ...kids);
-    return settleDeclaredLanguages(document, catalog, title).metadata.titleLanguage;
+    return settleDeclaredLanguages(document, catalog, title, true).metadata.titleLanguage;
   }
 
   it('takes the language of a heading that says the same', async () => {
@@ -384,6 +384,18 @@ describe("the title's language", () => {
     expect(
       await titleLanguage('ja', '年次報告', el('H1', span('ja', '年次報告')), el('P', span('en', 'English.'))),
     ).toBeUndefined();
+  });
+
+  it('takes no unanimous language from tags that cover little of the page', async () => {
+    const document = await read('ja', el('P', span('en', 'ACME Corporation')));
+    expect(
+      settleDeclaredLanguages(document, 'ja', 'ACME Annual Report', false).metadata.titleLanguage,
+    ).toBeUndefined();
+    // A heading that says the same still decides it.
+    const withHeading = await read('ja', el('H1', span('en', 'ACME Annual Report')));
+    expect(
+      settleDeclaredLanguages(withHeading, 'ja', 'ACME Annual Report', false).metadata.titleLanguage,
+    ).toBe('en');
   });
 
   it('does not mark a title with Japanese in it as English', async () => {

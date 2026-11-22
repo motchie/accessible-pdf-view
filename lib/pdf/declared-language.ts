@@ -41,7 +41,9 @@ import { comparableTitle } from './repeated-title';
  *
  * The title (`title`, from the document information) declares no language
  * of its own. `titleLanguage` says when the document's tags show it to be in
- * one other than the document's; see `titleLanguageFrom`.
+ * one other than the document's; see `titleLanguageFrom`. `tagsCoverText`
+ * says whether the tags carry most of the page text: without that, only a
+ * heading that says the same as the title may decide its language.
  *
  * Idempotent: a run with no language of its own is read as being in its
  * block's, so settling a settled document gives it back unchanged. `decorate`
@@ -51,6 +53,7 @@ export function settleDeclaredLanguages(
   document: AccessibleDocument,
   documentLanguage: string | undefined,
   title?: string,
+  tagsCoverText = false,
 ): AccessibleDocument {
   if (!declaresAnyLanguage(document)) return document;
   const pages = document.pages.map((page) => ({
@@ -58,7 +61,9 @@ export function settleDeclaredLanguages(
     nodes: page.nodes.map((node) => settleBlock(node, documentLanguage)),
   }));
   const { titleLanguage: _previous, ...metadata } = document.metadata;
-  const titleLanguage = title ? titleLanguageFrom(pages, title, documentLanguage) : undefined;
+  const titleLanguage = title
+    ? titleLanguageFrom(pages, title, documentLanguage, tagsCoverText)
+    : undefined;
   return { ...document, metadata: { ...metadata, ...(titleLanguage ? { titleLanguage } : {}) }, pages };
 }
 
@@ -72,7 +77,9 @@ export function settleDeclaredLanguages(
  *   2. Every run with letters in the document, when they all agree on one
  *      language. Not a majority: a document whose every word says English is
  *      an English document whatever its catalog says, while one that mixes
- *      languages gives the title no answer, and it keeps the document's.
+ *      languages gives the title no answer, and it keeps the document's. Only
+ *      when the tags carry most of the page text (`tagsCoverText`): a tree
+ *      that tags one English logo line says nothing about the rest.
  *
  * Either way the title text must bear the language out, by the rules runs
  * follow (`voicedLanguage`): a title with Japanese in it is not marked English.
@@ -81,6 +88,7 @@ function titleLanguageFrom(
   pages: AccessibleDocument['pages'],
   title: string,
   documentLanguage: string | undefined,
+  tagsCoverText: boolean,
 ): string | undefined {
   const wanted = comparableTitle(title);
   if (!wanted || !LETTER.test(wanted)) return undefined;
@@ -91,7 +99,11 @@ function titleLanguageFrom(
       (node.type === 'heading' || node.type === 'paragraph') &&
       comparableTitle(inlineToPlainText(node.content)) === wanted,
   );
-  const candidate = same ? (same.language ?? null) : unanimousLanguage(nodes);
+  const candidate = same
+    ? (same.language ?? null)
+    : tagsCoverText
+      ? unanimousLanguage(nodes)
+      : null;
   if (!candidate) return undefined;
   const voiced = voicedLanguage(wanted, candidate, documentLanguage);
   return voiced && !sameLanguage(voiced, documentLanguage) ? voiced : undefined;
