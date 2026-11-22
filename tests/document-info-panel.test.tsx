@@ -141,6 +141,22 @@ describe('the language the Reader reads in', () => {
       'ルーマニア語 (ro)（設定の「よく読む文書の言語」による。PDF には、文書全体の宣言のほかに言語の手がかりがありません）',
     );
 
+    // A PDF that declares nothing is not said to declare something.
+    act(() =>
+      root.render(
+        inLocale(
+          'en',
+          <DocumentInfoPanel
+            info={DECLARED}
+            structureSource="tagged-pdf"
+            pageCount={1}
+            readingLanguage={{ language: 'ro', source: 'usual' }}
+          />,
+        ),
+      ),
+    );
+    expect(reason()).toBe('Romanian (ro), your usual document language: the PDF declares no language');
+
     mountWith({ language: 'ro', source: 'chosen', kept: true }, 'en');
     expect(reason()).toBe('Romanian (ro), chosen for this document. Kept until this tab is closed.');
 
