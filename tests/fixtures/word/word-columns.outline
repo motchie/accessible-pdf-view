@@ -11,16 +11,17 @@
 # declaration, and nothing in the file contradicts it for the article as a
 # whole.
 #
-# The page title and its heading come from the document's /Title, which has no
-# language of its own, so they take the catalog's ja (#42). That is the
-# file's error, not the Reader's.
+# The heading at the top comes from the document's /Title, which has no
+# language of its own. Every run in the document declares en, so the title is
+# taken to be English too (#49). The tab's title cannot carry a language of
+# its own, and stays in the interface's.
 #
 #   - The table's first column is row headers: Word's "Table Grid" style has
 #     "First Column" on, and Word tags those cells TH.
 #   - Every table sits in a region named 表, so it can scroll by keyboard.
 document lang=ja title="Reading order across columns（リーダー） — Accessible PDF View"
   banner
-    heading level=1 lang=ja "Reading order across columns"
+    heading level=1 lang=en "Reading order across columns"
   main
     region "リーダー"
       article lang=ja

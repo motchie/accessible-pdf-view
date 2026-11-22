@@ -66,13 +66,19 @@ function titled(m: Messages, name: string | null, note: string): string {
  * document that declares no language has nothing better to offer than the
  * interface's, so those leave `lang` off and inherit it.
  *
+ * The title itself declares no language, so the document's is a default. When
+ * the document's own tags show the title to be in another — `titleLanguage`,
+ * worked out by `settleDeclaredLanguages` — that wins: an English document
+ * exported from a Japanese Word says `ja` for the file, and its English title
+ * should not be read in a Japanese voice (#49).
+ *
  * Whoever renders the heading has to create a new element when this changes,
  * not update the attribute: Firefox passes screen readers the language an
  * element was created with (#40).
  */
 export function titleHeadingLanguage(
-  metadata: Pick<DocumentMetadata, 'title' | 'language'> | undefined,
+  metadata: Pick<DocumentMetadata, 'title' | 'language' | 'titleLanguage'> | undefined,
 ): string | undefined {
   if (!metadata?.title?.trim()) return undefined;
-  return metadata.language?.trim() || undefined;
+  return metadata.titleLanguage?.trim() || metadata.language?.trim() || undefined;
 }

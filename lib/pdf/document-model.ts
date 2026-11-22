@@ -105,6 +105,12 @@ export interface DocumentMetadata {
   producedBy: DocumentOrigin[];
   /** BCP-47 tag, when a producer can tell us. Used for `lang` on the article. */
   language?: string;
+  /**
+   * The language of `title`, when the document's own declarations show it to
+   * differ from `language`. The title comes from the document information,
+   * which declares no language of its own; see `settleDeclaredLanguages`.
+   */
+  titleLanguage?: string;
   /** The document's own description of itself. */
   info?: PdfFileInfo;
 }

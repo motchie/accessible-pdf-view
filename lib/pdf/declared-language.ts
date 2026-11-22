@@ -6,8 +6,10 @@ import type {
   TableRow,
   TextNode,
 } from './document-model';
+import { inlineToPlainText } from './document-model';
 import { normalizeCjkSpacing } from './inspector/markdown-to-document';
 import { HANGUL, KANA } from './pdfjs/language';
+import { comparableTitle } from './repeated-title';
 
 /**
  * Which language each block and run of a document is marked as (#49).
@@ -37,6 +39,10 @@ import { HANGUL, KANA } from './pdfjs/language';
  * "The same" compares languages, not tags: `en` and `en-US` are one language
  * here, `en-GB` and `en-US` are two (`sameLanguage`).
  *
+ * The title (`title`, from the document information) declares no language
+ * of its own. `titleLanguage` says when the document's tags show it to be in
+ * one other than the document's; see `titleLanguageFrom`.
+ *
  * Idempotent: a run with no language of its own is read as being in its
  * block's, so settling a settled document gives it back unchanged. `decorate`
  * runs more than once on a reading.
@@ -44,16 +50,98 @@ import { HANGUL, KANA } from './pdfjs/language';
 export function settleDeclaredLanguages(
   document: AccessibleDocument,
   documentLanguage: string | undefined,
+  title?: string,
 ): AccessibleDocument {
   if (!declaresAnyLanguage(document)) return document;
-  return {
-    ...document,
-    pages: document.pages.map((page) => ({
-      ...page,
-      nodes: page.nodes.map((node) => settleBlock(node, documentLanguage)),
-    })),
-  };
+  const pages = document.pages.map((page) => ({
+    ...page,
+    nodes: page.nodes.map((node) => settleBlock(node, documentLanguage)),
+  }));
+  const { titleLanguage: _previous, ...metadata } = document.metadata;
+  const titleLanguage = title ? titleLanguageFrom(pages, title, documentLanguage) : undefined;
+  return { ...document, metadata: { ...metadata, ...(titleLanguage ? { titleLanguage } : {}) }, pages };
 }
+
+/**
+ * The title's language, from what the document's tags declare, when that
+ * differs from the document's. Two sources, in order:
+ *
+ *   1. A heading or paragraph that says the same as the title. Word writes the
+ *      title property and the title on the page separately, and when they
+ *      agree the paragraph's language is the title's.
+ *   2. Every run with letters in the document, when they all agree on one
+ *      language. Not a majority: a document whose every word says English is
+ *      an English document whatever its catalog says, while one that mixes
+ *      languages gives the title no answer, and it keeps the document's.
+ *
+ * Either way the title text must bear the language out, by the rules runs
+ * follow (`voicedLanguage`): a title with Japanese in it is not marked English.
+ */
+function titleLanguageFrom(
+  pages: AccessibleDocument['pages'],
+  title: string,
+  documentLanguage: string | undefined,
+): string | undefined {
+  const wanted = comparableTitle(title);
+  if (!wanted || !LETTER.test(wanted)) return undefined;
+  const nodes = pages.flatMap((page) => page.nodes);
+
+  const same = nodes.find(
+    (node): node is Extract<DocumentNode, { type: 'heading' | 'paragraph' }> =>
+      (node.type === 'heading' || node.type === 'paragraph') &&
+      comparableTitle(inlineToPlainText(node.content)) === wanted,
+  );
+  const candidate = same ? (same.language ?? null) : unanimousLanguage(nodes);
+  if (!candidate) return undefined;
+  const voiced = voicedLanguage(wanted, candidate, documentLanguage);
+  return voiced && !sameLanguage(voiced, documentLanguage) ? voiced : undefined;
+}
+
+/** The one language every run with letters is in, after settling, or null. */
+function unanimousLanguage(nodes: DocumentNode[]): string | null {
+  let found: string | undefined | null = null;
+  let agreed = true;
+  const see = (language: string | undefined) => {
+    if (found === null) found = language;
+    else if (!sameLanguage(found, language)) agreed = false;
+  };
+  const inInline = (content: InlineNode[], around: string | undefined) => {
+    for (const node of content) {
+      if (node.type === 'link') inInline(node.content, around);
+      else if (node.type === 'text' && LETTER.test(node.text)) see(node.language ?? around);
+    }
+  };
+  const inBlocks = (blocks: DocumentNode[]) => {
+    for (const node of blocks) {
+      switch (node.type) {
+        case 'heading':
+        case 'paragraph':
+        case 'unknown':
+          inInline(node.content, node.language);
+          break;
+        case 'list':
+          for (const item of node.items) inBlocks(item.blocks);
+          break;
+        case 'blockquote':
+          inBlocks(node.blocks);
+          break;
+        case 'table':
+          for (const row of [...(node.header ? [node.header] : []), ...node.rows]) {
+            for (const cell of row.cells) {
+              inInline(cell.content, cell.language);
+              inBlocks(cell.blocks ?? []);
+            }
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  };
+  inBlocks(nodes);
+  return agreed && found ? found : null;
+}
+
 
 function settleBlock(node: DocumentNode, documentLanguage: string | undefined): DocumentNode {
   switch (node.type) {
