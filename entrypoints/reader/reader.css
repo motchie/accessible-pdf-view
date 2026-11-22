@@ -299,9 +299,8 @@ body {
   /* The bar is dark under both themes, so the control and its popup are told
      so. The option list is then the platform's dark list, highlight included.
      Options carry no colours of their own: when they did (light rows under a
-     dark box), Firefox drew the list from the page's colours and the
-     highlighted row lost its light background but kept its dark text, which
-     left that row dark-on-dark and unreadable in the light theme. */
+     dark box), Firefox in the light theme showed the highlighted row as dark
+     text on a dark background, unreadable. */
   color-scheme: dark;
 }
 
