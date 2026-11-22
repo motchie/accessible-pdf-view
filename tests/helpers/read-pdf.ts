@@ -10,7 +10,8 @@ import type {
   PdfCapabilities,
   PdfFileInfo,
 } from '../../lib/pdf/document-model';
-import { mapFigures } from '../../lib/pdf/document-model';
+import { documentToPlainText, mapFigures } from '../../lib/pdf/document-model';
+import { chooseDocumentLanguages, type LanguagePreferences } from '../../lib/pdf/document-language';
 import { analyzePdfBytes } from '../../lib/pdf/inspector/analyze';
 import { READER_PROCESS_OPTIONS } from '../../lib/pdf/inspector/protocol';
 import { classifyPages } from '../../lib/pdf/pdfjs/page-content';
@@ -19,7 +20,6 @@ import {
   chooseReading,
   decorate,
   documentLanguage,
-  declaredDocumentLanguages,
   pagesNeedingExplanation,
   prepareReading,
   readingHeadingCounts,
@@ -87,6 +87,8 @@ export interface ReadPdfOptions {
   sourceUrl?: string | null;
   /** The reader's `structureSource` setting. Defaults to the shipped default. */
   preferred?: StructureSource;
+  /** The reader's language choice and usual document language (#57). */
+  languages?: LanguagePreferences;
 }
 
 // From this file rather than the working directory, so a run started elsewhere
@@ -142,11 +144,15 @@ export async function readPdfAsReader(
     const { document: prepared } = await prepareReading(raw.get(shown)!, pdf, {
       rasterize: standInFigureImages,
     });
-    const declared = declaredDocumentLanguages(
-      raw,
-      info,
-      await documentLanguage(prepared, info),
-      taggedCoversText,
+    const declared = chooseDocumentLanguages(
+      {
+        raw,
+        info,
+        found: await documentLanguage(prepared, info),
+        taggedCoversText,
+        sample: documentToPlainText(prepared).slice(0, 4000),
+      },
+      options.languages ?? {},
     );
     const language = declared.language;
     const needsExplaining = pagesNeedingExplanation(prepared);
@@ -159,7 +165,7 @@ export async function readPdfAsReader(
       language,
       kinds,
       ...(declared.titleLanguage ? { titleLanguage: declared.titleLanguage } : {}),
-      ...(declared.languageFromTags ? { languageFromTags: true } : {}),
+      ...(declared.source ? { languageSource: declared.source } : {}),
     });
 
     return {

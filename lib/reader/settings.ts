@@ -73,6 +73,14 @@ export interface ReaderSettings {
    * the mistake, since the file is the mistake.
    */
   aiLanguage: AiLanguage;
+  /**
+   * The language the reader usually reads documents in, as a BCP-47 tag, or
+   * `auto` for none (#57). Applied only to a PDF that gives no language beyond
+   * its catalog's, and only when its text is written in this language's
+   * writing system — see `chooseDocumentLanguages`. The default changes
+   * nothing.
+   */
+  usualDocumentLanguage: 'auto' | string;
   fontScale: FontScale;
   lineHeight: LineHeight;
   measure: Measure;
@@ -86,6 +94,7 @@ export const DEFAULT_SETTINGS: ReaderSettings = {
   // The document's own declaration, because it is usually right and it is the
   // only answer that is about this document rather than about the reader.
   aiLanguage: 'document',
+  usualDocumentLanguage: 'auto',
   fontScale: 'normal',
   lineHeight: 'normal',
   measure: 'normal',

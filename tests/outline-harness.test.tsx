@@ -292,6 +292,29 @@ describe("word-columns.pdf's language", () => {
   }, 60_000);
 });
 
+describe("word-columns.pdf read in a language the reader chose (#57)", () => {
+  const pdf = resolve(import.meta.dirname, 'fixtures/word/word-columns.pdf');
+
+  it('takes the chosen language for the article and the title, and drops the tags’', async () => {
+    const reading = await readPdfAsReader(new Uint8Array(await readFile(pdf)), {
+      languages: { chosen: 'ro' },
+    });
+    expect(reading.document.metadata).toMatchObject({ language: 'ro', languageSource: 'chosen' });
+    rendered = renderReader(reading, { locale: 'ja' });
+
+    expect(rendered.container.querySelector('article')!.getAttribute('lang')).toBe('ro');
+    expect(rendered.container.querySelector('h1.apv-title')!.getAttribute('lang')).toBe('ro');
+    expect(rendered.container.querySelectorAll('article [lang]:not(.apv-visually-hidden)')).toHaveLength(0);
+  }, 60_000);
+
+  it('is not changed by a usual language, since its tags declare English throughout', async () => {
+    const reading = await readPdfAsReader(new Uint8Array(await readFile(pdf)), {
+      languages: { usual: 'ro' },
+    });
+    expect(reading.document.metadata).toMatchObject({ language: 'en', languageSource: 'tags' });
+  }, 60_000);
+});
+
 describe('word-small-figures.pdf', () => {
   it('matches its hand-written outline (#15)', async () => {
     const pdf = resolve(import.meta.dirname, 'fixtures/word/word-small-figures.pdf');

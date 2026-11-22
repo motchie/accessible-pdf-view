@@ -120,9 +120,23 @@ export default function App(): JSX.Element {
   // The toolbar needs it because it changes what its link to the original does.
   const opensInReader = usePdfHandlerEnabled();
 
+  // A language the reader chose for this document earlier in this tab (#57).
+  // Session storage only: kept across a reload, gone when the tab closes, and
+  // never synced or kept on disk past that.
+  const chosenLanguageKey = params.sourceUrl ? `apv-document-language:${params.sourceUrl}` : null;
+  const [initialChosenLanguage] = useState(() => readSession(chosenLanguageKey));
+
   const analysis = usePdfAnalysis(source, {
     preferred: settings.structureSource,
+    ...(initialChosenLanguage ? { chosenLanguage: initialChosenLanguage } : {}),
+    ...(settings.usualDocumentLanguage !== "auto"
+      ? { usualLanguage: settings.usualDocumentLanguage }
+      : {}),
   });
+  const chooseLanguage = (language: string | null) => {
+    writeSession(chosenLanguageKey, language);
+    analysis.chooseLanguage(language);
+  };
   const error = sourceError ?? analysis.error;
 
   // What this document is called: its own title if it declares one, the file
@@ -202,8 +216,19 @@ export default function App(): JSX.Element {
           info={analysis.info}
           structureSource={analysis.structureSource}
           pageCount={analysis.document?.metadata.pageCount ?? 0}
-          {...(analysis.document?.metadata.languageFromTags && analysis.document.metadata.language
-            ? { languageFromTags: analysis.document.metadata.language }
+          {...(analysis.document
+            ? {
+                readingLanguage: {
+                  ...(analysis.document.metadata.language
+                    ? { language: analysis.document.metadata.language }
+                    : {}),
+                  ...(analysis.document.metadata.languageSource
+                    ? { source: analysis.document.metadata.languageSource }
+                    : {}),
+                },
+                onChooseLanguage: chooseLanguage,
+                browserLanguages: navigator.languages ?? [],
+              }
             : {})}
         />
 
@@ -327,7 +352,11 @@ export default function App(): JSX.Element {
                   otherCount={betterHeadings(analysis)!.count}
                 />
               ) : null}
+              {/* A new element when the language changes: Firefox passes
+                  screen readers the language an element was created with
+                  (#40), and the reader can now change it (#57). */}
               <article
+                key={analysis.document.metadata.language ?? ""}
                 className="apv-article"
                 lang={analysis.document.metadata.language}
               >
@@ -472,5 +501,25 @@ function statusMessage(
         ? m.status.readyNeedsOcr(pageCount)
         : m.status.ready(pageCount);
     }
+  }
+}
+
+/** Session storage, which may be unavailable; a failure is no remembered choice. */
+function readSession(key: string | null): string | undefined {
+  if (!key) return undefined;
+  try {
+    return sessionStorage.getItem(key) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeSession(key: string | null, value: string | null): void {
+  if (!key) return;
+  try {
+    if (value) sessionStorage.setItem(key, value);
+    else sessionStorage.removeItem(key);
+  } catch {
+    // Not remembered; the choice still applies to the document on screen.
   }
 }

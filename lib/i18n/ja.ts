@@ -118,8 +118,20 @@ export const ja: Messages = {
     keywords: 'キーワード',
     language: '言語',
     readingLanguage: '読み上げの言語',
-    readingLanguageFromTags: (language: string) =>
-      `${language}（構造タグで、本文のすべての部分がこの言語を宣言しているため）`,
+    readingLanguageReason: {
+      catalog: (language: string) => `${language}（PDF の宣言による）`,
+      detected: (language: string) =>
+        `${language}（PDF に言語の宣言がないため、本文から推定）`,
+      tags: (language: string) =>
+        `${language}（構造タグで、本文のすべての部分がこの言語を宣言しているため）`,
+      usual: (language: string) =>
+        `${language}（設定の「よく読む文書の言語」による。PDF には、文書全体の宣言のほかに言語の手がかりがありません）`,
+      chosen: (language: string) =>
+        `${language}（この文書について選んだ言語。このタブを閉じるまで使います）`,
+      none: 'なし（PDF に言語の宣言がなく、推定もできませんでした）',
+    },
+    readingLanguageChoose: 'この文書を読む言語',
+    readingLanguageAutomatic: '自動',
     pageCount: 'ページ数',
     created: '作成日時',
     modified: '更新日時',
@@ -364,6 +376,10 @@ export const ja: Messages = {
     aiLanguageInterface: '表示言語を使う',
     aiLanguageInterfaceNote: (language: string) =>
       `このパネルの先頭で設定した表示言語（現在は${language}）。`,
+    usualLanguage: 'よく読む文書の言語',
+    usualLanguageHint:
+      'PDF 全体の宣言のほかに言語の手がかりがない文書（古い Word で作った文書では、この宣言が誤っていることがよくあります）や、言語の宣言がない文書を、この言語で読みます。本文がこの言語の文字で書かれている場合に限ります。部分ごとに言語を宣言している文書は、その宣言に従います。文書ごとの言語は、その文書の「文書情報」で変えられます。',
+    usualLanguageAutomatic: '自動（PDF の宣言に従う）',
     pdfHandler: 'PDF を開くビューアー',
     pdfHandlerHint:
       'クリックした PDF をどのビューアーで開くかです。リーダーに切り替えると、すべてのサイトのデータを読み取る権限をブラウザが確認します。ページが読み込まれる前に PDF のアドレスを判別する必要があり、アクセスできないサイトではそれが許可されないためです。元に戻すと、この権限は返却されます。',

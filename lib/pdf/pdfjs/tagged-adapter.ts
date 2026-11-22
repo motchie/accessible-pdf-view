@@ -700,7 +700,7 @@ function pushText(out: InlineNode[], raw: string, language: string | undefined):
   // happens in `merge`, once the fragments have been joined.
   // Every run records the language in force where it sits. Which of these
   // need saying in the output is settled later, in `settleDeclaredLanguages`.
-  out.push({ type: 'text', text: raw, ...(language ? { language } : {}) });
+  out.push({ type: 'text', text: raw, ...(language ? { declaredLanguage: language } : {}) });
 }
 
 function merge(nodes: InlineNode[]): InlineNode[] {
@@ -712,7 +712,7 @@ function merge(nodes: InlineNode[]): InlineNode[] {
       node.type === 'text' &&
       previous?.type === 'text' &&
       (previous.emphasis ?? []).join('|') === (node.emphasis ?? []).join('|') &&
-      previous.language === node.language
+      previous.declaredLanguage === node.declaredLanguage
     ) {
       previous.text += node.text;
       continue;

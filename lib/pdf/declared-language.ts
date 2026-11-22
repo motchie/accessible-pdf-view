@@ -45,25 +45,34 @@ import { comparableTitle } from './repeated-title';
  * says whether the tags carry most of the page text: without that, only a
  * heading that says the same as the title may decide its language.
  *
- * Idempotent: a run with no language of its own is read as being in its
- * block's, so settling a settled document gives it back unchanged. `decorate`
- * runs more than once on a reading.
+ * `chosen`: the document's language is one the reader chose (#57), not one
+ * the file gave. Then the file's part-level declarations are dropped too,
+ * except where the text's writing system shows a language of another family
+ * (`chosenVoicedLanguage`), and the title takes the chosen language.
+ *
+ * Settling works from each run's `declaredLanguage`, which it never changes,
+ * so settling a settled document — again, or against another language — gives
+ * the same answer as settling it once. `decorate` runs more than once on a
+ * reading, and again when the reader chooses a language.
  */
 export function settleDeclaredLanguages(
   document: AccessibleDocument,
   documentLanguage: string | undefined,
-  title?: string,
-  tagsCoverText = false,
+  options: { title?: string; tagsCoverText?: boolean; chosen?: boolean } = {},
 ): AccessibleDocument {
   if (!declaresAnyLanguage(document)) return document;
+  const voice: Voicing = options.chosen
+    ? (text, declared) => chosenVoicedLanguage(text, declared, documentLanguage)
+    : (text, declared) => voicedLanguage(text, declared, documentLanguage);
   const pages = document.pages.map((page) => ({
     ...page,
-    nodes: page.nodes.map((node) => settleBlock(node, documentLanguage)),
+    nodes: page.nodes.map((node) => settleBlock(node, documentLanguage, voice)),
   }));
   const { titleLanguage: _previous, ...metadata } = document.metadata;
-  const titleLanguage = title
-    ? titleLanguageFrom(pages, title, documentLanguage, tagsCoverText)
-    : undefined;
+  const titleLanguage =
+    options.title && !options.chosen
+      ? titleLanguageFrom(pages, options.title, documentLanguage, options.tagsCoverText ?? false)
+      : undefined;
   return { ...document, metadata: { ...metadata, ...(titleLanguage ? { titleLanguage } : {}) }, pages };
 }
 
@@ -173,12 +182,19 @@ function unanimousLanguage(nodes: DocumentNode[]): string | null {
 }
 
 
-function settleBlock(node: DocumentNode, documentLanguage: string | undefined): DocumentNode {
+/** A run's voiced language, given its text and what the file declares for it. */
+type Voicing = (text: string, declared: string | undefined) => string | undefined;
+
+function settleBlock(
+  node: DocumentNode,
+  documentLanguage: string | undefined,
+  voice: Voicing,
+): DocumentNode {
   switch (node.type) {
     case 'heading':
     case 'paragraph':
     case 'unknown': {
-      const { language, content } = settleText(node.content, node.language, documentLanguage);
+      const { language, content } = settleText(node.content, documentLanguage, voice);
       const { language: _previous, ...rest } = node;
       return { ...rest, content, ...(language ? { language } : {}) };
     }
@@ -186,12 +202,12 @@ function settleBlock(node: DocumentNode, documentLanguage: string | undefined): 
       return {
         ...node,
         items: node.items.map((item) => ({
-          blocks: item.blocks.map((block) => settleBlock(block, documentLanguage)),
+          blocks: item.blocks.map((block) => settleBlock(block, documentLanguage, voice)),
         })),
       };
     case 'table': {
       const settleRow = (row: TableRow): TableRow => ({
-        cells: row.cells.map((cell) => settleCell(cell, documentLanguage)),
+        cells: row.cells.map((cell) => settleCell(cell, documentLanguage, voice)),
       });
       return {
         ...node,
@@ -200,33 +216,37 @@ function settleBlock(node: DocumentNode, documentLanguage: string | undefined): 
       };
     }
     case 'blockquote':
-      return { ...node, blocks: node.blocks.map((block) => settleBlock(block, documentLanguage)) };
+      return {
+        ...node,
+        blocks: node.blocks.map((block) => settleBlock(block, documentLanguage, voice)),
+      };
     default:
       return node;
   }
 }
 
-function settleCell(cell: TableCell, documentLanguage: string | undefined): TableCell {
-  const { language, content } = settleText(cell.content, cell.language, documentLanguage);
+function settleCell(
+  cell: TableCell,
+  documentLanguage: string | undefined,
+  voice: Voicing,
+): TableCell {
+  const { language, content } = settleText(cell.content, documentLanguage, voice);
   const { language: _previous, ...rest } = cell;
   return {
     ...rest,
     content,
     ...(language ? { language } : {}),
     ...(cell.blocks
-      ? { blocks: cell.blocks.map((block) => settleBlock(block, documentLanguage)) }
+      ? { blocks: cell.blocks.map((block) => settleBlock(block, documentLanguage, voice)) }
       : {}),
   };
 }
 
-/**
- * A block's language and its runs, given what the block already says
- * (`blockLanguage`, from a previous settling) and the document's language.
- */
+/** A block's language and its runs, from what the file declares for each run. */
 function settleText(
   content: InlineNode[],
-  blockLanguage: string | undefined,
   documentLanguage: string | undefined,
+  voice: Voicing,
 ): { language: string | undefined; content: InlineNode[] } {
   // Each run's voiced language, worked out once.
   const voiced = new Map<TextNode, string | undefined>();
@@ -234,7 +254,7 @@ function settleText(
     for (const node of nodes) {
       if (node.type === 'link') visit(node.content);
       else if (node.type === 'text' && LETTER.test(node.text)) {
-        voiced.set(node, voicedLanguage(node.text, node.language ?? blockLanguage, documentLanguage));
+        voiced.set(node, voice(node.text, node.declaredLanguage));
       }
     }
   };
@@ -254,11 +274,14 @@ function settleText(
       if (node.type !== 'text') return node;
       const own = voiced.get(node);
       if (own !== undefined && !sameLanguage(own, around)) {
-        if (own !== node.language) changed = true;
-        return own === node.language ? node : { ...node, language: own };
+        if (own === node.language) return node;
+        changed = true;
+        return { ...node, language: own };
       }
-      if (node.language === undefined) return node;
+      // Its language is the one around it: nothing to mark, and a candidate
+      // for joining its neighbours.
       changed = true;
+      if (node.language === undefined) return node;
       const { language: _dropped, ...rest } = node;
       return rest;
     });
@@ -289,10 +312,17 @@ function joinRuns(nodes: InlineNode[]): InlineNode[] {
       previous.language === node.language
     ) {
       // Each run's whitespace was collapsed on its own; the join can still
-      // put two spaces side by side.
+      // put two spaces side by side. A joined run keeps a declaration only
+      // when both halves made the same one: two runs read alike in this
+      // document's language, and the joined one is read in it again.
+      const { declaredLanguage: _mixed, ...joined } = previous;
       out[out.length - 1] = {
-        ...previous,
+        ...joined,
         text: normalizeCjkSpacing(`${previous.text}${node.text}`.replace(/\s+/g, ' ')),
+        ...(previous.declaredLanguage !== undefined &&
+        previous.declaredLanguage === node.declaredLanguage
+          ? { declaredLanguage: previous.declaredLanguage }
+          : {}),
       };
       continue;
     }
@@ -355,6 +385,28 @@ function voicedLanguage(
   return shown ? declared : undefined;
 }
 
+/**
+ * A run's voiced language when the reader chose the document's (`chosen`).
+ *
+ * The reader's choice is about the document; a file whose declarations were
+ * wrong enough to need it is not trusted for its parts either. So a part keeps
+ * a declaration only when its own writing system shows a language of another
+ * family than the chosen one — Japanese with kana inside a document chosen as
+ * Romanian, English words inside one chosen as Japanese — by the rules
+ * `voicedLanguage` applies. Within one family (Romanian chosen, Spanish
+ * declared) the choice wins: the text cannot show which is right, and the
+ * reader said which.
+ */
+function chosenVoicedLanguage(
+  text: string,
+  declared: string | undefined,
+  chosen: string | undefined,
+): string | undefined {
+  if (!declared || !chosen) return undefined;
+  if (CJK.has(primary(declared)) === CJK.has(primary(chosen))) return undefined;
+  return voicedLanguage(text, declared, chosen);
+}
+
 function primary(tag: string): string {
   return tag.split('-')[0]!.toLowerCase();
 }
@@ -371,10 +423,46 @@ export function sameLanguage(a: string | undefined, b: string | undefined): bool
   return x === y || x.startsWith(`${y}-`) || y.startsWith(`${x}-`);
 }
 
+/**
+ * Whether any part of the document carries a language the file declared for
+ * it, as opposed to the catalog's alone. The reader's usual document language
+ * applies only where none does (#57).
+ */
+export function declaresPartLanguages(document: AccessibleDocument): boolean {
+  const inInline = (nodes: InlineNode[]): boolean =>
+    nodes.some((node) =>
+      node.type === 'text'
+        ? node.declaredLanguage !== undefined
+        : node.type === 'link' && inInline(node.content),
+    );
+  const inBlocks = (nodes: DocumentNode[]): boolean =>
+    nodes.some((node) => {
+      switch (node.type) {
+        case 'heading':
+        case 'paragraph':
+        case 'unknown':
+          return inInline(node.content);
+        case 'list':
+          return node.items.some((item) => inBlocks(item.blocks));
+        case 'blockquote':
+          return inBlocks(node.blocks);
+        case 'table':
+          return [...(node.header ? [node.header] : []), ...node.rows].some((row) =>
+            row.cells.some((cell) => inInline(cell.content) || inBlocks(cell.blocks ?? [])),
+          );
+        default:
+          return false;
+      }
+    });
+  return document.pages.some((page) => inBlocks(page.nodes));
+}
+
 function declaresAnyLanguage(document: AccessibleDocument): boolean {
   const inInline = (nodes: InlineNode[]): boolean =>
     nodes.some((node) =>
-      node.type === 'text' ? node.language !== undefined : node.type === 'link' && inInline(node.content),
+      node.type === 'text'
+        ? node.declaredLanguage !== undefined || node.language !== undefined
+        : node.type === 'link' && inInline(node.content),
     );
   const inBlocks = (nodes: DocumentNode[]): boolean =>
     nodes.some((node) => {

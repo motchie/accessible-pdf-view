@@ -2,8 +2,13 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { settleDeclaredLanguages } from '../lib/pdf/declared-language';
-import { declaredDocumentLanguages } from '../lib/reader/readings';
+import {
+  chooseDocumentLanguages,
+  writtenIn,
+  type LanguagePreferences,
+} from '../lib/pdf/document-language';
 import type { AccessibleDocument, DocumentNode } from '../lib/pdf/document-model';
+import { documentToPlainText } from '../lib/pdf/document-model';
 import type { PdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
 import { extractTaggedDocument } from '../lib/pdf/pdfjs/tagged-adapter';
 import { DocumentView } from '../lib/reader/renderer';
@@ -113,7 +118,11 @@ describe('a language declared on structure elements (#49)', () => {
       {
         type: 'paragraph',
         language: 'en',
-        content: [{ type: 'text', text: 'The first paragraph of the left column.' }],
+        // What the file declared stays on the run, so a language the reader
+        // chooses later can be settled from it (#57).
+        content: [
+          { type: 'text', text: 'The first paragraph of the left column.', declaredLanguage: 'en' },
+        ],
       },
     ]);
     expect(html(document)).toBe('<p lang="en">The first paragraph of the left column.</p>');
@@ -354,7 +363,7 @@ describe("the interface's words inside a block in another language", () => {
 describe("the title's language", () => {
   async function titleLanguage(catalog: string, title: string, ...kids: El[]) {
     const document = await read(catalog, ...kids);
-    return settleDeclaredLanguages(document, catalog, title, true).metadata.titleLanguage;
+    return settleDeclaredLanguages(document, catalog, { title, tagsCoverText: true }).metadata.titleLanguage;
   }
 
   it('takes the language of a heading that says the same', async () => {
@@ -389,12 +398,12 @@ describe("the title's language", () => {
   it('takes no unanimous language from tags that cover little of the page', async () => {
     const document = await read('ja', el('P', span('en', 'ACME Corporation')));
     expect(
-      settleDeclaredLanguages(document, 'ja', 'ACME Annual Report', false).metadata.titleLanguage,
+      settleDeclaredLanguages(document, 'ja', { title: 'ACME Annual Report' }).metadata.titleLanguage,
     ).toBeUndefined();
     // A heading that says the same still decides it.
     const withHeading = await read('ja', el('H1', span('en', 'ACME Annual Report')));
     expect(
-      settleDeclaredLanguages(withHeading, 'ja', 'ACME Annual Report', false).metadata.titleLanguage,
+      settleDeclaredLanguages(withHeading, 'ja', { title: 'ACME Annual Report' }).metadata.titleLanguage,
     ).toBe('en');
   });
 
@@ -405,57 +414,172 @@ describe("the title's language", () => {
   });
 });
 
-/** The document's own language, for every reading (#49). */
+/** The document's own language, for every reading (#49, #57). */
 describe("the document's language", () => {
-  async function languages(catalog: string | undefined, title: string | undefined, ...kids: El[]) {
-    return languagesCovering(true, catalog, title, ...kids);
-  }
-
-  async function languagesCovering(
-    covers: boolean,
-    catalog: string | undefined,
-    title: string | undefined,
+  async function decide(
+    options: {
+      catalog?: string;
+      title?: string;
+      covers?: boolean;
+      tagged?: boolean;
+      preferences?: LanguagePreferences;
+    },
     ...kids: El[]
   ) {
-    const tagged = await read(catalog, ...kids);
-    const info = { isTagged: true, hasStructureTree: true, ...(title ? { title } : {}) } as PdfDocumentInfo;
-    return declaredDocumentLanguages(new Map([['tagged-pdf', tagged]]), info, catalog, covers);
+    const document = await read(options.catalog, ...kids);
+    const info = {
+      isTagged: true,
+      hasStructureTree: true,
+      ...(options.title ? { title: options.title } : {}),
+      ...(options.catalog ? { language: options.catalog } : {}),
+    } as PdfDocumentInfo;
+    const raw = new Map(options.tagged === false ? [] : [['tagged-pdf' as const, document]]);
+    return chooseDocumentLanguages(
+      {
+        raw,
+        info,
+        found: options.catalog,
+        taggedCoversText: options.covers ?? true,
+        sample: documentToPlainText(document),
+      },
+      options.preferences ?? {},
+    );
   }
 
   it("is the catalog's when the tags carry too little of the page text", async () => {
     // A declared Tagged PDF whose tree holds one English logo line, its
     // Japanese body untagged.
     expect(
-      await languagesCovering(false, 'ja', undefined, el('P', span('en', 'ACME Corporation'))),
-    ).toEqual({ language: 'ja' });
+      await decide({ catalog: 'ja', covers: false }, el('P', span('en', 'ACME Corporation'))),
+    ).toEqual({ language: 'ja', source: 'catalog' });
   });
 
   it('is the one every run declares, over the catalog', async () => {
     expect(
-      await languages('ja', 'Reading order', el('P', span('en', 'First.')), el('P', span('en', 'Second.'))),
-    ).toEqual({ language: 'en', languageFromTags: true });
+      await decide(
+        { catalog: 'ja', title: 'Reading order' },
+        el('P', span('en', 'First.')),
+        el('P', span('en', 'Second.')),
+      ),
+    ).toEqual({ language: 'en', source: 'tags' });
   });
 
   it("is the catalog's when the runs disagree", async () => {
     expect(
-      await languages('ja', undefined, el('P', span('en', 'First.')), el('P', span('ja', '二つ目。'))),
-    ).toEqual({ language: 'ja' });
+      await decide({ catalog: 'ja' }, el('P', span('en', 'First.')), el('P', span('ja', '二つ目。'))),
+    ).toEqual({ language: 'ja', source: 'catalog' });
   });
 
   it("is the catalog's when the runs declare nothing", async () => {
-    expect(await languages('ja', undefined, el('P', '本文。'))).toEqual({ language: 'ja' });
+    expect(await decide({ catalog: 'ja' }, el('P', '本文。'))).toEqual({
+      language: 'ja',
+      source: 'catalog',
+    });
   });
 
-  it("is the catalog's without a tagged reading", () => {
-    expect(declaredDocumentLanguages(new Map(), { isTagged: false, hasStructureTree: false } as PdfDocumentInfo, 'ja', false)).toEqual({
+  it("is the catalog's without a tagged reading", async () => {
+    expect(await decide({ catalog: 'ja', tagged: false }, el('P', '本文。'))).toEqual({
       language: 'ja',
+      source: 'catalog',
     });
   });
 
   it("gives the title its own only where it differs from the document's", async () => {
     expect(
-      await languages('ja', 'Annual Report', el('H1', span('en', 'Annual Report')), el('P', span('ja', '本文です。'))),
-    ).toEqual({ language: 'ja', titleLanguage: 'en' });
+      await decide(
+        { catalog: 'ja', title: 'Annual Report' },
+        el('H1', span('en', 'Annual Report')),
+        el('P', span('ja', '本文です。')),
+      ),
+    ).toEqual({ language: 'ja', titleLanguage: 'en', source: 'catalog' });
+  });
+
+  describe("the reader's usual document language (#57)", () => {
+    const romanian = 'Regulamentul privind accesibilitatea pentru studenții cu dizabilități.';
+
+    it('replaces a catalog that is the only evidence, over text in its alphabet', async () => {
+      expect(
+        await decide({ catalog: 'en-US', preferences: { usual: 'ro' } }, el('P', romanian)),
+      ).toEqual({ language: 'ro', source: 'usual' });
+    });
+
+    it('fills in for a PDF that declares no language', async () => {
+      expect(
+        await decide({ tagged: false, preferences: { usual: 'ro' } }, el('P', romanian)),
+      ).toEqual({ language: 'ro', source: 'usual' });
+    });
+
+    it('leaves a PDF whose parts declare their languages', async () => {
+      expect(
+        await decide({ catalog: 'en', preferences: { usual: 'ro' } }, el('P', span('en', 'Annual report.'))),
+      ).toEqual({ language: 'en', source: 'catalog' });
+    });
+
+    it('leaves a document written in another alphabet', async () => {
+      expect(
+        await decide({ catalog: 'en', preferences: { usual: 'ro' } }, el('P', 'これは日本語の文書です。')),
+      ).toEqual({ language: 'en', source: 'catalog' });
+    });
+
+    it('leaves a document whose tags all declare one language', async () => {
+      expect(
+        await decide(
+          { catalog: 'ja', preferences: { usual: 'ro' } },
+          el('P', span('en', 'First.')),
+          el('P', span('en', 'Second.')),
+        ),
+      ).toEqual({ language: 'en', source: 'tags' });
+    });
+  });
+
+  describe("the reader's choice for this document (#57)", () => {
+    it('wins over the catalog, the tags and the usual language', async () => {
+      expect(
+        await decide(
+          { catalog: 'ja', preferences: { chosen: 'ro', usual: 'de' } },
+          el('P', span('en', 'First.')),
+          el('P', span('en', 'Second.')),
+        ),
+      ).toEqual({ language: 'ro', source: 'chosen' });
+    });
+
+    it("drops the file's part declarations, except another writing system's", async () => {
+      const document = await read(
+        'en',
+        el('P', span('ro', 'Regulamentul '), span('es', '(UE) 2024/1263 al Parlamentului')),
+        el('P', span('ro', 'Numele: '), span('ja', 'ひらがな')),
+      );
+      const chosen = settleDeclaredLanguages(document, 'ro', { chosen: true });
+      const markup = renderToStaticMarkup(
+        inLocale('ja', <DocumentView document={{ ...chosen, metadata: { ...chosen.metadata, language: 'ro' } }} />),
+      ).replace(/<div class="apv-page"[^>]*>|<\/div>/g, '');
+
+      expect(markup).toBe(
+        '<p>Regulamentul (UE) 2024/1263 al Parlamentului</p><p>Numele: <span lang="ja">ひらがな</span></p>',
+      );
+    });
+
+    it('can be undone, back to what the file says', async () => {
+      const document = await read('ja', el('P', span('en', 'First.')), el('P', span('ja', '本文。')));
+      const chosen = settleDeclaredLanguages(document, 'ro', { chosen: true });
+      expect(settleDeclaredLanguages(chosen, 'ja')).toEqual(document);
+    });
+  });
+});
+
+describe('whether a text is written in a language’s alphabet', () => {
+  it.each([
+    ['Regulamentul universității', 'ro', true],
+    ['Regulamentul universității', 'ru', false],
+    ['Положение университета', 'ru', true],
+    ['これは日本語です', 'ja', true],
+    ['漢字だけ', 'ja', true],
+    ['漢字', 'ja', false],
+    ['漢字', 'zh', true],
+    ['これは日本語です', 'ro', false],
+    ['2026', 'ro', false],
+  ])('%s in %s: %s', (text, language, expected) => {
+    expect(writtenIn(text, language)).toBe(expected);
   });
 });
 

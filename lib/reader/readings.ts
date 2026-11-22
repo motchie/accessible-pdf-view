@@ -10,7 +10,8 @@ import { combineReadings } from '../pdf/combined-reading';
 import { documentWithoutControlCharacters } from '../pdf/control-characters';
 import { promoteMergedHeadings } from '../pdf/inspector/heading-promotion';
 import { attachFigureRegions } from '../pdf/pdfjs/figure-regions';
-import { settleDeclaredLanguages, unanimousDeclaredLanguage } from '../pdf/declared-language';
+import { settleDeclaredLanguages } from '../pdf/declared-language';
+import type { LanguageSource } from '../pdf/document-language';
 import { detectLanguage, detectScriptLanguage } from '../pdf/pdfjs/language';
 import { readPdfDocumentInfo } from '../pdf/pdfjs/metadata';
 import { materializeFigureImages } from '../pdf/pdfjs/region-raster';
@@ -170,49 +171,6 @@ export async function documentLanguage(
   );
 }
 
-/**
- * The document's language and its title's, for every reading, from what the
- * tagged reading declares (#49). `language` is the one `documentLanguage`
- * found: the catalog's `/Lang`, or detection's.
- *
- * When every run with letters in the tagged reading declares one other
- * language, that is the document's language — in every reading, so the
- * inferred one, which cannot see a run's language, reads it in the same voice
- * (`unanimousDeclaredLanguage`). The catalog's own value is still what the
- * document information panel shows. The title's language is then worked out
- * against the result (`settleDeclaredLanguages`).
- *
- * Without a tagged reading, `language` stands and the title has none of its
- * own. `taggedCoversText` (from `buildReadings`) says whether the tags carry
- * most of the page text; without that, they do not decide the document's
- * language, though they can still decide the title's.
- */
-export function declaredDocumentLanguages(
-  raw: ReadonlyMap<DocumentOrigin, AccessibleDocument>,
-  info: PdfFileInfo,
-  language: string | undefined,
-  taggedCoversText: boolean,
-): { language: string | undefined; titleLanguage?: string; languageFromTags?: boolean } {
-  const tagged = raw.get('tagged-pdf');
-  if (!tagged) return { language };
-  const title = info.title ?? tagged.metadata.title;
-  const settled = settleDeclaredLanguages(tagged, language, title, taggedCoversText);
-  // Only tags that carry most of the page text may speak for the document. A
-  // declared Tagged PDF is read from its tags however little they cover, and
-  // a tree holding one English logo line would otherwise make a Japanese body
-  // English in every reading.
-  const content = taggedCoversText ? unanimousDeclaredLanguage(settled, language) : undefined;
-  if (!content) {
-    const titleLanguage = settled.metadata.titleLanguage;
-    return { language, ...(titleLanguage ? { titleLanguage } : {}) };
-  }
-  // The corrections depend on the document's language, so the title is
-  // worked out again against the new one.
-  const titleLanguage = title
-    ? settleDeclaredLanguages(tagged, content, title, true).metadata.titleLanguage
-    : undefined;
-  return { language: content, ...(titleLanguage ? { titleLanguage } : {}), languageFromTags: true };
-}
 
 /**
  * The text-less pages whose cause is still to be found: the ones the producer
@@ -238,8 +196,8 @@ export interface DocumentFacts {
    * no declared languages of its own (the inferred one) could not work it out.
    */
   titleLanguage?: string;
-  /** `language` came from the structure tags, not the catalog or detection. */
-  languageFromTags?: boolean;
+  /** Where `language` came from (`chooseDocumentLanguages`). */
+  languageSource?: LanguageSource;
   kinds: Map<number, PageContentKind>;
 }
 
@@ -261,16 +219,22 @@ export function decorate(document: AccessibleDocument, facts: DocumentFacts): Ac
   // The title's language is the document's, decided once from the tagged
   // reading (`declaredDocumentLanguages`) and passed in `facts`, so it is not
   // worked out again here from whatever this reading holds.
-  const settled = settleDeclaredLanguages(document, facts.language ?? document.metadata.language);
+  // A language the reader chose overrules the file's part-level declarations
+  // as well as its catalog (#57).
+  const settled = settleDeclaredLanguages(document, facts.language ?? document.metadata.language, {
+    chosen: facts.languageSource === 'chosen',
+  });
+  const { titleLanguage: _previousTitle, languageSource: _previousSource, ...metadata } =
+    settled.metadata;
   return documentWithoutControlCharacters({
     ...settled,
     metadata: {
-      ...settled.metadata,
+      ...metadata,
       // The document's own title and language beat anything inferred.
       title: facts.info.title ?? document.metadata.title,
       ...(facts.language ? { language: facts.language } : {}),
       ...(facts.titleLanguage ? { titleLanguage: facts.titleLanguage } : {}),
-      ...(facts.languageFromTags ? { languageFromTags: true as const } : {}),
+      ...(facts.languageSource ? { languageSource: facts.languageSource } : {}),
       info: facts.info,
     },
     pages:
