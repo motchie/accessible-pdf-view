@@ -549,6 +549,12 @@ describe("the document's language", () => {
       ).toEqual({ language: 'en', source: 'catalog' });
     });
 
+    it('fills in for an undeclared document in a non-Latin script without distinctive letters', async () => {
+      expect(
+        await decide({ tagged: false, preferences: { usual: 'ru' } }, el('P', 'Положение о доступности университета.')),
+      ).toEqual({ language: 'ru', source: 'usual' });
+    });
+
     it('leaves a document whose tags all declare one language', async () => {
       expect(
         await decide(

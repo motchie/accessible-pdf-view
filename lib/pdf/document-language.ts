@@ -222,8 +222,10 @@ const DISTINCTIVE_MINIMUM = 3;
  * Where the file's language uses the same one, the text must also carry the
  * usual language's distinctive letters (`DISTINCTIVE_LETTERS`): a catalog of
  * `ja` over Latin text is plainly wrong, but one of `en-US` over Latin text
- * may be right. A file that gives no language counts as the same alphabet: an
- * English document that declares nothing is as likely as a Romanian one.
+ * may be right. A file that gives no language counts as the Latin alphabet: an
+ * English document that declares nothing is as likely as a Romanian one, while
+ * a Russian or Chinese text that declares nothing can only be what it looks
+ * like.
  */
 export function fitsUsualLanguage(
   sample: string,
@@ -234,6 +236,10 @@ export function fitsUsualLanguage(
   const usualScript = scriptOf(usual);
   const fileScript = fileLanguage ? scriptOf(fileLanguage) : undefined;
   if (fileScript && usualScript && fileScript !== usualScript) return true;
+  // With no language from the file, the doubt is only whether the text is
+  // English, and English text is not in Cyrillic, Greek or Han: the writing
+  // system is evidence enough outside the Latin alphabet.
+  if (!fileScript && usualScript && usualScript !== 'Latn') return true;
 
   const distinctive = DISTINCTIVE_LETTERS[usual.split('-')[0]!.toLowerCase()];
   if (!distinctive) return false;
