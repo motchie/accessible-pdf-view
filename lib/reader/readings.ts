@@ -198,7 +198,11 @@ export interface DocumentFacts {
 export function decorate(document: AccessibleDocument, facts: DocumentFacts): AccessibleDocument {
   // Which declared languages are worth marking depends on the document's own,
   // so it is decided here, where that is known — detection included (#49).
-  const settled = settleDeclaredLanguages(document, facts.language ?? document.metadata.language);
+  const settled = settleDeclaredLanguages(
+    document,
+    facts.language ?? document.metadata.language,
+    facts.info.title ?? document.metadata.title,
+  );
   return documentWithoutControlCharacters({
     ...settled,
     metadata: {

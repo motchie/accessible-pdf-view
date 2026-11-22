@@ -46,6 +46,6 @@ export function dropRepeatedTitle(
  * exact comparison let the title be read twice. Both sides get the same
  * normalisation, so the comparison is between what each one says.
  */
-function comparableTitle(text: string): string {
+export function comparableTitle(text: string): string {
   return normalizeCjkSpacing(text.replace(/\s+/g, ' ').trim());
 }

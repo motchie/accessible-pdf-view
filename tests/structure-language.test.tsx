@@ -325,3 +325,49 @@ describe("the interface's words inside a block in another language", () => {
     expect(html(document)).toContain('<p class="apv-figure__placeholder">');
   });
 });
+
+/**
+ * The page's title heading comes from the document information, which declares
+ * no language. It takes one from the document's tags only when they show it.
+ */
+describe("the title's language", () => {
+  async function titleLanguage(catalog: string, title: string, ...kids: El[]) {
+    const document = await read(catalog, ...kids);
+    return settleDeclaredLanguages(document, catalog, title).metadata.titleLanguage;
+  }
+
+  it('takes the language of a heading that says the same', async () => {
+    expect(
+      await titleLanguage(
+        'ja',
+        'Annual Report',
+        el('H1', span('en', 'Annual Report')),
+        el('P', span('ja', '本文です。')),
+      ),
+    ).toBe('en');
+  });
+
+  it('takes the language every run in the document agrees on', async () => {
+    expect(
+      await titleLanguage('ja', 'Reading order', el('P', span('en', 'First.')), el('P', span('en', 'Second.'))),
+    ).toBe('en');
+  });
+
+  it('keeps the document’s when the runs disagree and nothing says the same', async () => {
+    expect(
+      await titleLanguage('ja', 'Reading order', el('P', span('en', 'First.')), el('P', span('ja', '二つ目。'))),
+    ).toBeUndefined();
+  });
+
+  it("keeps the document's when the matching heading is in the document's language", async () => {
+    expect(
+      await titleLanguage('ja', '年次報告', el('H1', span('ja', '年次報告')), el('P', span('en', 'English.'))),
+    ).toBeUndefined();
+  });
+
+  it('does not mark a title with Japanese in it as English', async () => {
+    expect(
+      await titleLanguage('ja', 'PDF の読み方', el('P', span('en', 'All English.'))),
+    ).toBeUndefined();
+  });
+});
