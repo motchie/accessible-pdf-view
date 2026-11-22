@@ -110,8 +110,6 @@
   --apv-d-error-border: #f2b8b5;
   --apv-d-toolbar-bg: #0f1114;
   --apv-d-control-bg: #000000;
-  --apv-d-menu-fg: #e8eaed;
-  --apv-d-menu-bg: #22262c;
 
   /* Light is the base. */
   --apv-bg: #ffffff;
@@ -127,8 +125,6 @@
      so its light values are dark too. */
   --apv-toolbar-bg: #2b2f36;
   --apv-control-bg: #1b1e23;
-  --apv-menu-fg: #1b1d21;
-  --apv-menu-bg: #ffffff;
 }
 
 /* Nobody chose, and the OS says dark. Guarded so an explicit "light" wins. */
@@ -144,8 +140,6 @@
     --apv-error-border: var(--apv-d-error-border);
     --apv-toolbar-bg: var(--apv-d-toolbar-bg);
     --apv-control-bg: var(--apv-d-control-bg);
-    --apv-menu-fg: var(--apv-d-menu-fg);
-    --apv-menu-bg: var(--apv-d-menu-bg);
   }
 }
 
@@ -161,8 +155,6 @@
   --apv-error-border: var(--apv-d-error-border);
   --apv-toolbar-bg: var(--apv-d-toolbar-bg);
   --apv-control-bg: var(--apv-d-control-bg);
-  --apv-menu-fg: var(--apv-d-menu-fg);
-  --apv-menu-bg: var(--apv-d-menu-bg);
 }
 
 /* A percentage, so it multiplies the reader's own browser default rather than
@@ -304,13 +296,13 @@ body {
   border-radius: 0.25rem;
   /* Long option text must not push the bar wider than the window. */
   max-width: 26ch;
-}
-
-.apv-toolbar select option {
-  /* Some platforms render the popup with the page's colours rather than the
-     control's; state both so the list is never dark-on-dark. */
-  color: var(--apv-menu-fg);
-  background: var(--apv-menu-bg);
+  /* The bar is dark under both themes, so the control and its popup are told
+     so. The option list is then the platform's dark list, highlight included.
+     Options carry no colours of their own: when they did (light rows under a
+     dark box), Firefox drew the list from the page's colours and the
+     highlighted row lost its light background but kept its dark text, which
+     left that row dark-on-dark and unreadable in the light theme. */
+  color-scheme: dark;
 }
 
 .apv-toolbar__error {
