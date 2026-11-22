@@ -439,6 +439,26 @@ These rules were worked out on Japanese documents exported by Word, where
 the declarations were measured. Other producers, and Chinese or Korean
 documents, have not been measured.
 
+Nothing in a file may show its language at all, or show the wrong one: of
+seven tagged Romanian public PDFs measured, six declared `en-US` over Romanian
+text with no part declaring anything else. So the reader decides too (#57):
+
+- **For one document**, in **Document information**: "Read as" says which
+  language the Reader uses and where it came from, and offers others. A choice
+  is kept for the tab, through a reload, and is gone when the tab closes. A
+  chosen language also overrules the file's part-level declarations, except
+  where the text's writing system shows another language.
+- **As a setting**, "Usual document language", off by default. It applies only
+  to a PDF that gives nothing beyond its catalog's language, or none — no part
+  declares a language and the tags do not decide it — and only when the text
+  is written in that language's alphabet. Where the catalog's language uses the
+  same alphabet (`en-US` over what may be Romanian), the text must also carry
+  letters the usual language has and English does not (ă, ș, ț for Romanian).
+  Measured on this project's fixtures and the Romanian PDFs, a usual language
+  of Romanian takes every misdeclared Romanian document and none of the
+  English ones. A language with no such letters cannot overrule a catalog in
+  its own alphabet.
+
 The Reader's own words inside the document — a page label, a link's "opens in
 a new tab", a figure's notice — are marked with the interface's language where
 it differs from the text around them.

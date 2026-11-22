@@ -521,6 +521,34 @@ describe("the document's language", () => {
       ).toEqual({ language: 'en', source: 'catalog' });
     });
 
+    it('leaves English text declared English: the alphabet alone cannot say it is Romanian', async () => {
+      expect(
+        await decide(
+          { catalog: 'en-US', preferences: { usual: 'ro' } },
+          el('P', 'This document is written in English, and its catalog says so.'),
+        ),
+      ).toEqual({ language: 'en-US', source: 'catalog' });
+    });
+
+    it('needs no distinctive letters where the catalog is in another alphabet', async () => {
+      // English has none, but a catalog of ja over Latin text is plainly wrong.
+      expect(
+        await decide(
+          { catalog: 'ja', tagged: false, preferences: { usual: 'en' } },
+          el('P', 'This document is written in English.'),
+        ),
+      ).toEqual({ language: 'en', source: 'usual' });
+    });
+
+    it('cannot overrule a catalog in the same alphabet for a language without distinctive letters', async () => {
+      expect(
+        await decide(
+          { catalog: 'en', tagged: false, preferences: { usual: 'nl' } },
+          el('P', 'Dit document is in het Nederlands geschreven.'),
+        ),
+      ).toEqual({ language: 'en', source: 'catalog' });
+    });
+
     it('leaves a document whose tags all declare one language', async () => {
       expect(
         await decide(

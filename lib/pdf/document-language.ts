@@ -62,10 +62,13 @@ export interface LanguagePreferences {
  *      Word exports whose catalog says `en-US` over Romanian text, and not a
  *      Japanese document, nor one whose runs declare English.
  *
- * The usual language cannot tell a Romanian document from an English one when
- * both declare only `en-US`; the reader who sets it accepts that, and the
- * panel says which rule applied, so the choice for one document is one step
- * away.
+ * Where the file's language is written in the same alphabet as the usual
+ * one — `en-US` declared over what may be Romanian — the alphabet cannot tell
+ * them apart, so the text must also show letters the usual language has and
+ * English does not (`fitsUsualLanguage`). Measured on this project's fixtures,
+ * without it a usual language of Romanian took four of six English documents.
+ * The panel says which rule applied, so the choice for one document is one
+ * step away either way.
  */
 export function chooseDocumentLanguages(
   evidence: LanguageEvidence,
@@ -80,7 +83,7 @@ export function chooseDocumentLanguages(
     fromFile.source !== 'tags' &&
     !sameLanguage(usual, fromFile.language) &&
     !partsDeclareLanguages(evidence.raw) &&
-    writtenIn(evidence.sample, usual)
+    fitsUsualLanguage(evidence.sample, usual, fromFile.language)
   ) {
     return { language: usual, source: 'usual' };
   }
@@ -139,12 +142,7 @@ function partsDeclareLanguages(raw: ReadonlyMap<DocumentOrigin, AccessibleDocume
  * Unicode script property. A sample with no letters fits nothing.
  */
 export function writtenIn(sample: string, language: string): boolean {
-  let script: string | undefined;
-  try {
-    script = new Intl.Locale(language).maximize().script;
-  } catch {
-    return false;
-  }
+  const script = scriptOf(language);
   if (!script) return false;
 
   const letters = countMatches(sample, /\p{L}/gu);
@@ -170,6 +168,85 @@ export function writtenIn(sample: string, language: string): boolean {
       }
       return inScript * 2 > letters;
     }
+  }
+}
+
+/**
+ * Letters a language writes and English does not, for the languages written in
+ * the Latin alphabet that have them. Not a way to tell these languages from
+ * one another — ä is German, Swedish and Finnish alike — only from text with
+ * none of them, which is what a document declared `en-US` would be if it
+ * really were English.
+ *
+ * A language without such letters (Dutch, Indonesian, English itself) is not
+ * in the list, and a usual language of one of them cannot overrule a catalog
+ * in the same alphabet: nothing in the text could show it was right to.
+ */
+const DISTINCTIVE_LETTERS: Readonly<Record<string, RegExp>> = {
+  cs: /[ěščřžůĚŠČŘŽŮ]/gu,
+  da: /[æøåÆØÅ]/gu,
+  de: /[äöüßÄÖÜ]/gu,
+  es: /[ñáéíóú¿¡ÑÁÉÍÓÚ]/gu,
+  et: /[õäöüšžÕÄÖÜŠŽ]/gu,
+  fi: /[äöÄÖ]/gu,
+  fr: /[éèêàçùûôœëïÉÈÊÀÇÙÛÔŒ]/gu,
+  ga: /[áéíóúÁÉÍÓÚ]/gu,
+  hr: /[čćšžđČĆŠŽĐ]/gu,
+  hu: /[őűáéíóöúüŐŰÁÉÍÓÖÚÜ]/gu,
+  it: /[àèéìòùÀÈÉÌÒÙ]/gu,
+  lt: /[ąčęėįšųūžĄČĘĖĮŠŲŪŽ]/gu,
+  lv: /[āčēģīķļņšūžĀČĒĢĪĶĻŅŠŪŽ]/gu,
+  mt: /[ċġħżĊĠĦŻ]/gu,
+  no: /[æøåÆØÅ]/gu,
+  pl: /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/gu,
+  pt: /[ãõçáéíóúâêôàÃÕÇÁÉÍÓÚÂÊÔÀ]/gu,
+  // ă, ș and ț are Romanian's own; ş and ţ are the cedilla forms older fonts
+  // and documents use for the last two. â and î are shared with French.
+  ro: /[ăâîșțşţĂÂÎȘȚŞŢ]/gu,
+  sk: /[ľščťžýáíéäôňĽŠČŤŽÝÁÍÉÄÔŇ]/gu,
+  sl: /[čšžČŠŽ]/gu,
+  sv: /[åäöÅÄÖ]/gu,
+  tr: /[ğışçöüİĞŞÇÖÜ]/gu,
+  vi: /[ăâđêôơưĂÂĐÊÔƠƯ]/gu,
+};
+
+/** At least this share of the letters, and this many, must be distinctive. */
+const DISTINCTIVE_SHARE = 0.01;
+const DISTINCTIVE_MINIMUM = 3;
+
+/**
+ * Whether a text could be in the reader's usual language rather than in the
+ * one the file gives (`fileLanguage`).
+ *
+ * It must be written in the usual language's writing system (`writtenIn`).
+ * Where the file's language uses the same one, the text must also carry the
+ * usual language's distinctive letters (`DISTINCTIVE_LETTERS`): a catalog of
+ * `ja` over Latin text is plainly wrong, but one of `en-US` over Latin text
+ * may be right. A file that gives no language counts as the same alphabet: an
+ * English document that declares nothing is as likely as a Romanian one.
+ */
+export function fitsUsualLanguage(
+  sample: string,
+  usual: string,
+  fileLanguage: string | undefined,
+): boolean {
+  if (!writtenIn(sample, usual)) return false;
+  const usualScript = scriptOf(usual);
+  const fileScript = fileLanguage ? scriptOf(fileLanguage) : undefined;
+  if (fileScript && usualScript && fileScript !== usualScript) return true;
+
+  const distinctive = DISTINCTIVE_LETTERS[usual.split('-')[0]!.toLowerCase()];
+  if (!distinctive) return false;
+  const letters = countMatches(sample, /\p{L}/gu);
+  const found = countMatches(sample, distinctive);
+  return found >= DISTINCTIVE_MINIMUM && found >= letters * DISTINCTIVE_SHARE;
+}
+
+function scriptOf(language: string): string | undefined {
+  try {
+    return new Intl.Locale(language).maximize().script;
+  } catch {
+    return undefined;
   }
 }
 
