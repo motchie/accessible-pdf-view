@@ -431,6 +431,8 @@ export const en = {
 
   settings: {
     title: 'Settings',
+    /** There is no Save button: say so, where the Reader is not in view (#68). */
+    savedAtOnce: 'Changes are saved at once, and apply to any open Reader.',
     textAndSpacing: 'Text and spacing',
     zoomHint: 'Works alongside the browser’s own zoom (Ctrl and +).',
     fontSize: 'Text size',

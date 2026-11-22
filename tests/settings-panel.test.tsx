@@ -228,3 +228,14 @@ describe('the usual document language', () => {
     expect(patches).toContainEqual({ usualDocumentLanguage: 'ro' });
   });
 });
+
+/** There is no Save button, so the panel says changes are kept at once (#68). */
+describe('saving', () => {
+  it('says that changes are saved at once and reach an open Reader', async () => {
+    removeLanguageModel();
+    await mount();
+    expect(container.querySelector('h1')?.nextElementSibling?.textContent).toBe(
+      '変更はすぐに保存され、開いているリーダーにも反映されます。',
+    );
+  });
+});

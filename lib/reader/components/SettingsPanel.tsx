@@ -59,6 +59,10 @@ export function SettingsPanel({
   return (
     <div className="apv-settings">
       <h1 className="apv-settings__title">{m.settings.title}</h1>
+      {/* There is no Save button. Beside the Reader the change shows at once;
+          on a page of its own (Firefox for Android, #68) the Reader is out of
+          sight, so this says what happened. */}
+      <p className="apv-settings__hint">{m.settings.savedAtOnce}</p>
 
       {/* First, because it changes the words of every control under it. */}
       <fieldset>

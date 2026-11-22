@@ -345,6 +345,7 @@ export const ja: Messages = {
 
   settings: {
     title: '設定',
+    savedAtOnce: '変更はすぐに保存され、開いているリーダーにも反映されます。',
     textAndSpacing: '文字と余白',
     zoomHint: 'ブラウザのズーム（Ctrl と ＋）と併用できます。',
     fontSize: '文字サイズ',
