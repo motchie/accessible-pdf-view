@@ -330,6 +330,21 @@ describe('the language switch', () => {
     expect(container.querySelector('#apv-language-select')).toBeNull();
   });
 
+  it('is shown in the Reader view only', () => {
+    const documentLanguage = {
+      language: 'en-US',
+      source: 'catalog' as const,
+      browserLanguages: [],
+      onChoose: () => {},
+    };
+    for (const active of ['original', 'markdown'] as const) {
+      mount({ active, documentLanguage });
+      expect(container.querySelector('#apv-language-select')).toBeNull();
+    }
+    mount({ active: 'reader', documentLanguage });
+    expect(container.querySelector('#apv-language-select')).not.toBeNull();
+  });
+
   it('names what Automatic is, offers the browser’s languages first, and stays out of the toolbar', () => {
     mount({
       documentLanguage: {
@@ -340,7 +355,7 @@ describe('the language switch', () => {
       },
     });
     const select = languageSelect();
-    expect(select.labels?.[0]?.textContent).toBe('言語');
+    expect(select.labels?.[0]?.textContent).toBe('文書の言語');
     expect(select.value).toBe('');
     expect(select.options[0]!.textContent).toBe('自動（アメリカ英語 (en-US)）');
     expect([...select.options].slice(1, 3).map((option) => option.value)).toEqual(['ro', 'en']);

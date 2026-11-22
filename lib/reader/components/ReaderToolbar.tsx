@@ -200,7 +200,9 @@ export function ReaderToolbar({
         </select>
       </span>
 
-      {documentLanguage ? <LanguageSwitch {...documentLanguage} /> : null}
+      {/* Only where it changes what is on screen: the Original view is the
+          browser's own PDF viewer, and the Markdown view carries no lang. */}
+      {documentLanguage && active === 'reader' ? <LanguageSwitch {...documentLanguage} /> : null}
 
       {fileName ? <span className="apv-toolbar__file">{fileName}</span> : null}
 
