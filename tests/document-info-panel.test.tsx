@@ -106,7 +106,6 @@ describe('the language the Reader reads in', () => {
   function mountWith(
     readingLanguage: { language?: string; source?: LanguageSource; kept?: boolean },
     locale: Locale,
-    onChooseLanguage?: (language: string | null) => void,
   ): void {
     act(() =>
       root.render(
@@ -117,15 +116,12 @@ describe('the language the Reader reads in', () => {
             structureSource="tagged-pdf"
             pageCount={1}
             readingLanguage={readingLanguage}
-            browserLanguages={['ro-RO', 'en']}
-            {...(onChooseLanguage ? { onChooseLanguage } : {})}
           />,
         ),
       ),
     );
   }
   const reason = () => container.querySelector('.apv-docinfo__reason')?.textContent;
-  const select = () => container.querySelector<HTMLSelectElement>('.apv-docinfo__choose select');
 
   it('says where the language came from, in both interface languages', () => {
     mountWith({ language: 'en', source: 'tags' }, 'ja');
@@ -170,34 +166,8 @@ describe('the language the Reader reads in', () => {
     expect(reason()).toBe('なし（PDF に言語の宣言がなく、推定もできませんでした）');
   });
 
-  it("offers the browser's languages first, and Automatic unless one was chosen", () => {
-    mountWith({ language: 'ja', source: 'catalog' }, 'en', () => {});
-    const options = [...select()!.options].map((option) => option.value);
-    expect(options.slice(0, 3)).toEqual(['', 'ro', 'en']);
-    expect(select()!.value).toBe('');
-    expect(container.querySelector('.apv-docinfo__choose label')?.textContent).toBe('Read this document as');
-
-    mountWith({ language: 'ro', source: 'chosen' }, 'en', () => {});
-    expect(select()!.value).toBe('ro');
-  });
-
-  it('chooses a language, and goes back to Automatic with null', () => {
-    const chosen: Array<string | null> = [];
-    mountWith({ language: 'en-US', source: 'catalog' }, 'ja', (language) => chosen.push(language));
-
-    act(() => {
-      select()!.value = 'ro';
-      select()!.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    act(() => {
-      select()!.value = '';
-      select()!.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    expect(chosen).toEqual(['ro', null]);
-  });
-
-  it('only reports when it cannot be changed', () => {
+  it('only reports: the choice is in the toolbar (#62)', () => {
     mountWith({ language: 'ja', source: 'catalog' }, 'ja');
-    expect(select()).toBeNull();
+    expect(container.querySelector('.apv-docinfo select')).toBeNull();
   });
 });

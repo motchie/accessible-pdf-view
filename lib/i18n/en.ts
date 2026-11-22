@@ -111,6 +111,11 @@ export const en = {
       '(opens in a new tab — and in this Reader, because of your “Opening PDFs” setting)',
     settings: 'Settings',
     settingsFailed: (detail: string) => `Settings could not be opened. ${detail}`,
+    /** The language the document is read in (#57, #62). */
+    language: 'Language',
+    /** The first choice: what the Reader worked out, named. */
+    languageAutomatic: (current: string | null) =>
+      current ? `Automatic: ${current}` : 'Automatic',
   },
 
   structure: {

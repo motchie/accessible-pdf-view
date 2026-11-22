@@ -78,6 +78,8 @@ export const ja: Messages = {
       '（新しいタブで開きますが、「PDF を開くビューアー」の設定により、このリーダーで開きます）',
     settings: '設定',
     settingsFailed: (detail: string) => `設定を開けませんでした。${detail}`,
+    language: '言語',
+    languageAutomatic: (current: string | null) => (current ? `自動（${current}）` : '自動'),
   },
 
   structure: {

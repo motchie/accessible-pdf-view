@@ -313,3 +313,69 @@ describe('the bar as a whole', () => {
     expect(container.querySelector('.apv-toolbar__file')).toBeNull();
   });
 });
+
+/**
+ * The document's language (#57, #62): a `<select>` beside the view switch,
+ * outside the toolbar role for the same reason, saying what Automatic is now.
+ */
+describe('the language switch', () => {
+  function languageSelect(): HTMLSelectElement {
+    const found = container.querySelector<HTMLSelectElement>('#apv-language-select');
+    if (!found) throw new Error('no language select');
+    return found;
+  }
+
+  it('is absent until there is a document', () => {
+    mount();
+    expect(container.querySelector('#apv-language-select')).toBeNull();
+  });
+
+  it('names what Automatic is, offers the browser’s languages first, and stays out of the toolbar', () => {
+    mount({
+      documentLanguage: {
+        language: 'en-US',
+        source: 'catalog',
+        browserLanguages: ['ro-RO', 'en'],
+        onChoose: () => {},
+      },
+    });
+    const select = languageSelect();
+    expect(select.labels?.[0]?.textContent).toBe('言語');
+    expect(select.value).toBe('');
+    expect(select.options[0]!.textContent).toBe('自動（アメリカ英語 (en-US)）');
+    expect([...select.options].slice(1, 3).map((option) => option.value)).toEqual(['ro', 'en']);
+    expect(select.closest('[role="toolbar"]')).toBeNull();
+  });
+
+  it('shows a chosen language as chosen, and Automatic unnamed', () => {
+    mount(
+      {
+        documentLanguage: { language: 'ro', source: 'chosen', browserLanguages: [], onChoose: () => {} },
+      },
+      'en',
+    );
+    expect(languageSelect().value).toBe('ro');
+    expect(languageSelect().options[0]!.textContent).toBe('Automatic');
+  });
+
+  it('chooses a language, and goes back to Automatic with null', () => {
+    const picked: Array<string | null> = [];
+    mount({
+      documentLanguage: {
+        language: 'en-US',
+        source: 'catalog',
+        browserLanguages: [],
+        onChoose: (language) => picked.push(language),
+      },
+    });
+    act(() => {
+      languageSelect().value = 'ro';
+      languageSelect().dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    act(() => {
+      languageSelect().value = '';
+      languageSelect().dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(picked).toEqual(['ro', null]);
+  });
+});

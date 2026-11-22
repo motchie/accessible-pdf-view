@@ -447,24 +447,6 @@ body {
   color: var(--apv-muted);
 }
 
-/* The reason, then the control that changes it, each on its own line. */
-.apv-docinfo__reason,
-.apv-docinfo__choose {
-  display: block;
-}
-
-.apv-docinfo__choose {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-  margin-top: 0.35rem;
-}
-
-.apv-docinfo__choose select {
-  max-width: 100%;
-  font: inherit;
-}
 
 /* ------------------------------------------------- describe / OCR panels */
 

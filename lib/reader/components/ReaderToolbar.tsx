@@ -8,6 +8,8 @@ import {
 import { isSidePanelSupported, openSidePanel } from '../../browser/side-panel';
 import { sanitizeHref } from '../../pdf/sanitize-url';
 import { useMessages } from '../../i18n';
+import { documentLanguageChoices, languageLabel } from '../../i18n/language-choices';
+import type { LanguageSource } from '../../pdf/document-language';
 
 /**
  * The Reader's toolbar.
@@ -21,7 +23,16 @@ import { useMessages } from '../../i18n';
  * and making a screen reader user walk past a dozen controls that do nothing to
  * reach the document.
  *
- * So the bar holds four things: which view, which file, print, and the original.
+ * So the bar holds five things: which view, which language the document is
+ * read in, which file, print, and the original.
+ *
+ * The language is here rather than only in Document information (#62): a
+ * reader hearing a Romanian document in an English voice — the usual case for
+ * Word exports declared `en-US` — meets the bar before the text, and the
+ * collapsed panel is not where anyone looks for a remedy. The bar says the
+ * language and offers others; the panel still says why it is the one it is.
+ * It is a `<select>` like the view switch, and sits outside the toolbar role
+ * for the same reason.
  *
  * ## Where `role="toolbar"` starts and stops
  *
@@ -86,6 +97,16 @@ export interface ReaderToolbarProps {
    * see `usePdfHandlerEnabled`.
    */
   opensInReader?: boolean;
+  /**
+   * The language the document is read in, and the choice of another (#57).
+   * Absent until there is a document.
+   */
+  documentLanguage?: {
+    language?: string;
+    source?: LanguageSource;
+    browserLanguages: readonly string[];
+    onChoose: (language: string | null) => void;
+  };
 }
 
 /**
@@ -104,6 +125,7 @@ export function ReaderToolbar({
   fileName,
   sourceUrl,
   opensInReader = false,
+  documentLanguage,
 }: ReaderToolbarProps): JSX.Element {
   const m = useMessages();
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -178,6 +200,8 @@ export function ReaderToolbar({
         </select>
       </span>
 
+      {documentLanguage ? <LanguageSwitch {...documentLanguage} /> : null}
+
       {fileName ? <span className="apv-toolbar__file">{fileName}</span> : null}
 
       <div
@@ -235,5 +259,39 @@ export function ReaderToolbar({
         </p>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * The language the document is read in: "Automatic", naming what that is now,
+ * or the language the reader chose; then the others, the browser's first.
+ */
+function LanguageSwitch({
+  language,
+  source,
+  browserLanguages,
+  onChoose,
+}: NonNullable<ReaderToolbarProps['documentLanguage']>): JSX.Element {
+  const m = useMessages();
+  const chosen = source === 'chosen' && language ? language.split('-')[0]!.toLowerCase() : '';
+  const current = !chosen && language ? languageLabel(language, m.app.locale) : null;
+  const choices = documentLanguageChoices(m.app.locale, browserLanguages, [language]);
+
+  return (
+    <span className="apv-toolbar__view">
+      <label htmlFor="apv-language-select">{m.toolbar.language}</label>
+      <select
+        id="apv-language-select"
+        value={chosen}
+        onChange={(event) => onChoose(event.currentTarget.value || null)}
+      >
+        <option value="">{m.toolbar.languageAutomatic(current)}</option>
+        {choices.map((choice) => (
+          <option key={choice.tag} value={choice.tag}>
+            {choice.label}
+          </option>
+        ))}
+      </select>
+    </span>
   );
 }
