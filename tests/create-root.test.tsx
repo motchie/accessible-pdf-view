@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, useState } from 'react';
 import type { Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,8 +12,9 @@ import { createRoot } from '../lib/reader/create-root';
  * no-op `onclick`, and React's handlers must still run.
  *
  * Both halves depend on how React 19 attaches to its container: it calls the
- * container's own `addEventListener`, and it assigns `onclick` itself. These
- * tests are what notices when an update to React changes either.
+ * container's own `addEventListener` inside `createRoot`, and it assigns
+ * `onclick` itself. These tests are what notices when an update to React
+ * changes either.
  */
 declare global {
   // eslint-disable-next-line no-var
@@ -73,15 +76,40 @@ function render() {
 }
 
 describe('createRoot', () => {
-  it('adds no listener to the container', () => {
+  it('adds no click, mousedown or mouseup listener to the container', () => {
     render();
-    expect(addedTo(container)).toEqual([]);
+    for (const type of CLICK_EVENTS) expect(addedTo(container)).not.toContain(type);
+  });
+
+  it('keeps React’s other delegated listeners on the container', () => {
+    render();
+    expect(addedTo(container)).toContain('keydown');
+    expect(addedTo(document)).not.toContain('keydown');
+  });
+
+  it('gives the container its ordinary addEventListener back', () => {
+    render();
+    expect(Object.hasOwn(container, 'addEventListener')).toBe(false);
+    const listener = vi.fn();
+    container.addEventListener('click', listener);
+    document.body.click();
+    expect(listener).not.toHaveBeenCalled();
+    container.querySelector('button')!.click();
+    expect(listener).toHaveBeenCalledOnce();
   });
 
   it('leaves the container without an onclick', () => {
     render();
     expect(container.onclick).toBeUndefined();
     expect(container.hasAttribute('onclick')).toBe(false);
+  });
+
+  it('refuses a real onclick, so the page cannot quietly become clickable', () => {
+    render();
+    expect(() => {
+      container.onclick = () => console.log('clicked');
+    }).toThrow(/#33/);
+    expect(container.onclick).toBeUndefined();
   });
 
   it('still runs React click handlers', () => {
@@ -97,6 +125,30 @@ describe('createRoot', () => {
     for (const type of CLICK_EVENTS) expect(addedTo(document)).toContain(type);
   });
 
+  it('still runs React keyboard handlers, which stay on the container', () => {
+    const onKeyDown = vi.fn();
+    root = createRoot(container);
+    act(() => root!.render(<input aria-label="Field" onKeyDown={onKeyDown} />));
+    container
+      .querySelector('input')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+    expect(onKeyDown).toHaveBeenCalledOnce();
+  });
+
+  /*
+   * React gives a portal's container the same listeners as a root's, and
+   * this helper does not reach it: a portal into `document.body` would
+   * expose the whole page as clickable again. When one is needed, give it a
+   * container that is not an ancestor of the Reader's content, or extend the
+   * helper, and change this test with it.
+   */
+  it('has no portal to cover: nothing in the extension calls createPortal', () => {
+    const callers = sourceFiles(['lib', 'entrypoints']).filter((file) =>
+      /\bcreatePortal\s*\(|import[^;]*\bcreatePortal\b/.test(readFileSync(file, 'utf8')),
+    );
+    expect(callers).toEqual([]);
+  });
+
   /*
    * The reason the helper exists. If a React update stops doing this, the
    * helper may be unnecessary, but it is more likely to have moved the
@@ -110,3 +162,16 @@ describe('createRoot', () => {
     expect(typeof container.onclick).toBe('function');
   });
 });
+
+function sourceFiles(directories: string[]): string[] {
+  const files: string[] = [];
+  const walk = (directory: string) => {
+    for (const name of readdirSync(directory)) {
+      const path = join(directory, name);
+      if (statSync(path).isDirectory()) walk(path);
+      else if (/\.(ts|tsx)$/.test(name)) files.push(path);
+    }
+  };
+  for (const directory of directories) walk(directory);
+  return files;
+}

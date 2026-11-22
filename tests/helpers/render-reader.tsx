@@ -1,5 +1,5 @@
 import { act, type JSX } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot } from '../../lib/reader/create-root';
 import { MessagesProvider, messagesFor, type Locale, type Messages } from '../../lib/i18n';
 import {
   NoHeadingsNotice,

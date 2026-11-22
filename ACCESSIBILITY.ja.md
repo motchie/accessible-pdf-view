@@ -165,16 +165,16 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
 ラベル](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Aopen+label%3Aaccessibility)
 で追えます。
 
-- **Firefox では、Reader の静的な内容がクリック可能として公開されます**
-  （[#33](https://github.com/motchie/accessible-pdf-view/issues/33)）。TalkBack で
-  は、状況を伝える行、見出し、段落、ツールバーの行が「ダブルタップするもの」とし
-  て読み上げられ、ダブルタップしても何も起きません。原因は測定済み（React がルート
-  要素に付けるイベントの受け口）で、修正は Reader のマウントのしかたを変えること
-  になり、まだ行っていません。**回避策は Chrome 155 以降**です。Chrome 側の同じ問
-  題（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）はそこでなくなりました。
-  Chrome 147〜154 は回避先になりません。
-  #19 が閉じたのは Chrome が変わったからで、この拡張機能が変わったからではないた
-  め、VoiceOver では同じ原因が今も読み上げられます。
+- **Firefox では、Reader の静的な内容がまだクリック可能として公開されている可能
+  性があります**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)）。
+  TalkBack では、状況を伝える行、見出し、段落、ツールバーの行が「ダブルタップする
+  もの」として読み上げられ、ダブルタップしても何も起きませんでした。原因は React
+  がルート要素に付けるイベントの受け口と `onclick` でした。Reader と設定パネルは、
+  クリックの受け口を document に置き、ルート要素に `onclick` を付けないマウントの
+  しかたに変えました（[#66](https://github.com/motchie/accessible-pdf-view/pull/66)）。
+  確かめたのは jsdom でのテストだけで、ブラウザー上の TalkBack・NVDA・VoiceOver で
+  は**まだ確かめていません**。確かめるまでの間、まだ起きる場合の**回避策は Chrome
+  155 以降**です。Chrome 側の同じ問題（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）はそこでなくなりました。
 - **タグに見出しがないタグ付き PDF では、アウトラインが平らになります。** 組み合わ
   せた読み取りは、ページ上で裏づけが取れる見出しは復元しますが、レベルを創作する
   ことはできません。これはビジネス文書では例外ではなく、ごく普通の場合です。
