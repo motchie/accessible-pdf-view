@@ -97,6 +97,41 @@ describe('the settings surface', () => {
     expect(openOptionsPage).not.toHaveBeenCalled();
   });
 
+  it('brings back the settings tab already open, pointed at this Reader, rather than opening another', async () => {
+    const create = vi.fn(async () => ({}));
+    const update = vi.fn(async () => ({}));
+    fake.browser = {
+      runtime: { openOptionsPage: vi.fn(), getURL: (path: string) => `moz-extension://x${path}` },
+      tabs: { getCurrent: async () => ({ id: 7 }), create, update },
+      storage: { session: { get: async () => ({ 'apv-settings-tab': 5 }), set: vi.fn(), remove: vi.fn() } },
+    };
+
+    await openSettings();
+    expect(update).toHaveBeenCalledWith(5, {
+      active: true,
+      url: 'moz-extension://x/options.html?returnTo=7',
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('opens a new settings tab when the remembered one has gone', async () => {
+    const create = vi.fn(async () => ({}));
+    fake.browser = {
+      runtime: { openOptionsPage: vi.fn(), getURL: (path: string) => `moz-extension://x${path}` },
+      tabs: {
+        getCurrent: async () => ({ id: 7 }),
+        create,
+        update: async () => {
+          throw new Error('No tab with id: 5');
+        },
+      },
+      storage: { session: { get: async () => ({ 'apv-settings-tab': 5 }), set: vi.fn(), remove: vi.fn() } },
+    };
+
+    await openSettings();
+    expect(create).toHaveBeenCalledWith({ url: 'moz-extension://x/options.html?returnTo=7' });
+  });
+
   it('falls back to openOptionsPage when the calling tab is unknown', async () => {
     const openOptionsPage = vi.fn(async () => {});
     fake.browser = { runtime: { openOptionsPage }, tabs: { getCurrent: async () => undefined } };
@@ -143,6 +178,20 @@ describe('the way back from the options page (#68)', () => {
     };
     await returnToReader(12);
     expect(calls).toEqual(['update 12', 'remove 3']);
+  });
+
+  it('brings the Reader’s window forward too, where there are windows', async () => {
+    const focus = vi.fn(async () => ({}));
+    fake.browser = {
+      tabs: {
+        getCurrent: async () => ({ id: 3 }),
+        update: async () => ({ id: 12, windowId: 2 }),
+        remove: vi.fn(async () => {}),
+      },
+      windows: { update: focus },
+    };
+    await returnToReader(12);
+    expect(focus).toHaveBeenCalledWith(2, { focused: true });
   });
 
   it('keeps the settings open when the Reader tab is gone', async () => {

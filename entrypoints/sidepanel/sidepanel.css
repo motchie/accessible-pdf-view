@@ -11,8 +11,10 @@
  * restating them.
  */
 .apv-sidepanel {
+  /* One value, so the options page's return bar can span the panel exactly. */
+  --apv-panel-padding: 0.85rem;
   max-width: none;
-  padding: 0.85rem;
+  padding: var(--apv-panel-padding);
 }
 
 .apv-settings__title {
@@ -124,8 +126,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.75rem;
-  margin: -0.85rem -0.85rem 0.75rem;
-  padding: 0.5rem 0.85rem;
+  margin: calc(-1 * var(--apv-panel-padding)) calc(-1 * var(--apv-panel-padding)) 0.75rem;
+  padding: 0.5rem var(--apv-panel-padding);
   background: var(--apv-bg);
   border-bottom: 1px solid var(--apv-border);
 }

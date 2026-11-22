@@ -85,7 +85,60 @@ export async function openSettings(): Promise<void> {
     await apis()!.runtime!.openOptionsPage!();
     return;
   }
+  // One settings tab, not one per press: a reader who went back through the
+  // tab switcher rather than the page's own button would otherwise pile them
+  // up. The open one is pointed at this Reader tab and brought forward.
+  const open = await openSettingsTab();
+  if (open !== null && open !== current.id) {
+    try {
+      await browser.tabs.update(open, { active: true, url: settingsPageUrl(current.id) });
+      return;
+    } catch {
+      // Closed since it was remembered: open a new one.
+    }
+  }
   await browser.tabs.create({ url: settingsPageUrl(current.id) });
+}
+
+/**
+ * The settings tab, as the options page records it for itself in the
+ * browser's session storage while it is open (`rememberSettingsTab`). Session
+ * storage is cleared when the browser closes, and the page forgets itself as
+ * it goes, so a stale id that now belongs to another tab is not navigated.
+ */
+const SETTINGS_TAB_KEY = 'apv-settings-tab';
+
+type SessionArea = {
+  get(key: string): Promise<Record<string, unknown>>;
+  set(items: Record<string, unknown>): Promise<void>;
+  remove(key: string): Promise<void>;
+};
+
+function sessionArea(): SessionArea | undefined {
+  return (browser as unknown as { storage?: { session?: SessionArea } } | undefined)?.storage
+    ?.session;
+}
+
+async function openSettingsTab(): Promise<number | null> {
+  try {
+    const value = (await sessionArea()?.get(SETTINGS_TAB_KEY))?.[SETTINGS_TAB_KEY];
+    return typeof value === 'number' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Called by the options page when it loads, and again when it is hidden. */
+export async function rememberSettingsTab(): Promise<void> {
+  const current = await browser.tabs.getCurrent();
+  if (current?.id != null) await sessionArea()?.set({ [SETTINGS_TAB_KEY]: current.id });
+}
+
+export async function forgetSettingsTab(): Promise<void> {
+  const current = await browser.tabs.getCurrent();
+  if (current?.id != null && (await openSettingsTab()) === current.id) {
+    await sessionArea()?.remove(SETTINGS_TAB_KEY);
+  }
 }
 
 /** The options page, told which tab to return to. */
@@ -105,7 +158,16 @@ export function returnToTab(search: string): number | null {
  */
 export async function returnToReader(readerTab: number): Promise<void> {
   const current = await browser.tabs.getCurrent();
-  await browser.tabs.update(readerTab, { active: true });
+  const reader = await browser.tabs.update(readerTab, { active: true });
+  // The Reader may be in another window, on a desktop browser: bring that
+  // window forward too. Where there is no windows API (Firefox for Android,
+  // with one window) there is nothing to do.
+  const windows = (browser as unknown as {
+    windows?: { update?: (id: number, info: { focused: boolean }) => Promise<unknown> };
+  }).windows;
+  if (reader?.windowId != null && windows?.update) {
+    await windows.update(reader.windowId, { focused: true }).catch(() => {});
+  }
   if (current?.id != null) await browser.tabs.remove(current.id);
 }
 
