@@ -191,8 +191,10 @@ label](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Ao
   TalkBack, on one device: the headings, the Reader region, the structure
   picker's group and the toolbar container are no longer exposed as clickable,
   only the controls are, and TalkBack no longer announces them as something to
-  double-tap. **Not yet checked** in desktop Firefox with NVDA, or with
-  VoiceOver. Until then, and in 0.3.2: **workaround: Chrome 155 or later**,
+  double-tap. **Checked in desktop Firefox on Windows** with NVDA too: the
+  page no longer exposes its text as inside something clickable, and NVDA no
+  longer says "clickable" on entering the page. **Not yet checked** with
+  VoiceOver. In 0.3.2: **workaround: Chrome 155 or later**,
   where the counterpart problem
   ([#19](https://github.com/motchie/accessible-pdf-view/issues/19)) went away.
   Chrome 147 to 154 is not a way round it: #19 was closed because Chrome
