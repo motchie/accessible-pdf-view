@@ -26,7 +26,13 @@ interface SidebarActionApi {
  * crash, not a missing feature, so both accessors treat "no API" and "no
  * browser" as the same answer.
  */
-type MaybeApis = { sidePanel?: SidePanelApi; sidebarAction?: SidebarActionApi } | undefined;
+type MaybeApis =
+  | {
+      sidePanel?: SidePanelApi;
+      sidebarAction?: SidebarActionApi;
+      runtime?: { openOptionsPage?: () => Promise<void> };
+    }
+  | undefined;
 
 function apis(): MaybeApis {
   return browser as unknown as MaybeApis;
@@ -42,6 +48,30 @@ function firefox(): SidebarActionApi | undefined {
 
 export function isSidePanelSupported(): boolean {
   return Boolean(chromium()?.open ?? firefox()?.open);
+}
+
+/**
+ * Where the settings open: the side panel (Chrome) or sidebar (desktop
+ * Firefox) where there is one, else the extension's options page, a screen of
+ * its own — Firefox for Android has no sidebar (#68). Null where there is
+ * neither, and the toolbar then leaves its Settings button out.
+ */
+export type SettingsSurface = 'side-panel' | 'options-page';
+
+export function settingsSurface(): SettingsSurface | null {
+  if (isSidePanelSupported()) return 'side-panel';
+  return apis()?.runtime?.openOptionsPage ? 'options-page' : null;
+}
+
+/** Opens the settings where `settingsSurface` says they are. */
+export async function openSettings(): Promise<void> {
+  if (isSidePanelSupported()) {
+    await openSidePanel();
+    return;
+  }
+  const open = apis()?.runtime?.openOptionsPage;
+  if (!open) throw new Error('The settings cannot be opened in this environment.');
+  await open();
 }
 
 /**
