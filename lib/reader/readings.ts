@@ -164,6 +164,23 @@ export async function documentLanguage(
 }
 
 /**
+ * The title's language for every reading of the document, from the tagged
+ * reading's declarations: undefined when there is no tagged reading or its
+ * declarations do not show one other than `language`. See
+ * `settleDeclaredLanguages`.
+ */
+export function documentTitleLanguage(
+  raw: ReadonlyMap<DocumentOrigin, AccessibleDocument>,
+  info: PdfFileInfo,
+  language: string | undefined,
+): string | undefined {
+  const tagged = raw.get('tagged-pdf');
+  const title = info.title ?? tagged?.metadata.title;
+  if (!tagged || !title) return undefined;
+  return settleDeclaredLanguages(tagged, language, title).metadata.titleLanguage;
+}
+
+/**
  * The text-less pages whose cause is still to be found: the ones the producer
  * did not explain. pdf-inspector reports a cause per page, and walking a
  * scanned page's content stream for an answer already in the result is seconds
@@ -180,6 +197,13 @@ export function pagesNeedingExplanation(document: AccessibleDocument): number[] 
 export interface DocumentFacts {
   info: PdfFileInfo;
   language: string | undefined;
+  /**
+   * The title's language, when the document's tags show it to differ from
+   * `language` — worked out once, from the tagged reading, so that every
+   * reading of the document gives its title the same language. A reading with
+   * no declared languages of its own (the inferred one) could not work it out.
+   */
+  titleLanguage?: string;
   kinds: Map<number, PageContentKind>;
 }
 
@@ -210,6 +234,7 @@ export function decorate(document: AccessibleDocument, facts: DocumentFacts): Ac
       // The document's own title and language beat anything inferred.
       title: facts.info.title ?? document.metadata.title,
       ...(facts.language ? { language: facts.language } : {}),
+      ...(facts.titleLanguage ? { titleLanguage: facts.titleLanguage } : {}),
       info: facts.info,
     },
     pages:

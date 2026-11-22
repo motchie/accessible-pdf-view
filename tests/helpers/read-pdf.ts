@@ -19,6 +19,7 @@ import {
   chooseReading,
   decorate,
   documentLanguage,
+  documentTitleLanguage,
   pagesNeedingExplanation,
   prepareReading,
   readingHeadingCounts,
@@ -147,7 +148,13 @@ export async function readPdfAsReader(
       needsExplaining.length > 0
         ? await classifyPages(pdf, needsExplaining)
         : new Map<number, PageContentKind>();
-    const document = decorate(prepared, { info, language, kinds });
+    const titleLanguage = documentTitleLanguage(raw, info, language);
+    const document = decorate(prepared, {
+      info,
+      language,
+      kinds,
+      ...(titleLanguage ? { titleLanguage } : {}),
+    });
 
     return {
       document,

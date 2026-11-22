@@ -20,6 +20,7 @@ import {
   chooseReading,
   decorate,
   documentLanguage,
+  documentTitleLanguage,
   pagesNeedingExplanation,
   prepareReading,
   readingHeadingCounts,
@@ -131,6 +132,8 @@ interface Runtime {
   /** Resolved once, from whichever document was shown first — it is a property
    * of the PDF, not of the producer that read it. */
   language: string | undefined;
+  /** Same, for the title: see `documentTitleLanguage`. */
+  titleLanguage?: string;
   /** Same: why a page has no text does not depend on who failed to read it. */
   kinds: Map<number, PageContentKind>;
 }
@@ -245,6 +248,8 @@ export function usePdfAnalysis(
           signal: controller.signal,
         });
         if (cancelled) return;
+        const titleLanguage = documentTitleLanguage(raw, info, runtime.language);
+        if (titleLanguage) runtime.titleLanguage = titleLanguage;
 
         entry.document = decorate(enriched.document, runtime);
         shownRef.current = shown;

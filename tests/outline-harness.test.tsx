@@ -272,6 +272,22 @@ describe('word-columns.pdf', () => {
   }, 60_000);
 });
 
+describe("word-columns.pdf's title", () => {
+  /**
+   * The title's language comes from the tags, but it belongs to the document:
+   * the inferred reading, which has no declared languages, gives it the same
+   * one (#49).
+   */
+  it.each(['tagged-pdf', 'pdf-inspector'] as const)('is English in the %s reading', async (preferred) => {
+    const pdf = resolve(import.meta.dirname, 'fixtures/word/word-columns.pdf');
+    const reading = await readPdfAsReader(new Uint8Array(await readFile(pdf)), { preferred });
+    expect(reading.structureSource).toBe(preferred);
+    rendered = renderReader(reading, { locale: 'ja' });
+
+    expect(rendered.container.querySelector('h1.apv-title')!.getAttribute('lang')).toBe('en');
+  }, 60_000);
+});
+
 describe('word-small-figures.pdf', () => {
   it('matches its hand-written outline (#15)', async () => {
     const pdf = resolve(import.meta.dirname, 'fixtures/word/word-small-figures.pdf');

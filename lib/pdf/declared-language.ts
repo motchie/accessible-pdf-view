@@ -258,7 +258,12 @@ function joinRuns(nodes: InlineNode[]): InlineNode[] {
       (previous.emphasis ?? []).join('|') === (node.emphasis ?? []).join('|') &&
       previous.language === node.language
     ) {
-      out[out.length - 1] = { ...previous, text: normalizeCjkSpacing(previous.text + node.text) };
+      // Each run's whitespace was collapsed on its own; the join can still
+      // put two spaces side by side.
+      out[out.length - 1] = {
+        ...previous,
+        text: normalizeCjkSpacing(`${previous.text}${node.text}`.replace(/\s+/g, ' ')),
+      };
       continue;
     }
     out.push(node);
@@ -288,6 +293,9 @@ const CJK = new Set(['ja', 'zh', 'ko']);
  *   - A run with Han, kana or hangul in it and declared a language outside
  *     Chinese, Japanese and Korean says nothing. 「営業」 cannot be English, and
  *     a voice for English cannot read 「PDFを開く」's kana either.
+ *   - The reverse: a run with none of them, declared Chinese, Japanese or
+ *     Korean, says nothing either. 「Annual Report」 declared `ja` in an English
+ *     document is English text, and a Japanese voice would read it as such.
  *   - Where the run is declared Chinese, Japanese or Korean and the document
  *     is in another of the three, the declaration stands only if the text
  *     shows it: kana for Japanese, hangul for Korean, and for Chinese nothing
@@ -304,6 +312,10 @@ function voicedLanguage(
   if (!declared) return undefined;
   const declaredPrimary = primary(declared);
   if (!CJK.has(declaredPrimary)) return CJK_LETTER.test(text) ? undefined : declared;
+  // The mirror image: Word declares its East Asian language on full-width and
+  // Latin runs alike, and English words declared Japanese would be read in a
+  // Japanese voice. With no Han, kana or hangul, the text cannot show it.
+  if (!CJK_LETTER.test(text)) return undefined;
 
   if (!documentLanguage) return declared;
   const documentPrimary = primary(documentLanguage);
