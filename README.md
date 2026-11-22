@@ -249,7 +249,10 @@ the Japanese strings are the originals.
 **Settings** in the toolbar opens the browser's side panel — Chrome's
 `sidePanel`, Firefox's sidebar. A side panel rather than a popup for one reason:
 **a popup closes when it loses focus**, and for anyone reading with a screen
-reader, a keyboard or a magnifier, moving focus is how you read.
+reader, a keyboard or a magnifier, moving focus is how you read. Where there is
+no side panel — Firefox for Android — the same settings are the extension's
+options page, which opens in a tab of its own; the browser's add-on manager
+links to it too (#68).
 
 In order: the interface language; text size, line spacing and column width;
 typeface; theme; the on-device AI and whether to get its download out of the

@@ -5,7 +5,7 @@ import {
   type JSX,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
-import { isSidePanelSupported, openSidePanel } from '../../browser/side-panel';
+import { openSettings, settingsSurface } from '../../browser/side-panel';
 import { sanitizeHref } from '../../pdf/sanitize-url';
 import { useMessages } from '../../i18n';
 import { documentLanguageChoices, languageLabel } from '../../i18n/language-choices';
@@ -68,8 +68,10 @@ import type { LanguageSource } from '../../pdf/document-language';
  *
  * The settings button opens the browser's side panel — not a popup, which
  * closes the moment focus leaves it. For anyone navigating with a screen
- * reader, a keyboard or a magnifier, moving focus *is* how you read. It is left
- * out entirely where no side-panel API exists, rather than shown and inert.
+ * reader, a keyboard or a magnifier, moving focus *is* how you read. Where
+ * there is no side panel (Firefox for Android, #68) it opens the extension's
+ * options page in a tab instead, for the same reason. It is left out entirely
+ * where neither exists, rather than shown and inert.
  */
 export type ViewMode = 'reader' | 'original' | 'markdown';
 
@@ -128,6 +130,7 @@ export function ReaderToolbar({
   documentLanguage,
 }: ReaderToolbarProps): JSX.Element {
   const m = useMessages();
+  const surface = settingsSurface();
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +154,7 @@ export function ReaderToolbar({
   // user gesture, and awaiting anything first spends it.
   function handleSettings() {
     setSettingsError(null);
-    void openSidePanel().catch((cause: unknown) => {
+    void openSettings().catch((cause: unknown) => {
       setSettingsError(cause instanceof Error ? cause.message : String(cause));
     });
   }
@@ -241,14 +244,19 @@ export function ReaderToolbar({
             </span>
           </a>
         ) : null}
-        {isSidePanelSupported() ? (
+        {surface ? (
           <button
             type="button"
             onClick={handleSettings}
             data-apv-toolbar-item="settings"
           >
             {m.toolbar.settings}
-            <span className="apv-visually-hidden">{m.app.openInSidePanel}</span>
+            {/* Where it opens, as with the original-PDF link: the side panel
+                beside the page, or — with no side panel, as on Firefox for
+                Android (#68) — the options page, in a tab of its own. */}
+            <span className="apv-visually-hidden">
+              {surface === 'side-panel' ? m.app.openInSidePanel : m.app.openInNewTab}
+            </span>
           </button>
         ) : null}
       </div>
