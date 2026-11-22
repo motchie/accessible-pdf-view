@@ -97,6 +97,24 @@ function titleLanguageFrom(
   return voiced && !sameLanguage(voiced, documentLanguage) ? voiced : undefined;
 }
 
+/**
+ * The language every run with letters in a settled document is declared in,
+ * when they all agree on one other than `documentLanguage`; else undefined.
+ *
+ * Unanimity, not a majority. An English document exported from a Japanese
+ * Word says `ja` in its catalog and `en` on every run: its text is English,
+ * and the Reader reads it as English in every reading, the inferred one
+ * included, which cannot see a run's language (#49). A document that mixes
+ * languages, or declares none on its runs, keeps the catalog's.
+ */
+export function unanimousDeclaredLanguage(
+  document: AccessibleDocument,
+  documentLanguage: string | undefined,
+): string | undefined {
+  const found = unanimousLanguage(document.pages.flatMap((page) => page.nodes));
+  return found && !sameLanguage(found, documentLanguage) ? found : undefined;
+}
+
 /** The one language every run with letters is in, after settling, or null. */
 function unanimousLanguage(nodes: DocumentNode[]): string | null {
   let found: string | undefined | null = null;

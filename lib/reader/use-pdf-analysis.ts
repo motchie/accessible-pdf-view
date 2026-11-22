@@ -20,7 +20,7 @@ import {
   chooseReading,
   decorate,
   documentLanguage,
-  documentTitleLanguage,
+  declaredDocumentLanguages,
   pagesNeedingExplanation,
   prepareReading,
   readingHeadingCounts,
@@ -248,8 +248,9 @@ export function usePdfAnalysis(
           signal: controller.signal,
         });
         if (cancelled) return;
-        const titleLanguage = documentTitleLanguage(raw, info, runtime.language);
-        if (titleLanguage) runtime.titleLanguage = titleLanguage;
+        const declared = declaredDocumentLanguages(raw, info, runtime.language);
+        runtime.language = declared.language;
+        if (declared.titleLanguage) runtime.titleLanguage = declared.titleLanguage;
 
         entry.document = decorate(enriched.document, runtime);
         shownRef.current = shown;

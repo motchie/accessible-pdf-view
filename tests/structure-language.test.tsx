@@ -2,6 +2,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { settleDeclaredLanguages } from '../lib/pdf/declared-language';
+import { declaredDocumentLanguages } from '../lib/reader/readings';
 import type { AccessibleDocument, DocumentNode } from '../lib/pdf/document-model';
 import type { PdfDocumentInfo } from '../lib/pdf/pdfjs/metadata';
 import { extractTaggedDocument } from '../lib/pdf/pdfjs/tagged-adapter';
@@ -389,5 +390,42 @@ describe("the title's language", () => {
     expect(
       await titleLanguage('ja', 'PDF の読み方', el('P', span('en', 'All English.'))),
     ).toBeUndefined();
+  });
+});
+
+/** The document's own language, for every reading (#49). */
+describe("the document's language", () => {
+  async function languages(catalog: string | undefined, title: string | undefined, ...kids: El[]) {
+    const tagged = await read(catalog, ...kids);
+    const info = { isTagged: true, hasStructureTree: true, ...(title ? { title } : {}) } as PdfDocumentInfo;
+    return declaredDocumentLanguages(new Map([['tagged-pdf', tagged]]), info, catalog);
+  }
+
+  it('is the one every run declares, over the catalog', async () => {
+    expect(
+      await languages('ja', 'Reading order', el('P', span('en', 'First.')), el('P', span('en', 'Second.'))),
+    ).toEqual({ language: 'en' });
+  });
+
+  it("is the catalog's when the runs disagree", async () => {
+    expect(
+      await languages('ja', undefined, el('P', span('en', 'First.')), el('P', span('ja', '二つ目。'))),
+    ).toEqual({ language: 'ja' });
+  });
+
+  it("is the catalog's when the runs declare nothing", async () => {
+    expect(await languages('ja', undefined, el('P', '本文。'))).toEqual({ language: 'ja' });
+  });
+
+  it("is the catalog's without a tagged reading", () => {
+    expect(declaredDocumentLanguages(new Map(), { isTagged: false, hasStructureTree: false } as PdfDocumentInfo, 'ja')).toEqual({
+      language: 'ja',
+    });
+  });
+
+  it("gives the title its own only where it differs from the document's", async () => {
+    expect(
+      await languages('ja', 'Annual Report', el('H1', span('en', 'Annual Report')), el('P', span('ja', '本文です。'))),
+    ).toEqual({ language: 'ja', titleLanguage: 'en' });
   });
 });

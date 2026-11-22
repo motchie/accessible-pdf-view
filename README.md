@@ -417,6 +417,13 @@ neither is one whose text cannot be in the declared language — Japanese text
 declared English, or Han characters declared Chinese inside Japanese. The
 inferred reading has no way to see any of this.
 
+When every run with letters in the tags declares the same language, and it is
+not the catalog's, that is taken as the document's language, in every reading:
+an English document exported from a Japanese Word says `ja` in its catalog and
+`en` on every run, and is read as English, the inferred reading included. The
+document's title, which declares no language of its own, follows the same
+evidence. The catalog's value is still what **Document information** shows.
+
 The Reader's own words inside the document — a page label, a link's "opens in
 a new tab", a figure's notice — are marked with the interface's language where
 it differs from the text around them.

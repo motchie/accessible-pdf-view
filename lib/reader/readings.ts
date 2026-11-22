@@ -10,7 +10,7 @@ import { combineReadings } from '../pdf/combined-reading';
 import { documentWithoutControlCharacters } from '../pdf/control-characters';
 import { promoteMergedHeadings } from '../pdf/inspector/heading-promotion';
 import { attachFigureRegions } from '../pdf/pdfjs/figure-regions';
-import { settleDeclaredLanguages } from '../pdf/declared-language';
+import { settleDeclaredLanguages, unanimousDeclaredLanguage } from '../pdf/declared-language';
 import { detectLanguage, detectScriptLanguage } from '../pdf/pdfjs/language';
 import { readPdfDocumentInfo } from '../pdf/pdfjs/metadata';
 import { materializeFigureImages } from '../pdf/pdfjs/region-raster';
@@ -164,20 +164,34 @@ export async function documentLanguage(
 }
 
 /**
- * The title's language for every reading of the document, from the tagged
- * reading's declarations: undefined when there is no tagged reading or its
- * declarations do not show one other than `language`. See
- * `settleDeclaredLanguages`.
+ * The document's language and its title's, for every reading, from what the
+ * tagged reading declares (#49). `language` is the one `documentLanguage`
+ * found: the catalog's `/Lang`, or detection's.
+ *
+ * When every run with letters in the tagged reading declares one other
+ * language, that is the document's language — in every reading, so the
+ * inferred one, which cannot see a run's language, reads it in the same voice
+ * (`unanimousDeclaredLanguage`). The catalog's own value is still what the
+ * document information panel shows. The title's language is then worked out
+ * against the result (`settleDeclaredLanguages`).
+ *
+ * Without a tagged reading, `language` stands and the title has none of its
+ * own.
  */
-export function documentTitleLanguage(
+export function declaredDocumentLanguages(
   raw: ReadonlyMap<DocumentOrigin, AccessibleDocument>,
   info: PdfFileInfo,
   language: string | undefined,
-): string | undefined {
+): { language: string | undefined; titleLanguage?: string } {
   const tagged = raw.get('tagged-pdf');
-  const title = info.title ?? tagged?.metadata.title;
-  if (!tagged || !title) return undefined;
-  return settleDeclaredLanguages(tagged, language, title).metadata.titleLanguage;
+  if (!tagged) return { language };
+  const content = unanimousDeclaredLanguage(settleDeclaredLanguages(tagged, language), language);
+  const settledLanguage = content ?? language;
+  const title = info.title ?? tagged.metadata.title;
+  const titleLanguage = title
+    ? settleDeclaredLanguages(tagged, settledLanguage, title).metadata.titleLanguage
+    : undefined;
+  return { language: settledLanguage, ...(titleLanguage ? { titleLanguage } : {}) };
 }
 
 /**

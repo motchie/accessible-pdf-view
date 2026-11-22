@@ -272,11 +272,11 @@ describe('word-columns.pdf', () => {
   }, 60_000);
 });
 
-describe("word-columns.pdf's title", () => {
+describe("word-columns.pdf's language", () => {
   /**
-   * The title's language comes from the tags, but it belongs to the document:
-   * the inferred reading, which has no declared languages, gives it the same
-   * one (#49).
+   * The language comes from the tags, but it belongs to the document: the
+   * inferred reading, which has no declared languages, gives the title and the
+   * article the same one (#49).
    */
   it.each(['tagged-pdf', 'pdf-inspector'] as const)('is English in the %s reading', async (preferred) => {
     const pdf = resolve(import.meta.dirname, 'fixtures/word/word-columns.pdf');
@@ -285,6 +285,10 @@ describe("word-columns.pdf's title", () => {
     rendered = renderReader(reading, { locale: 'ja' });
 
     expect(rendered.container.querySelector('h1.apv-title')!.getAttribute('lang')).toBe('en');
+    // And so is the article: every run declares en, so the document is
+    // English in the inferred reading too, though that reading cannot see a
+    // run's language.
+    expect(rendered.container.querySelector('article')!.getAttribute('lang')).toBe('en');
   }, 60_000);
 });
 

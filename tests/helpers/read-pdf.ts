@@ -19,7 +19,7 @@ import {
   chooseReading,
   decorate,
   documentLanguage,
-  documentTitleLanguage,
+  declaredDocumentLanguages,
   pagesNeedingExplanation,
   prepareReading,
   readingHeadingCounts,
@@ -142,18 +142,18 @@ export async function readPdfAsReader(
     const { document: prepared } = await prepareReading(raw.get(shown)!, pdf, {
       rasterize: standInFigureImages,
     });
-    const language = await documentLanguage(prepared, info);
+    const declared = declaredDocumentLanguages(raw, info, await documentLanguage(prepared, info));
+    const language = declared.language;
     const needsExplaining = pagesNeedingExplanation(prepared);
     const kinds =
       needsExplaining.length > 0
         ? await classifyPages(pdf, needsExplaining)
         : new Map<number, PageContentKind>();
-    const titleLanguage = documentTitleLanguage(raw, info, language);
     const document = decorate(prepared, {
       info,
       language,
       kinds,
-      ...(titleLanguage ? { titleLanguage } : {}),
+      ...(declared.titleLanguage ? { titleLanguage: declared.titleLanguage } : {}),
     });
 
     return {
