@@ -1,5 +1,6 @@
 import { act } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
+import { createRoot } from '../lib/reader/create-root';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { withoutControlCharacters } from '../lib/pdf/control-characters';
 import type { AccessibleDocument, DocumentNode } from '../lib/pdf/document-model';

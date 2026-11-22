@@ -1,5 +1,6 @@
 import { act } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
+import { createRoot } from '../lib/reader/create-root';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import type { PdfCapabilities } from '../lib/pdf/document-model';
 import { OcrRequiredNotice } from '../lib/reader/components/Notices';

@@ -179,17 +179,18 @@ Described as what a reader runs into. The full lists are
 [`accessibility`
 label](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Aopen+label%3Aaccessibility).
 
-- **In Firefox, the Reader's static content is exposed as clickable**
-  ([#33](https://github.com/motchie/accessible-pdf-view/issues/33)). With
-  TalkBack, the status line, headings, paragraphs and the toolbar rows are
-  announced as something to double-tap, and double-tapping does nothing. The
-  cause is measured — React's listeners on the root element — and the fix is a
-  change to how the Reader is mounted, not yet made. **Workaround: Chrome 155
-  or later**, where the counterpart problem
+- **In Firefox, the Reader's static content may still be exposed as
+  clickable** ([#33](https://github.com/motchie/accessible-pdf-view/issues/33)).
+  With TalkBack, the status line, headings, paragraphs and the toolbar rows
+  were announced as something to double-tap, and double-tapping did nothing.
+  The cause was React's listeners and `onclick` on the root element. The Reader
+  and the settings panel are now mounted so that the click listeners are on the
+  document and the root element has no `onclick`
+  ([#66](https://github.com/motchie/accessible-pdf-view/pull/66)). That is
+  checked by tests in jsdom only: it has **not yet been checked** with TalkBack,
+  NVDA or VoiceOver in a browser. Until it is, if it still happens:
+  **workaround: Chrome 155 or later**, where the counterpart problem
   ([#19](https://github.com/motchie/accessible-pdf-view/issues/19)) went away.
-  Chrome 147 to 154 is not a way round it: #19 was closed because Chrome
-  changed, not because this extension did, so with VoiceOver the same cause is
-  still announced there.
 - **A tagged PDF whose tags carry no headings gives a flat outline.** The
   combined reading recovers headings where it can verify them against the page,
   but it cannot invent a level. This is the common case in business documents,
