@@ -87,26 +87,47 @@ export async function openSettings(): Promise<void> {
   }
   // One settings tab, not one per press: a reader who went back through the
   // tab switcher rather than the page's own button would otherwise pile them
-  // up. The open one is pointed at this Reader tab and brought forward.
-  const open = await openSettingsTab();
-  if (open !== null && open !== current.id) {
+  // up. The open one is pointed at this Reader tab and brought forward — but
+  // only while it still shows the settings: a tab the reader has since taken
+  // to another page is theirs, and is not navigated away.
+  const open = (await recordedSettingsTab())?.tab;
+  if (open != null && open !== current.id && (await showsSettings(open))) {
     try {
       await browser.tabs.update(open, { active: true, url: settingsPageUrl(current.id) });
       return;
     } catch {
-      // Closed since it was remembered: open a new one.
+      // Closed since it was checked: open a new one.
     }
   }
   await browser.tabs.create({ url: settingsPageUrl(current.id) });
 }
 
+/** Whether tab `id` is showing this extension's options page now. */
+async function showsSettings(id: number): Promise<boolean> {
+  try {
+    const tab = await browser.tabs.get(id);
+    // An extension sees its own pages' addresses. Where it does not, the tab
+    // is not reused: a second settings tab is the safe mistake.
+    return typeof tab?.url === 'string' && tab.url.startsWith(browser.runtime.getURL('/options.html'));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The settings tab, as the options page records it for itself in the
- * browser's session storage while it is open (`rememberSettingsTab`). Session
- * storage is cleared when the browser closes, and the page forgets itself as
- * it goes, so a stale id that now belongs to another tab is not navigated.
+ * browser's session storage while it is open (`rememberSettingsTab`), with a
+ * token of that page's own: a page reloaded in the same tab must not have its
+ * record removed by the page it replaced (`forgetSettingsTab`). Session
+ * storage is cleared when the browser closes; `showsSettings` covers a record
+ * that outlived its page.
  */
 const SETTINGS_TAB_KEY = 'apv-settings-tab';
+
+interface SettingsTabRecord {
+  tab: number;
+  token: string;
+}
 
 type SessionArea = {
   get(key: string): Promise<Record<string, unknown>>;
@@ -119,24 +140,37 @@ function sessionArea(): SessionArea | undefined {
     ?.session;
 }
 
-async function openSettingsTab(): Promise<number | null> {
+async function recordedSettingsTab(): Promise<SettingsTabRecord | null> {
   try {
-    const value = (await sessionArea()?.get(SETTINGS_TAB_KEY))?.[SETTINGS_TAB_KEY];
-    return typeof value === 'number' ? value : null;
+    const value = (await sessionArea()?.get(SETTINGS_TAB_KEY))?.[SETTINGS_TAB_KEY] as
+      | Partial<SettingsTabRecord>
+      | undefined;
+    return typeof value?.tab === 'number' && typeof value.token === 'string'
+      ? { tab: value.tab, token: value.token }
+      : null;
   } catch {
     return null;
   }
 }
 
-/** Called by the options page when it loads, and again when it is hidden. */
+/** This page's token, made once when it loads. */
+const pageToken =
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : String(Math.random()).slice(2);
+
+/** Called by the options page when it loads. */
 export async function rememberSettingsTab(): Promise<void> {
   const current = await browser.tabs.getCurrent();
-  if (current?.id != null) await sessionArea()?.set({ [SETTINGS_TAB_KEY]: current.id });
+  if (current?.id != null) {
+    const record: SettingsTabRecord = { tab: current.id, token: pageToken };
+    await sessionArea()?.set({ [SETTINGS_TAB_KEY]: record });
+  }
 }
 
+/** Called by the options page as it goes; removes only its own record. */
 export async function forgetSettingsTab(): Promise<void> {
-  const current = await browser.tabs.getCurrent();
-  if (current?.id != null && (await openSettingsTab()) === current.id) {
+  if ((await recordedSettingsTab())?.token === pageToken) {
     await sessionArea()?.remove(SETTINGS_TAB_KEY);
   }
 }

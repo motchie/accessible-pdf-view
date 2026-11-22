@@ -102,8 +102,19 @@ describe('the settings surface', () => {
     const update = vi.fn(async () => ({}));
     fake.browser = {
       runtime: { openOptionsPage: vi.fn(), getURL: (path: string) => `moz-extension://x${path}` },
-      tabs: { getCurrent: async () => ({ id: 7 }), create, update },
-      storage: { session: { get: async () => ({ 'apv-settings-tab': 5 }), set: vi.fn(), remove: vi.fn() } },
+      tabs: {
+        getCurrent: async () => ({ id: 7 }),
+        get: async () => ({ id: 5, url: 'moz-extension://x/options.html?returnTo=6' }),
+        create,
+        update,
+      },
+      storage: {
+        session: {
+          get: async () => ({ 'apv-settings-tab': { tab: 5, token: 'other' } }),
+          set: vi.fn(),
+          remove: vi.fn(),
+        },
+      },
     };
 
     await openSettings();
@@ -120,16 +131,49 @@ describe('the settings surface', () => {
       runtime: { openOptionsPage: vi.fn(), getURL: (path: string) => `moz-extension://x${path}` },
       tabs: {
         getCurrent: async () => ({ id: 7 }),
-        create,
-        update: async () => {
+        get: async () => {
           throw new Error('No tab with id: 5');
         },
+        create,
+        update: vi.fn(),
       },
-      storage: { session: { get: async () => ({ 'apv-settings-tab': 5 }), set: vi.fn(), remove: vi.fn() } },
+      storage: {
+        session: {
+          get: async () => ({ 'apv-settings-tab': { tab: 5, token: 'other' } }),
+          set: vi.fn(),
+          remove: vi.fn(),
+        },
+      },
     };
 
     await openSettings();
     expect(create).toHaveBeenCalledWith({ url: 'moz-extension://x/options.html?returnTo=7' });
+  });
+
+  it('does not navigate a remembered tab that now shows another page', async () => {
+    const create = vi.fn(async () => ({}));
+    const update = vi.fn(async () => ({}));
+    fake.browser = {
+      runtime: { openOptionsPage: vi.fn(), getURL: (path: string) => `moz-extension://x${path}` },
+      tabs: {
+        getCurrent: async () => ({ id: 7 }),
+        // The reader typed an address into the settings tab and is reading there.
+        get: async () => ({ id: 5, url: 'https://example.org/article' }),
+        create,
+        update,
+      },
+      storage: {
+        session: {
+          get: async () => ({ 'apv-settings-tab': { tab: 5, token: 'other' } }),
+          set: vi.fn(),
+          remove: vi.fn(),
+        },
+      },
+    };
+
+    await openSettings();
+    expect(update).not.toHaveBeenCalled();
+    expect(create).toHaveBeenCalledOnce();
   });
 
   it('falls back to openOptionsPage when the calling tab is unknown', async () => {
@@ -224,5 +268,36 @@ describe('the way back from the options page (#68)', () => {
     const arrow = back!.querySelector('[aria-hidden="true"]');
     expect(arrow?.textContent).toBe('←');
     expect(back!.textContent?.replace(arrow!.textContent!, '')).toMatch(/^(Back to the Reader|リーダーに戻る)$/);
+  });
+});
+
+describe('the settings tab’s record', () => {
+  it('is removed by the page that wrote it, not by the page it replaced', async () => {
+    let stored: unknown;
+    const session = {
+      get: async () => ({ 'apv-settings-tab': stored }),
+      set: async (items: Record<string, unknown>) => {
+        stored = items['apv-settings-tab'];
+      },
+      remove: async () => {
+        stored = undefined;
+      },
+    };
+    fake.browser = { tabs: { getCurrent: async () => ({ id: 5 }) }, storage: { session } };
+
+    const { rememberSettingsTab, forgetSettingsTab } = await import('../lib/browser/side-panel');
+    await rememberSettingsTab();
+    expect(stored).toMatchObject({ tab: 5 });
+
+    // A page reloaded in the same tab writes its own token; the old page's
+    // forget, landing after it, must leave that alone.
+    stored = { tab: 5, token: 'the new page' };
+    await forgetSettingsTab();
+    expect(stored).toEqual({ tab: 5, token: 'the new page' });
+
+    // Its own record it does remove.
+    await rememberSettingsTab();
+    await forgetSettingsTab();
+    expect(stored).toBeUndefined();
   });
 });
