@@ -217,8 +217,9 @@ label](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Ao
   [#54](https://github.com/motchie/accessible-pdf-view/issues/54)). The
   language switch to the chosen language has been checked with NVDA; a voice for
   it has to be installed for it to be heard.
-- **Bullets drawn from the Symbol or Wingdings font show as a box and are read
-  as an extra bullet**, beside the list's own marker
+- **Bullets drawn from the Symbol or Wingdings font show as a box**, beside the
+  list's own marker. With NVDA in Chrome, one such document was heard reading
+  them as an extra bullet; other screen readers have not been checked
   ([#59](https://github.com/motchie/accessible-pdf-view/issues/59)).
 - **In some fonts, the inferred reading loses the letters "ti"**, where the
   font draws them as one glyph
