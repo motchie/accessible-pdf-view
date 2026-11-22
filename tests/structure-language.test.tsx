@@ -404,7 +404,7 @@ describe("the document's language", () => {
   it('is the one every run declares, over the catalog', async () => {
     expect(
       await languages('ja', 'Reading order', el('P', span('en', 'First.')), el('P', span('en', 'Second.'))),
-    ).toEqual({ language: 'en' });
+    ).toEqual({ language: 'en', languageFromTags: true });
   });
 
   it("is the catalog's when the runs disagree", async () => {

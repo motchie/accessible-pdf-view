@@ -157,6 +157,11 @@ export const en = {
     subject: 'Subject',
     keywords: 'Keywords',
     language: 'Language',
+    /** Shown only when the Reader reads the document in a language other than
+     * the one its catalog declares, and says why (#49). */
+    readingLanguage: 'Read as',
+    readingLanguageFromTags: (language: string) =>
+      `${language}: every passage the structure tags cover declares this language`,
     pageCount: 'Pages',
     created: 'Created',
     modified: 'Modified',

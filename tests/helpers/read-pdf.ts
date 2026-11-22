@@ -154,6 +154,7 @@ export async function readPdfAsReader(
       language,
       kinds,
       ...(declared.titleLanguage ? { titleLanguage: declared.titleLanguage } : {}),
+      ...(declared.languageFromTags ? { languageFromTags: true } : {}),
     });
 
     return {

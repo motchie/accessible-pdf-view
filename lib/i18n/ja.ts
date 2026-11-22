@@ -117,6 +117,9 @@ export const ja: Messages = {
     subject: '件名',
     keywords: 'キーワード',
     language: '言語',
+    readingLanguage: '読み上げの言語',
+    readingLanguageFromTags: (language: string) =>
+      `${language}（構造タグで、本文のすべての部分がこの言語を宣言しているため）`,
     pageCount: 'ページ数',
     created: '作成日時',
     modified: '更新日時',

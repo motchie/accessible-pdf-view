@@ -422,7 +422,19 @@ not the catalog's, that is taken as the document's language, in every reading:
 an English document exported from a Japanese Word says `ja` in its catalog and
 `en` on every run, and is read as English, the inferred reading included. The
 document's title, which declares no language of its own, follows the same
-evidence. The catalog's value is still what **Document information** shows.
+evidence. The catalog's value is still what **Document information** shows,
+with a row saying which language the Reader reads in and why.
+
+The evidence comes from the tags, and the tags cover only what the author
+marked as content. The inferred reading also reads text the tags leave out —
+running headers and footers, page numbers, untagged text — and takes the same
+language for it. That is a guess for those parts, but no worse a one than the
+catalog's, which a document like this one gets wrong for every passage that
+can be checked.
+
+These rules were worked out on Japanese documents exported by Word, where
+the declarations were measured. Other producers, and Chinese or Korean
+documents, have not been measured.
 
 The Reader's own words inside the document — a page label, a link's "opens in
 a new tab", a figure's notice — are marked with the interface's language where
