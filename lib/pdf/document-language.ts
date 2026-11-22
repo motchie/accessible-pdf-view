@@ -66,7 +66,8 @@ export interface LanguagePreferences {
  * one — `en-US` declared over what may be Romanian — the alphabet cannot tell
  * them apart, so the text must also show letters the usual language has and
  * English does not (`fitsUsualLanguage`). Measured on this project's fixtures,
- * without it a usual language of Romanian took four of six English documents.
+ * without it a usual language of Romanian took five of the six English
+ * documents; with it, none.
  * The panel says which rule applied, so the choice for one document is one
  * step away either way.
  */

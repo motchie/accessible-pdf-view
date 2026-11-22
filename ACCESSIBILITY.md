@@ -157,7 +157,11 @@ What that support actually amounts to:
   **NVDA** with Firefox on Windows
   ([#33](https://github.com/motchie/accessible-pdf-view/issues/33),
   [#34](https://github.com/motchie/accessible-pdf-view/issues/34),
-  [#40](https://github.com/motchie/accessible-pdf-view/issues/40)),
+  [#40](https://github.com/motchie/accessible-pdf-view/issues/40),
+  [#49](https://github.com/motchie/accessible-pdf-view/issues/49)),
+  **NVDA** with Chrome on Windows
+  ([#49](https://github.com/motchie/accessible-pdf-view/issues/49),
+  [#57](https://github.com/motchie/accessible-pdf-view/issues/57)),
   **VoiceOver** with Chrome on macOS
   ([#19](https://github.com/motchie/accessible-pdf-view/issues/19)), and
   **TalkBack** with Firefox for Android
@@ -204,6 +208,24 @@ label](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Ao
   elements by position.
 - **Where the two readings of a document disagree, the Reader offers a switch
   rather than a report.** You have to try both to find out what differs.
+- **A PDF that declares the wrong language, and nothing more, is read in that
+  language until you choose another.** Many Word exports declare `en-US` over
+  text in another language. **Workaround: Document language in the toolbar**,
+  or a usual document language in the settings. Detecting the language from the
+  text is not done yet
+  ([#56](https://github.com/motchie/accessible-pdf-view/issues/56),
+  [#54](https://github.com/motchie/accessible-pdf-view/issues/54)). The
+  language switch to the chosen language has been checked with NVDA; a voice for
+  it has to be installed for it to be heard.
+- **Bullets drawn from the Symbol or Wingdings font show as a box and are read
+  as an extra bullet**, beside the list's own marker
+  ([#59](https://github.com/motchie/accessible-pdf-view/issues/59)).
+- **In some fonts, the inferred reading loses the letters "ti"**, where the
+  font draws them as one glyph
+  ([#60](https://github.com/motchie/accessible-pdf-view/issues/60)).
+  Workaround: the tagged reading, where there is one.
+- **The interface is in English and Japanese only**
+  ([#61](https://github.com/motchie/accessible-pdf-view/issues/61)).
 
 ## Ownership and maintenance
 
@@ -212,7 +234,7 @@ a team. This file, and the practices in it, are reviewed at each release;
 anything in it that has gone stale is a bug in the file and worth reporting as
 one.
 
-**Last reviewed: 2026-11-15, against version 0.3.1.**
+**Last reviewed: 2026-11-22, against version 0.3.2.**
 
 ## Feedback and improvements
 

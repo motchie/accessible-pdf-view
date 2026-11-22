@@ -147,7 +147,8 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
   パネルは自分を出さず、その理由を表示します。
 - **これまでに確認に使った支援技術**（定期的にではなく、具体的な疑問が必要とした
   ときに）。使ったブラウザーと組みで書きます。
-  Windows の Firefox と **NVDA**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)、[#34](https://github.com/motchie/accessible-pdf-view/issues/34)、[#40](https://github.com/motchie/accessible-pdf-view/issues/40)）、
+  Windows の Firefox と **NVDA**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)、[#34](https://github.com/motchie/accessible-pdf-view/issues/34)、[#40](https://github.com/motchie/accessible-pdf-view/issues/40)、[#49](https://github.com/motchie/accessible-pdf-view/issues/49)）、
+  Windows の Chrome と **NVDA**（[#49](https://github.com/motchie/accessible-pdf-view/issues/49)、[#57](https://github.com/motchie/accessible-pdf-view/issues/57)）、
   macOS の Chrome と **VoiceOver**（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）、
   Firefox for Android と **TalkBack**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)）。
 - **リリースごとのスクリーンリーダー試験マトリクスはありません。** すべての変更で
@@ -189,6 +190,23 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
   なります。** 注釈と構造要素は位置で対応づけているためです。
 - **文書の二つの読み取りが食い違うとき、Reader は切り替えを提供するだけで、違いを
   報告しません。** 何が違うのかは、両方を試して確かめることになります。
+- **誤った言語を宣言していて、ほかに手がかりのない PDF は、利用者が別の言語を選ぶ
+  までその言語で読みます。** Word で書き出した文書には、別の言語の本文に `en-US`
+  を宣言しているものが多くあります。**回避策は、ツールバーの「文書の言語」**か、
+  設定の「よく読む文書の言語」です。本文から言語を推定することは、まだしていませ
+  ん（[#56](https://github.com/motchie/accessible-pdf-view/issues/56)、
+  [#54](https://github.com/motchie/accessible-pdf-view/issues/54)）。選んだ言語へ
+  の切り替えが NVDA に伝わることは確かめています。実際にその言語で聞くには、その
+  言語の音声が入っている必要があります。
+- **Symbol や Wingdings のフォントの箇条書き記号は、四角で表示され、余分な記号と
+  して読まれます。** 箇条書き本来の記号と並んで出ます
+  （[#59](https://github.com/motchie/accessible-pdf-view/issues/59)）。
+- **一部のフォントでは、推測の読み取りで「ti」の文字が抜けます。** フォントが
+  「ti」を 1 つの字形で描いている場合です
+  （[#60](https://github.com/motchie/accessible-pdf-view/issues/60)）。回避策は、
+  構造タグがあれば、構造タグの読み取りを使うことです。
+- **画面の表示言語は、英語と日本語だけです**
+  （[#61](https://github.com/motchie/accessible-pdf-view/issues/61)）。
 
 ## 管理の責任
 
@@ -196,7 +214,7 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
 このファイルとここに書かれた実践は、リリースごとに見直します。古くなった記述はこ
 のファイルの不具合であり、不具合として報告していただく価値があります。
 
-**最終確認: 2026-11-15、バージョン 0.3.1 に対して。**
+**最終確認: 2026-11-22、バージョン 0.3.2 に対して。**
 
 ## 改善の提案
 
