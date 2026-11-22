@@ -73,6 +73,7 @@ export function DocumentInfoPanel({
         language={readingLanguage.language}
         source={readingLanguage.source}
         kept={readingLanguage.kept ?? false}
+        declared={Boolean(info.language)}
         browserLanguages={browserLanguages}
         {...(onChooseLanguage ? { onChoose: onChooseLanguage } : {})}
       />,
@@ -153,12 +154,15 @@ function ReadingLanguage({
   language,
   source,
   kept,
+  declared,
   browserLanguages,
   onChoose,
 }: {
   language: string | undefined;
   source: LanguageSource | undefined;
   kept: boolean;
+  /** The PDF declares a language of its own (the catalog's `/Lang`). */
+  declared: boolean;
   browserLanguages: readonly string[];
   onChoose?: (language: string | null) => void;
 }): JSX.Element {
@@ -169,7 +173,9 @@ function ReadingLanguage({
     ? reasons.none
     : source === 'chosen'
       ? reasons.chosen(languageLabel(language, m), kept)
-      : reasons[source](languageLabel(language, m));
+      : source === 'usual'
+        ? reasons.usual(languageLabel(language, m), declared)
+        : reasons[source](languageLabel(language, m));
   const choices = documentLanguageChoices(m.app.locale, browserLanguages, [language]);
   const chosen = source === 'chosen' && language ? language.split('-')[0]!.toLowerCase() : '';
 
