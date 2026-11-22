@@ -171,10 +171,13 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
   もの」として読み上げられ、ダブルタップしても何も起きませんでした。原因は React
   がルート要素に付けるイベントの受け口と `onclick` でした。Reader と設定パネルは、
   クリックの受け口を document に置き、ルート要素に `onclick` を付けないマウントの
-  しかたに変えました（[#66](https://github.com/motchie/accessible-pdf-view/pull/66)）。
+  しかたに変えました（[#67](https://github.com/motchie/accessible-pdf-view/pull/67)）。
   確かめたのは jsdom でのテストだけで、ブラウザー上の TalkBack・NVDA・VoiceOver で
   は**まだ確かめていません**。確かめるまでの間、まだ起きる場合の**回避策は Chrome
   155 以降**です。Chrome 側の同じ問題（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）はそこでなくなりました。
+  Chrome 147〜154 は回避先になりません。#19 が閉じたのは Chrome が変わったからなの
+  で、この変更を確かめるまでは、VoiceOver では同じ原因が今も読み上げられる可能性が
+  あります。
 - **タグに見出しがないタグ付き PDF では、アウトラインが平らになります。** 組み合わ
   せた読み取りは、ページ上で裏づけが取れる見出しは復元しますが、レベルを創作する
   ことはできません。これはビジネス文書では例外ではなく、ごく普通の場合です。

@@ -186,11 +186,14 @@ label](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Ao
   The cause was React's listeners and `onclick` on the root element. The Reader
   and the settings panel are now mounted so that the click listeners are on the
   document and the root element has no `onclick`
-  ([#66](https://github.com/motchie/accessible-pdf-view/pull/66)). That is
+  ([#67](https://github.com/motchie/accessible-pdf-view/pull/67)). That is
   checked by tests in jsdom only: it has **not yet been checked** with TalkBack,
   NVDA or VoiceOver in a browser. Until it is, if it still happens:
   **workaround: Chrome 155 or later**, where the counterpart problem
   ([#19](https://github.com/motchie/accessible-pdf-view/issues/19)) went away.
+  Chrome 147 to 154 is not a way round it: #19 was closed because Chrome
+  changed, so with VoiceOver the same cause may still be announced there until
+  this change is checked.
 - **A tagged PDF whose tags carry no headings gives a flat outline.** The
   combined reading recovers headings where it can verify them against the page,
   but it cannot invent a level. This is the common case in business documents,

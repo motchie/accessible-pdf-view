@@ -28,8 +28,12 @@ import { createRoot as createReactRoot, type Root } from 'react-dom/client';
  * - `onclick` always reads `undefined`. React assigns its no-op only while
  *   the property reads `null`. Writing an empty function is ignored, which
  *   also covers a React that assigns it unconditionally. Writing anything
- *   else throws, because a real handler there would expose the page as
- *   clickable again.
+ *   else throws in development and tests, because a real handler there would
+ *   expose the page as clickable again. In a built extension it is ignored
+ *   with a warning instead: if a React or bundler update ever reached this
+ *   with a no-op the check does not recognise, throwing inside React's
+ *   commit would leave the reader with a blank page, which is worse than
+ *   the page being announced as clickable.
  *
  * What that changes for the three click events: React's handlers now run
  * from the document, so `stopPropagation()` in a React handler does not stop
@@ -63,9 +67,10 @@ export function createRoot(container: HTMLElement): Root {
     get: () => undefined,
     set: (value: unknown) => {
       if (value == null || isEmptyFunction(value)) return;
-      throw new TypeError(
-        'The Reader root cannot take an onclick: Firefox would expose the whole page as clickable (#33).',
-      );
+      const message =
+        'The Reader root cannot take an onclick: Firefox would expose the whole page as clickable (#33).';
+      if (import.meta.env.DEV) throw new TypeError(message);
+      console.warn(`${message} It was ignored.`);
     },
   });
   try {
