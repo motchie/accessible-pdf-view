@@ -196,7 +196,7 @@ export function declaredDocumentLanguages(
   const tagged = raw.get('tagged-pdf');
   if (!tagged) return { language };
   const title = info.title ?? tagged.metadata.title;
-  const settled = settleDeclaredLanguages(tagged, language, title);
+  const settled = settleDeclaredLanguages(tagged, language, title, taggedCoversText);
   // Only tags that carry most of the page text may speak for the document. A
   // declared Tagged PDF is read from its tags however little they cover, and
   // a tree holding one English logo line would otherwise make a Japanese body
@@ -209,7 +209,7 @@ export function declaredDocumentLanguages(
   // The corrections depend on the document's language, so the title is
   // worked out again against the new one.
   const titleLanguage = title
-    ? settleDeclaredLanguages(tagged, content, title).metadata.titleLanguage
+    ? settleDeclaredLanguages(tagged, content, title, true).metadata.titleLanguage
     : undefined;
   return { language: content, ...(titleLanguage ? { titleLanguage } : {}), languageFromTags: true };
 }
@@ -258,11 +258,10 @@ export interface DocumentFacts {
 export function decorate(document: AccessibleDocument, facts: DocumentFacts): AccessibleDocument {
   // Which declared languages are worth marking depends on the document's own,
   // so it is decided here, where that is known — detection included (#49).
-  const settled = settleDeclaredLanguages(
-    document,
-    facts.language ?? document.metadata.language,
-    facts.info.title ?? document.metadata.title,
-  );
+  // The title's language is the document's, decided once from the tagged
+  // reading (`declaredDocumentLanguages`) and passed in `facts`, so it is not
+  // worked out again here from whatever this reading holds.
+  const settled = settleDeclaredLanguages(document, facts.language ?? document.metadata.language);
   return documentWithoutControlCharacters({
     ...settled,
     metadata: {
