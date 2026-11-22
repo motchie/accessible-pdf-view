@@ -112,6 +112,23 @@ describe('createRoot', () => {
     expect(container.onclick).toBeUndefined();
   });
 
+  it('ignores, with a warning, an onclick it does not recognise in a built extension', () => {
+    // Throwing inside React's commit would blank the Reader; in production the
+    // value is dropped instead.
+    vi.stubEnv('DEV', false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render();
+      expect(() => {
+        container.onclick = () => console.log('clicked');
+      }).not.toThrow();
+      expect(container.onclick).toBeUndefined();
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/#33\).*ignored/));
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('still runs React click handlers', () => {
     render();
     const button = container.querySelector('button')!;
