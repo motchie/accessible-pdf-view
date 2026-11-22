@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot } from '../../lib/reader/create-root';
 import App from './App';
 import './reader.css';
 
