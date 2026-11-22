@@ -177,3 +177,53 @@ describe('a radio with a note', () => {
     expect(patches).toContainEqual({ theme: 'dark' });
   });
 });
+
+/** The usual document language (#57). */
+describe('the usual document language', () => {
+  function select(): HTMLSelectElement {
+    const legend = [...container.querySelectorAll('legend')].find(
+      (element) => element.textContent === 'よく読む文書の言語',
+    );
+    const found = legend?.closest('fieldset')?.querySelector('select');
+    if (!found) throw new Error('no usual-language select');
+    return found;
+  }
+
+  it('is automatic by default, named by its legend and described by its hint', async () => {
+    removeLanguageModel();
+    await mount();
+
+    const control = select();
+    expect(control.value).toBe('auto');
+    expect(control.options[0]!.textContent).toBe('自動（PDF の宣言に従う）');
+    expect(document.getElementById(control.getAttribute('aria-labelledby')!)?.textContent).toBe(
+      'よく読む文書の言語',
+    );
+    expect(document.getElementById(control.getAttribute('aria-describedby')!)?.textContent).toMatch(
+      /^PDF 全体の宣言のほかに/,
+    );
+  });
+
+  it('saves the chosen language', async () => {
+    removeLanguageModel();
+    const patches: unknown[] = [];
+    await act(async () => {
+      root.render(
+        inLocale(
+          'ja',
+          <SettingsPanel
+            settings={DEFAULT_SETTINGS}
+            onChange={(patch) => patches.push(patch)}
+            onReset={() => {}}
+          />,
+        ),
+      );
+    });
+
+    act(() => {
+      select().value = 'ro';
+      select().dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(patches).toContainEqual({ usualDocumentLanguage: 'ro' });
+  });
+});

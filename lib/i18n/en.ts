@@ -157,11 +157,24 @@ export const en = {
     subject: 'Subject',
     keywords: 'Keywords',
     language: 'Language',
-    /** Shown only when the Reader reads the document in a language other than
-     * the one its catalog declares, and says why (#49). */
+    /** The language the Reader reads the document in, and why — the
+     * "Language" row above is the catalog's own value (#50, #57). */
     readingLanguage: 'Read as',
-    readingLanguageFromTags: (language: string) =>
-      `${language}: every passage the structure tags cover declares this language`,
+    readingLanguageReason: {
+      catalog: (language: string) => `${language}, as the PDF declares`,
+      detected: (language: string) =>
+        `${language}, detected from the text: the PDF declares no language`,
+      tags: (language: string) =>
+        `${language}: every passage the structure tags cover declares this language`,
+      usual: (language: string) =>
+        `${language}, your usual document language: the PDF gives no language beyond the one declared for the whole file`,
+      chosen: (language: string) =>
+        `${language}, chosen for this document. Kept until this tab is closed.`,
+      none: 'No language: the PDF declares none, and none could be detected',
+    },
+    /** The control that chooses it. */
+    readingLanguageChoose: 'Read this document as',
+    readingLanguageAutomatic: 'Automatic',
     pageCount: 'Pages',
     created: 'Created',
     modified: 'Modified',
@@ -448,6 +461,10 @@ export const en = {
     aiLanguageInterface: 'Use the interface language',
     aiLanguageInterfaceNote: (language: string) =>
       `The language set at the top of this panel, which is ${language} right now.`,
+    usualLanguage: 'Usual document language',
+    usualLanguageHint:
+      "Used for a PDF that gives no language beyond the one declared for the whole file — often wrong in documents from older versions of Word — or none at all, and only when its text is written in this language's alphabet. A PDF that declares languages for its parts keeps them. Any one document can be read in another language from its Document information.",
+    usualLanguageAutomatic: 'Automatic (as the PDF declares)',
     pdfHandler: 'Opening PDFs',
     pdfHandlerHint:
       'Which viewer opens a PDF you click. Switching to the Reader makes the browser ask for permission to read data on all sites: this extension has to recognise a PDF’s address before the page loads, and no browser allows that for sites it cannot already reach. Switching back hands it in again.',

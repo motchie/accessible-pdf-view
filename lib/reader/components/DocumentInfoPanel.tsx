@@ -1,6 +1,8 @@
 import { useId, useState, type JSX, type ReactNode } from 'react';
 import type { DocumentOrigin, PdfFileInfo } from '../../pdf/document-model';
 import { useMessages, type Messages } from '../../i18n';
+import { documentLanguageChoices } from '../../i18n/language-choices';
+import type { LanguageSource } from '../../pdf/document-language';
 
 /**
  * The document's own description of itself, plus where the structure on screen
@@ -20,19 +22,28 @@ export interface DocumentInfoPanelProps {
   structureSource: DocumentOrigin | null;
   pageCount: number;
   /**
-   * The language the Reader reads the document in, when the structure tags
-   * declared it over the catalog's (`DocumentMetadata.languageFromTags`).
-   * The "Language" row is the catalog's own value, so without this a reader
-   * hearing English from a PDF the panel calls Japanese has no explanation.
+   * The language the Reader reads the document in, and where it came from
+   * (`chooseDocumentLanguages`). The "Language" row is the catalog's own
+   * value, so without this a reader hearing English from a PDF the panel calls
+   * Japanese has no explanation (#50).
    */
-  languageFromTags?: string;
+  readingLanguage?: { language?: string; source?: LanguageSource };
+  /**
+   * Chooses the language this document is read in; null goes back to the
+   * automatic one (#57). Without it the row only reports.
+   */
+  onChooseLanguage?: (language: string | null) => void;
+  /** The browser's languages, offered first. */
+  browserLanguages?: readonly string[];
 }
 
 export function DocumentInfoPanel({
   info,
   structureSource,
   pageCount,
-  languageFromTags,
+  readingLanguage,
+  onChooseLanguage,
+  browserLanguages = [],
 }: DocumentInfoPanelProps): JSX.Element | null {
   const m = useMessages();
   const headingId = useId();
@@ -49,12 +60,17 @@ export function DocumentInfoPanel({
   add(m.documentInfo.subject, info.subject);
   add(m.documentInfo.keywords, info.keywords);
   add(m.documentInfo.language, info.language ? languageLabel(info.language, m) : undefined);
-  add(
-    m.documentInfo.readingLanguage,
-    languageFromTags
-      ? m.documentInfo.readingLanguageFromTags(languageLabel(languageFromTags, m))
-      : undefined,
-  );
+  if (readingLanguage) {
+    add(
+      m.documentInfo.readingLanguage,
+      <ReadingLanguage
+        language={readingLanguage.language}
+        source={readingLanguage.source}
+        browserLanguages={browserLanguages}
+        {...(onChooseLanguage ? { onChoose: onChooseLanguage } : {})}
+      />,
+    );
+  }
   add(m.documentInfo.pageCount, m.documentInfo.pages(pageCount));
   add(m.documentInfo.created, formatDate(info.createdAt, m));
   add(m.documentInfo.modified, formatDate(info.modifiedAt, m));
@@ -118,6 +134,58 @@ function structureLabel(source: DocumentOrigin | null, m: Messages): string | un
 
 /** The document's language, named in the interface's language — not in its
  * own, which is the one thing the reader may not be able to read. */
+/**
+ * The language the document is read in, why, and — where the Reader allows it —
+ * the control that changes it for this document.
+ *
+ * A native `<select>` with a visible label: the panel is read in order, and a
+ * reader who has just heard Romanian read in an English voice should meet the
+ * reason and the remedy together.
+ */
+function ReadingLanguage({
+  language,
+  source,
+  browserLanguages,
+  onChoose,
+}: {
+  language: string | undefined;
+  source: LanguageSource | undefined;
+  browserLanguages: readonly string[];
+  onChoose?: (language: string | null) => void;
+}): JSX.Element {
+  const m = useMessages();
+  const selectId = useId();
+  const reason =
+    language && source
+      ? m.documentInfo.readingLanguageReason[source](languageLabel(language, m))
+      : m.documentInfo.readingLanguageReason.none;
+  const choices = documentLanguageChoices(m.app.locale, browserLanguages, [language]);
+  const chosen = source === 'chosen' && language ? language.split('-')[0]!.toLowerCase() : '';
+
+  return (
+    <>
+      <span className="apv-docinfo__reason">{reason}</span>
+      {onChoose ? (
+        <span className="apv-docinfo__choose">
+          <label htmlFor={selectId}>{m.documentInfo.readingLanguageChoose}</label>
+          <select
+            id={selectId}
+            value={chosen}
+            onChange={(event) => onChoose(event.currentTarget.value || null)}
+          >
+            <option value="">{m.documentInfo.readingLanguageAutomatic}</option>
+            {choices.map((choice) => (
+              <option key={choice.tag} value={choice.tag}>
+                {choice.label}
+              </option>
+            ))}
+          </select>
+        </span>
+      ) : null}
+    </>
+  );
+}
+
 function languageLabel(tag: string, m: Messages): string {
   try {
     const names = new Intl.DisplayNames([m.app.locale], { type: 'language' });

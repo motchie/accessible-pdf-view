@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DocumentOrigin, PdfFileInfo } from '../lib/pdf/document-model';
 import type { Locale } from '../lib/i18n';
 import { DocumentInfoPanel } from '../lib/reader/components/DocumentInfoPanel';
+import type { LanguageSource } from '../lib/pdf/document-language';
 import { inLocale } from './helpers/messages';
 
 /**
@@ -97,13 +98,16 @@ describe('the other two cases', () => {
 });
 
 /**
- * The "Language" row is the catalog's own /Lang. When the Reader reads the
- * document in the language every passage in its tags declares instead (#49),
- * the panel says so and why, or a reader hearing English from a PDF the panel
- * calls Japanese has no explanation.
+ * The "Language" row is the catalog's own /Lang. The "Read as" row says which
+ * language the Reader reads in and why (#50), and lets the reader choose
+ * another for this document (#57).
  */
 describe('the language the Reader reads in', () => {
-  function mountWith(languageFromTags: string | undefined, locale: Locale): void {
+  function mountWith(
+    readingLanguage: { language?: string; source?: LanguageSource },
+    locale: Locale,
+    onChooseLanguage?: (language: string | null) => void,
+  ): void {
     act(() =>
       root.render(
         inLocale(
@@ -112,29 +116,66 @@ describe('the language the Reader reads in', () => {
             info={{ ...DECLARED, language: 'ja' }}
             structureSource="tagged-pdf"
             pageCount={1}
-            {...(languageFromTags ? { languageFromTags } : {})}
+            readingLanguage={readingLanguage}
+            browserLanguages={['ro-RO', 'en']}
+            {...(onChooseLanguage ? { onChooseLanguage } : {})}
           />,
         ),
       ),
     );
   }
+  const reason = () => container.querySelector('.apv-docinfo__reason')?.textContent;
+  const select = () => container.querySelector<HTMLSelectElement>('.apv-docinfo__choose select');
 
-  it('is shown beside the catalog’s, with the reason, when the tags decided it', () => {
-    mountWith('en', 'ja');
+  it('says where the language came from, in both interface languages', () => {
+    mountWith({ language: 'en', source: 'tags' }, 'ja');
     expect(row('言語')).toBe('日本語 (ja)');
-    expect(row('読み上げの言語')).toBe(
-      '英語 (en)（構造タグで、本文のすべての部分がこの言語を宣言しているため）',
+    expect(reason()).toBe('英語 (en)（構造タグで、本文のすべての部分がこの言語を宣言しているため）');
+
+    mountWith({ language: 'en', source: 'tags' }, 'en');
+    expect(row('Language')).toBe('Japanese (ja)');
+    expect(reason()).toBe('English (en): every passage the structure tags cover declares this language');
+
+    mountWith({ language: 'ro', source: 'usual' }, 'ja');
+    expect(reason()).toBe(
+      'ルーマニア語 (ro)（設定の「よく読む文書の言語」による。PDF には、文書全体の宣言のほかに言語の手がかりがありません）',
     );
 
-    mountWith('en', 'en');
-    expect(row('Language')).toBe('Japanese (ja)');
-    expect(row('Read as')).toBe(
-      'English (en): every passage the structure tags cover declares this language',
-    );
+    mountWith({ language: 'ro', source: 'chosen' }, 'en');
+    expect(reason()).toBe('Romanian (ro), chosen for this document. Kept until this tab is closed.');
+
+    mountWith({}, 'ja');
+    expect(reason()).toBe('なし（PDF に言語の宣言がなく、推定もできませんでした）');
   });
 
-  it('is not shown when the Reader uses the catalog’s', () => {
-    mountWith(undefined, 'ja');
-    expect(row('読み上げの言語')).toBeUndefined();
+  it("offers the browser's languages first, and Automatic unless one was chosen", () => {
+    mountWith({ language: 'ja', source: 'catalog' }, 'en', () => {});
+    const options = [...select()!.options].map((option) => option.value);
+    expect(options.slice(0, 3)).toEqual(['', 'ro', 'en']);
+    expect(select()!.value).toBe('');
+    expect(container.querySelector('.apv-docinfo__choose label')?.textContent).toBe('Read this document as');
+
+    mountWith({ language: 'ro', source: 'chosen' }, 'en', () => {});
+    expect(select()!.value).toBe('ro');
+  });
+
+  it('chooses a language, and goes back to Automatic with null', () => {
+    const chosen: Array<string | null> = [];
+    mountWith({ language: 'en-US', source: 'catalog' }, 'ja', (language) => chosen.push(language));
+
+    act(() => {
+      select()!.value = 'ro';
+      select()!.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    act(() => {
+      select()!.value = '';
+      select()!.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(chosen).toEqual(['ro', null]);
+  });
+
+  it('only reports when it cannot be changed', () => {
+    mountWith({ language: 'ja', source: 'catalog' }, 'ja');
+    expect(select()).toBeNull();
   });
 });

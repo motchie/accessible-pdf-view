@@ -112,11 +112,12 @@ export interface DocumentMetadata {
    */
   titleLanguage?: string;
   /**
-   * Set when `language` is not the catalog's `/Lang` but the one every passage
-   * in the structure tags declares (`declaredDocumentLanguages`). The document
-   * information panel says so, since its "Language" row shows the catalog's.
+   * Where `language` came from: the catalog, detection, the structure tags,
+   * or the reader (`LanguageSource` in `lib/pdf/document-language.ts`). The
+   * document information panel says so, since its "Language" row shows the
+   * catalog's.
    */
-  languageFromTags?: true;
+  languageSource?: 'catalog' | 'detected' | 'tags' | 'usual' | 'chosen';
   /** The document's own description of itself. */
   info?: PdfFileInfo;
 }
@@ -450,6 +451,14 @@ export type InlineNode = TextNode | LinkNode | LineBreakNode;
 export interface TextNode extends DeclaredLanguage {
   type: 'text';
   text: string;
+  /**
+   * What the PDF's structure elements declare for this run, as the tagged
+   * adapter read it: the run's own `/Lang`, else its nearest ancestor's. Kept
+   * as declared, never corrected, so the document can be settled again when
+   * its language changes — chosen by the reader (#57) — without losing what
+   * the file said. `language` is the settled answer the renderer uses.
+   */
+  declaredLanguage?: string;
   /** Native emphasis only — `<strong>`, `<em>`, `<code>`. */
   emphasis?: Array<'strong' | 'em' | 'code'>;
 }

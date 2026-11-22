@@ -6,6 +6,7 @@ import type { ReaderSettings } from '../settings';
 import { STRUCTURE_ORDER } from '../structure-source';
 import { UI_LANGUAGE_NAMES, resolveLocale, useMessages } from '../../i18n';
 import { downloadPercent } from '../download-progress';
+import { documentLanguageChoices } from '../../i18n/language-choices';
 import {
   disablePdfHandler,
   enablePdfHandler,
@@ -157,6 +158,11 @@ export function SettingsPanel({
         />
         <p className="apv-settings__hint">{m.settings.themeHint}</p>
       </fieldset>
+
+      <UsualLanguageSection
+        value={settings.usualDocumentLanguage}
+        onChange={(usualDocumentLanguage) => onChange({ usualDocumentLanguage })}
+      />
 
       <ModelSection />
 
@@ -501,5 +507,49 @@ function RadioGroup<T extends string>({
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * The reader's usual document language (#57): a list, since there are dozens,
+ * with "automatic" — the PDF's own declaration — first and as the default.
+ */
+function UsualLanguageSection({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}): JSX.Element {
+  const m = useMessages();
+  const legendId = useId();
+  const hintId = useId();
+  const choices = documentLanguageChoices(
+    m.app.locale,
+    typeof navigator === 'undefined' ? [] : navigator.languages ?? [],
+    [value === 'auto' ? undefined : value],
+  );
+
+  return (
+    <fieldset>
+      <legend id={legendId}>{m.settings.usualLanguage}</legend>
+      <p className="apv-settings__hint" id={hintId}>
+        {m.settings.usualLanguageHint}
+      </p>
+      {/* Named by the legend, which says it on screen already. */}
+      <select
+        aria-labelledby={legendId}
+        aria-describedby={hintId}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      >
+        <option value="auto">{m.settings.usualLanguageAutomatic}</option>
+        {choices.map((choice) => (
+          <option key={choice.tag} value={choice.tag}>
+            {choice.label}
+          </option>
+        ))}
+      </select>
+    </fieldset>
   );
 }

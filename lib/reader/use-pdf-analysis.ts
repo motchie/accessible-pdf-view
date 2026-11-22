@@ -8,6 +8,13 @@ import type {
   PdfFileInfo,
 } from '../pdf/document-model';
 import { documentWithoutControlCharacters } from '../pdf/control-characters';
+import {
+  chooseDocumentLanguages,
+  type LanguageEvidence,
+  type LanguagePreferences,
+  type LanguageSource,
+} from '../pdf/document-language';
+import { documentToPlainText } from '../pdf/document-model';
 import { PdfError, isPdfError } from '../pdf/errors';
 import { InspectorClient } from '../pdf/inspector/client';
 import { READER_PROCESS_OPTIONS } from '../pdf/inspector/protocol';
@@ -20,7 +27,6 @@ import {
   chooseReading,
   decorate,
   documentLanguage,
-  declaredDocumentLanguages,
   pagesNeedingExplanation,
   prepareReading,
   readingHeadingCounts,
@@ -132,10 +138,13 @@ interface Runtime {
   /** Resolved once, from whichever document was shown first — it is a property
    * of the PDF, not of the producer that read it. */
   language: string | undefined;
-  /** Same, for the title: see `declaredDocumentLanguages`. */
+  /** Same, for the title: see `chooseDocumentLanguages`. */
   titleLanguage?: string;
-  /** `language` came from the structure tags: see `declaredDocumentLanguages`. */
-  languageFromTags?: boolean;
+  /** Where `language` came from: see `chooseDocumentLanguages`. */
+  languageSource?: LanguageSource;
+  /** What the language was decided from, kept so that a choice made later
+   * by the reader can decide it again without reading the PDF again. */
+  evidence?: LanguageEvidence;
   /** Same: why a page has no text does not depend on who failed to read it. */
   kinds: Map<number, PageContentKind>;
 }
@@ -151,6 +160,13 @@ export interface AnalysisOptions {
    * keeps a late setting from restarting the whole analysis.
    */
   preferred?: StructureSource;
+  /**
+   * The language the reader chose for this document before, if any (#57).
+   * Read when the language is first decided, like `preferred`.
+   */
+  chosenLanguage?: string;
+  /** The reader's usual document language setting, if set (#57). */
+  usualLanguage?: string;
 }
 
 export function usePdfAnalysis(
@@ -163,6 +179,8 @@ export function usePdfAnalysis(
   replaceDocument: (document: AccessibleDocument) => void;
   /** Shows another producer's reading of the same PDF. */
   selectSource: (origin: DocumentOrigin) => void;
+  /** Reads the document in this language, or in the automatic one for null (#57). */
+  chooseLanguage: (language: string | null) => void;
 } {
   const [state, setState] = useState<AnalysisState>(INITIAL);
   const [attempt, setAttempt] = useState(0);
@@ -171,6 +189,15 @@ export function usePdfAnalysis(
   const shownRef = useRef<DocumentOrigin | null>(null);
   const preferredRef = useRef<StructureSource>(options.preferred ?? 'tagged-pdf');
   preferredRef.current = options.preferred ?? 'tagged-pdf';
+  const preferencesRef = useRef<LanguagePreferences>({});
+  if (preferencesRef.current.chosen === undefined && options.chosenLanguage) {
+    preferencesRef.current = { ...preferencesRef.current, chosen: options.chosenLanguage };
+  }
+  const usualLanguage = options.usualLanguage;
+  // Read when the language is decided, not captured when the analysis starts:
+  // the setting arrives from storage after that, and the effect below updates
+  // this as it does.
+  const usualRef = useRef<string | undefined>(undefined);
   /** The switch the user asked for last. A slow preparation that finishes after
    * the user has moved on must not drag the reader back to it. */
   const wantedRef = useRef<DocumentOrigin | null>(null);
@@ -250,10 +277,17 @@ export function usePdfAnalysis(
           signal: controller.signal,
         });
         if (cancelled) return;
-        const declared = declaredDocumentLanguages(raw, info, runtime.language, taggedCoversText);
-        runtime.language = declared.language;
-        if (declared.titleLanguage) runtime.titleLanguage = declared.titleLanguage;
-        if (declared.languageFromTags) runtime.languageFromTags = true;
+        runtime.evidence = {
+          raw,
+          info,
+          found: runtime.language,
+          taggedCoversText,
+          sample: documentToPlainText(enriched.document).slice(0, 4000),
+        };
+        applyLanguages(runtime, {
+          ...preferencesRef.current,
+          ...(usualRef.current ? { usual: usualRef.current } : {}),
+        });
 
         entry.document = decorate(enriched.document, runtime);
         shownRef.current = shown;
@@ -409,7 +443,51 @@ export function usePdfAnalysis(
     })();
   }, []);
 
-  return { ...state, retry, replaceDocument, selectSource };
+  /** Decides the language again and folds it into every prepared reading. */
+  const relanguage = useCallback((preferences: LanguagePreferences) => {
+    const runtime = runtimeRef.current;
+    if (!runtime?.evidence) return;
+    applyLanguages(runtime, preferences);
+    // Folded into what is there now, user edits included, as `kinds` is.
+    for (const prepared of runtime.entries.values()) {
+      if (prepared.document) prepared.document = decorate(prepared.document, runtime);
+    }
+    setState((previous) => {
+      if (previous.phase !== 'ready' || !previous.structureSource) return previous;
+      const current = runtime.entries.get(previous.structureSource)?.document;
+      return current ? { ...previous, document: current } : previous;
+    });
+  }, []);
+
+  const chooseLanguage = useCallback(
+    (language: string | null) => {
+      const { chosen: _previous, ...rest } = preferencesRef.current;
+      preferencesRef.current = language ? { ...rest, chosen: language } : rest;
+      relanguage({ ...preferencesRef.current, ...(usualRef.current ? { usual: usualRef.current } : {}) });
+    },
+    [relanguage],
+  );
+
+  // The usual language is a setting, and can change in the side panel while
+  // a document is open.
+  useEffect(() => {
+    if (usualRef.current === usualLanguage) return;
+    usualRef.current = usualLanguage;
+    relanguage({ ...preferencesRef.current, ...(usualLanguage ? { usual: usualLanguage } : {}) });
+  }, [usualLanguage, relanguage]);
+
+  return { ...state, retry, replaceDocument, selectSource, chooseLanguage };
+}
+
+/** Sets the runtime's language facts from its evidence and the reader's preferences. */
+function applyLanguages(runtime: Runtime, preferences: LanguagePreferences): void {
+  if (!runtime.evidence) return;
+  const decided = chooseDocumentLanguages(runtime.evidence, preferences);
+  runtime.language = decided.language;
+  delete runtime.titleLanguage;
+  delete runtime.languageSource;
+  if (decided.titleLanguage) runtime.titleLanguage = decided.titleLanguage;
+  if (decided.source) runtime.languageSource = decided.source;
 }
 
 /** `prepareReading`, cancelled with the run. */
