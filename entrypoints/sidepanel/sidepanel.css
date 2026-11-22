@@ -111,11 +111,40 @@
   }
 }
 
-/* The way back to the Reader, on the options page only (#68). */
+/*
+ * The way back to the Reader, on the options page only (#68): a bar across the
+ * top, as Android apps put "back", that stays there while the long list of
+ * settings scrolls under it.
+ */
 .apv-settings__return {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.75rem;
-  margin: 0 0 0.75rem;
+  margin: -0.85rem -0.85rem 0.75rem;
+  padding: 0.5rem 0.85rem;
+  background: var(--apv-bg);
+  border-bottom: 1px solid var(--apv-border);
+}
+
+.apv-settings__return button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 0.75rem 0 0.25rem;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.apv-settings__return-arrow {
+  font-size: 1.5em;
+  line-height: 1;
 }

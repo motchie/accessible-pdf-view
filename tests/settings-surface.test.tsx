@@ -171,5 +171,9 @@ describe('the way back from the options page (#68)', () => {
       /Back to the Reader|リーダーに戻る/.test(button.textContent ?? ''),
     );
     expect(back).toBeDefined();
+    // The arrow is drawn, not read: the button's name is the words.
+    const arrow = back!.querySelector('[aria-hidden="true"]');
+    expect(arrow?.textContent).toBe('←');
+    expect(back!.textContent?.replace(arrow!.textContent!, '')).toMatch(/^(Back to the Reader|リーダーに戻る)$/);
   });
 });

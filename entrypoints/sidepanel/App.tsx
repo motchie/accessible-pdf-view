@@ -41,6 +41,9 @@ export default function App({
           Firefox keeps the one an element was created with (#40). */}
       <main key={locale} lang={locale} className="apv-sidepanel" aria-busy={!loaded}>
         {returnTo !== null ? (
+          // Where Android puts "back": a bar across the top, arrow first. The
+          // words are there too, so the button says what it does without
+          // relying on the arrow; the arrow itself is not read out.
           <p className="apv-settings__return">
             <button
               type="button"
@@ -49,6 +52,9 @@ export default function App({
                 returnToReader(returnTo).catch(() => setReturnFailed(true));
               }}
             >
+              <span aria-hidden="true" className="apv-settings__return-arrow">
+                ←
+              </span>
               {messagesFor(locale).settings.backToReader}
             </button>
             {returnFailed ? (
