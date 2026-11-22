@@ -84,6 +84,13 @@ export function SettingsPanel({
         />
       </fieldset>
 
+      {/* Beside the interface's language: both say which language things are
+          read in, one for the Reader's own words and one for documents. */}
+      <UsualLanguageSection
+        value={settings.usualDocumentLanguage}
+        onChange={(usualDocumentLanguage) => onChange({ usualDocumentLanguage })}
+      />
+
       <fieldset>
         <legend>{m.settings.textAndSpacing}</legend>
         <p className="apv-settings__hint">{m.settings.zoomHint}</p>
@@ -158,11 +165,6 @@ export function SettingsPanel({
         />
         <p className="apv-settings__hint">{m.settings.themeHint}</p>
       </fieldset>
-
-      <UsualLanguageSection
-        value={settings.usualDocumentLanguage}
-        onChange={(usualDocumentLanguage) => onChange({ usualDocumentLanguage })}
-      />
 
       <ModelSection />
 
