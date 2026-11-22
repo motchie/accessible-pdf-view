@@ -213,7 +213,7 @@ export function usePdfAnalysis(
         }
         loaded = pdfDocument;
 
-        const { info, raw } = await buildReadings(inspector.document, pdfDocument.document, {
+        const { info, raw, taggedCoversText } = await buildReadings(inspector.document, pdfDocument.document, {
           sourceUrl,
           signal: controller.signal,
         });
@@ -250,7 +250,7 @@ export function usePdfAnalysis(
           signal: controller.signal,
         });
         if (cancelled) return;
-        const declared = declaredDocumentLanguages(raw, info, runtime.language);
+        const declared = declaredDocumentLanguages(raw, info, runtime.language, taggedCoversText);
         runtime.language = declared.language;
         if (declared.titleLanguage) runtime.titleLanguage = declared.titleLanguage;
         if (declared.languageFromTags) runtime.languageFromTags = true;

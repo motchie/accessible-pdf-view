@@ -36,6 +36,8 @@ export interface Readings {
   /** In offered order: the picker lists them as they were added, and a
    * preference the document cannot honour falls to the first. */
   raw: Map<DocumentOrigin, AccessibleDocument>;
+  /** The tagged reading carries most of the page text (`coversPageText`). */
+  taggedCoversText: boolean;
 }
 
 /**
@@ -74,6 +76,10 @@ export async function buildReadings(
   signal?.throwIfAborted();
 
   const raw = new Map<DocumentOrigin, AccessibleDocument>();
+  // Whether the tagged reading carries most of the page text. Only then may
+  // its declarations decide the whole document's language
+  // (`declaredDocumentLanguages`).
+  let taggedCoversText = false;
 
   // Either is enough: a tree without the `/Marked` declaration is still the
   // author's structure, and `isUsable` below rejects an empty one. Undeclared,
@@ -90,11 +96,12 @@ export async function buildReadings(
       const combined = combineReadings(author, inferred, info.title ?? author.metadata.title);
       if (combined) raw.set('combined', combined);
       raw.set('tagged-pdf', author);
+      taggedCoversText = coversPageText(tagged!);
     }
   }
   raw.set('pdf-inspector', inferred);
 
-  return { info, raw };
+  return { info, raw, taggedCoversText };
 }
 
 /** The reading to open with: the reader's setting, where there is a choice. */
@@ -176,26 +183,35 @@ export async function documentLanguage(
  * against the result (`settleDeclaredLanguages`).
  *
  * Without a tagged reading, `language` stands and the title has none of its
- * own.
+ * own. `taggedCoversText` (from `buildReadings`) says whether the tags carry
+ * most of the page text; without that, they do not decide the document's
+ * language, though they can still decide the title's.
  */
 export function declaredDocumentLanguages(
   raw: ReadonlyMap<DocumentOrigin, AccessibleDocument>,
   info: PdfFileInfo,
   language: string | undefined,
+  taggedCoversText: boolean,
 ): { language: string | undefined; titleLanguage?: string; languageFromTags?: boolean } {
   const tagged = raw.get('tagged-pdf');
   if (!tagged) return { language };
-  const content = unanimousDeclaredLanguage(settleDeclaredLanguages(tagged, language), language);
-  const settledLanguage = content ?? language;
   const title = info.title ?? tagged.metadata.title;
+  const settled = settleDeclaredLanguages(tagged, language, title);
+  // Only tags that carry most of the page text may speak for the document. A
+  // declared Tagged PDF is read from its tags however little they cover, and
+  // a tree holding one English logo line would otherwise make a Japanese body
+  // English in every reading.
+  const content = taggedCoversText ? unanimousDeclaredLanguage(settled, language) : undefined;
+  if (!content) {
+    const titleLanguage = settled.metadata.titleLanguage;
+    return { language, ...(titleLanguage ? { titleLanguage } : {}) };
+  }
+  // The corrections depend on the document's language, so the title is
+  // worked out again against the new one.
   const titleLanguage = title
-    ? settleDeclaredLanguages(tagged, settledLanguage, title).metadata.titleLanguage
+    ? settleDeclaredLanguages(tagged, content, title).metadata.titleLanguage
     : undefined;
-  return {
-    language: settledLanguage,
-    ...(titleLanguage ? { titleLanguage } : {}),
-    ...(content ? { languageFromTags: true } : {}),
-  };
+  return { language: content, ...(titleLanguage ? { titleLanguage } : {}), languageFromTags: true };
 }
 
 /**

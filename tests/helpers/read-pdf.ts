@@ -136,13 +136,18 @@ export async function readPdfAsReader(
   const loaded = await loadWithPdfjs(bytes.slice(0));
   try {
     const pdf = loaded.document;
-    const { info, raw } = await buildReadings(inspector.document, pdf, { sourceUrl });
+    const { info, raw, taggedCoversText } = await buildReadings(inspector.document, pdf, { sourceUrl });
     const shown = chooseReading([...raw.keys()], preferred);
 
     const { document: prepared } = await prepareReading(raw.get(shown)!, pdf, {
       rasterize: standInFigureImages,
     });
-    const declared = declaredDocumentLanguages(raw, info, await documentLanguage(prepared, info));
+    const declared = declaredDocumentLanguages(
+      raw,
+      info,
+      await documentLanguage(prepared, info),
+      taggedCoversText,
+    );
     const language = declared.language;
     const needsExplaining = pagesNeedingExplanation(prepared);
     const kinds =

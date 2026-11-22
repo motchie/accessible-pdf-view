@@ -61,7 +61,12 @@ export function DocumentView({
             <PageBreak pageNumber={page.pageNumber} language={language} />
           ) : null}
           {page.nodes.map((node, index) => (
-            <BlockNode key={index} node={node} headingOffset={headingOffset} language={language} />
+            <BlockNode
+              key={blockKey(index, node)}
+              node={node}
+              headingOffset={headingOffset}
+              language={language}
+            />
           ))}
           {page.nodes.length === 0 ? renderPageNotice?.(page) : null}
         </div>
@@ -116,6 +121,20 @@ function langFor(
  */
 function interfaceLang(m: Messages, language: string | undefined): { lang?: string } {
   return langFor(m.app.locale, language ?? m.app.locale);
+}
+
+/**
+ * A block's React key: its position, and its language.
+ *
+ * Switching readings re-renders the same positions with other blocks, and a
+ * key of position alone lets React keep the element and change only its
+ * `lang`. Firefox tells screen readers the language an element was created
+ * with (#40), and NVDA in Chrome was heard keeping one too, so a block whose
+ * language changes gets a new element.
+ */
+function blockKey(index: number, node: DocumentNode): string {
+  const language = 'language' in node && node.type !== 'code' ? (node.language ?? '') : '';
+  return `${index}:${language}`;
 }
 
 function BlockNode({
@@ -177,7 +196,7 @@ function BlockNode({
             <li key={index}>
               {item.blocks.map((block, blockIndex) => (
                 <BlockNode
-                  key={blockIndex}
+                  key={blockKey(blockIndex, block)}
                   node={block}
                   headingOffset={headingOffset}
                   language={language}
@@ -221,7 +240,12 @@ function BlockNode({
       return (
         <blockquote>
           {node.blocks.map((block, index) => (
-            <BlockNode key={index} node={block} headingOffset={headingOffset} language={language} />
+            <BlockNode
+              key={blockKey(index, block)}
+              node={block}
+              headingOffset={headingOffset}
+              language={language}
+            />
           ))}
         </blockquote>
       );
@@ -267,17 +291,22 @@ function Row({
           <>
             <Inline nodes={cell.content} language={cellLanguage} />
             {cell.blocks?.map((block, blockIndex) => (
-              <BlockNode key={blockIndex} node={block} headingOffset={0} language={cellLanguage} />
+              <BlockNode
+                key={blockKey(blockIndex, block)}
+                node={block}
+                headingOffset={0}
+                language={cellLanguage}
+              />
             ))}
           </>
         );
 
         return isHeader ? (
-          <th key={index} scope={scope} {...span}>
+          <th key={`${index}:${cell.language ?? ''}`} scope={scope} {...span}>
             {body}
           </th>
         ) : (
-          <td key={index} {...span}>
+          <td key={`${index}:${cell.language ?? ''}`} {...span}>
             {body}
           </td>
         );
