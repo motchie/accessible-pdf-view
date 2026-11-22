@@ -26,6 +26,7 @@ type Kid = El | string;
 interface El {
   role: string;
   lang?: string;
+  alt?: string;
   kids: Kid[];
 }
 
@@ -62,6 +63,7 @@ async function readDetected(
     return {
       role: kid.role,
       ...(kid.lang ? { lang: kid.lang } : {}),
+      ...(kid.alt ? { alt: kid.alt } : {}),
       children: kid.kids.map(toNode),
     };
   };
@@ -252,6 +254,13 @@ describe('declarations a Japanese Word document makes but the text cannot show',
     expect(html(document)).toBe('<p>PDFを開く。</p>');
   });
 
+  it('does not mark English words declared Japanese inside English', async () => {
+    const document = await read('en', el('P', span('ja', 'Hello '), span('en', ' world.')));
+
+    // The two runs join, and so do their spaces.
+    expect(html(document)).toBe('<p>Hello world.</p>');
+  });
+
   it('marks Latin words declared English inside Japanese', async () => {
     const document = await read(
       'ja',
@@ -317,6 +326,17 @@ describe("the interface's words inside a block in another language", () => {
     const markup = html(document);
     expect(markup).toContain('<td lang="en">Chart<figure');
     expect(markup).toContain('<p class="apv-figure__placeholder" lang="ja">');
+  });
+
+  it("marks a figure notice's own words and its alt text each in their language", async () => {
+    const document = await read(
+      'ja',
+      el('Table', el('TR', el('TD', span('en', 'Chart'), { role: 'Figure', alt: 'Sales by month', kids: [] }))),
+    );
+
+    expect(html(document)).toContain(
+      '<p class="apv-figure__placeholder" lang="ja">画像: <span lang="en">Sales by month</span></p>',
+    );
   });
 
   it('leaves the notice unmarked where the document has no language', async () => {

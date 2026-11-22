@@ -323,20 +323,60 @@ function Figure({
           {...(source.height ? { height: source.height } : {})}
         />
       ) : null}
-      {showsNotice ? (
-        <p
-          className="apv-figure__placeholder"
-          // Without alternative text the notice is the interface's words
-          // alone. With it, the notice wraps the document's or a model's text
-          // in a sentence of the interface's, and no one `lang` fits both, so
-          // it is left to the language around it.
-          {...(node.alternativeText ? {} : interfaceLang(m, language))}
-        >
-          {figurePlaceholderText(m, node)}
-        </p>
-      ) : null}
+      {showsNotice ? <FigureNotice node={node} language={language} /> : null}
       {node.caption ? <figcaption>{node.caption}</figcaption> : null}
     </figure>
+  );
+}
+
+/** Stands in for the alternative text, to find where a notice puts it. */
+const ALT_SLOT = '\u{F0000}';
+
+/**
+ * A figure's notice: the interface's words, and the alternative text when it
+ * has one.
+ *
+ * The notice is the interface's sentence and is marked as such where the text
+ * around it is in another language. Alternative text from the document — the
+ * author's, or the one its word processor wrote — is document text inside
+ * that sentence and is marked with the language around the figure, so a
+ * notice in a cell declared English reads 「画像：」 in the interface's voice
+ * and the description in English. Text a model generated or OCR read has no
+ * known language here (the description setting decides the first, the image
+ * the second), so a notice carrying one is left to the language around it, as
+ * before.
+ */
+function FigureNotice({
+  node,
+  language,
+}: {
+  node: Extract<DocumentNode, { type: 'figure' }>;
+  language: string | undefined;
+}): JSX.Element {
+  const m = useMessages();
+  const text = figurePlaceholderText(m, node);
+  const alt = node.alternativeText;
+
+  if (!alt) {
+    return (
+      <p className="apv-figure__placeholder" {...interfaceLang(m, language)}>
+        {text}
+      </p>
+    );
+  }
+
+  const fromDocument =
+    node.alternativeTextSource === 'author' || node.alternativeTextSource === 'document-ai';
+  const shell = figurePlaceholderText(m, { ...node, alternativeText: ALT_SLOT });
+  const at = shell.indexOf(ALT_SLOT);
+  if (!fromDocument || at === -1) return <p className="apv-figure__placeholder">{text}</p>;
+
+  return (
+    <p className="apv-figure__placeholder" {...interfaceLang(m, language)}>
+      {shell.slice(0, at)}
+      <span {...langFor(language, m.app.locale)}>{alt}</span>
+      {shell.slice(at + ALT_SLOT.length)}
+    </p>
   );
 }
 
