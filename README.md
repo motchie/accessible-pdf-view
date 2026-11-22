@@ -145,8 +145,8 @@ the same Reader is indistinguishable from a link that did nothing if you cannot
 see it. The Original view already shows the pages as they are, and switching the
 setting off gives the link back.
 
-A toolbar across the top carries the view switch, the file name, print, a link
-to the original, and settings. Three views:
+A toolbar across the top carries the view switch, the document's language (in
+the Reader view), the file name, print, a link to the original, and settings. Three views:
 
 | View | What it shows |
 | --- | --- |
@@ -187,7 +187,8 @@ have bought here is small: three actions, on a page that opens with a skip link.
 So every control keeps its own Tab stop, and the arrows work as well.
 
 The **view switch is a plain `<select>`, and it sits outside that toolbar**,
-keeping its own Tab stop. The APG's toolbar pattern says to avoid controls whose
+keeping its own Tab stop; so does the document-language switch beside it, for
+the same reason. The APG's toolbar pattern says to avoid controls whose
 operation needs the same arrow pair the toolbar navigates with, and a closed
 `<select>` answers Left and Right by changing its own value on Windows. Rather
 than replace it with a hand-built menu, or exile it to the end of the bar (the
