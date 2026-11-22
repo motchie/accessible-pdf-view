@@ -17,6 +17,15 @@ const COMMON = [
   'sv', 'th', 'tr', 'uk', 'vi', 'zh',
 ];
 
+/**
+ * A language's name in the interface's language, with its tag: 「ルーマニア語
+ * (ro)」, "Romanian (ro)". The tag alone where the platform has no name.
+ */
+export function languageLabel(tag: string, locale: string): string {
+  const name = displayNames(locale)?.of(tag);
+  return name && name !== tag ? `${name} (${tag})` : tag;
+}
+
 export interface LanguageChoice {
   tag: string;
   label: string;
@@ -27,11 +36,7 @@ export function documentLanguageChoices(
   browserLanguages: readonly string[],
   extra: readonly (string | undefined)[] = [],
 ): LanguageChoice[] {
-  const names = displayNames(locale);
-  const label = (tag: string) => {
-    const name = names?.of(tag);
-    return name && name !== tag ? `${name} (${tag})` : tag;
-  };
+  const label = (tag: string) => languageLabel(tag, locale);
 
   const browser = unique(browserLanguages.map(primaryTag).filter(isTag));
   const rest = unique([...COMMON, ...extra.filter(isTag).map(primaryTag)])

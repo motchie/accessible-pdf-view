@@ -443,8 +443,9 @@ Nothing in a file may show its language at all, or show the wrong one: of
 seven tagged Romanian public PDFs measured, six declared `en-US` over Romanian
 text with no part declaring anything else. So the reader decides too (#57):
 
-- **For one document**, in **Document information**: "Read as" says which
-  language the Reader uses and where it came from, and offers others. A choice
+- **For one document**, from **Language** in the toolbar, which names the
+  language in use and offers others; **Document information** says where the
+  language came from ("Read as"). A choice
   is kept for the tab, through a reload, and is gone when the tab closes. A
   chosen language also overrules the file's part-level declarations, except
   where the text's writing system shows another language.

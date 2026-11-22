@@ -205,6 +205,20 @@ export default function App(): JSX.Element {
         fileName={fileNameFromUrl(params.sourceUrl)}
         sourceUrl={params.sourceUrl}
         opensInReader={opensInReader}
+        {...(analysis.document
+          ? {
+              documentLanguage: {
+                ...(analysis.document.metadata.language
+                  ? { language: analysis.document.metadata.language }
+                  : {}),
+                ...(analysis.document.metadata.languageSource
+                  ? { source: analysis.document.metadata.languageSource }
+                  : {}),
+                browserLanguages: navigator.languages ?? [],
+                onChoose: chooseLanguage,
+              },
+            }
+          : {})}
       />
 
       <header className="apv-header">
@@ -230,8 +244,6 @@ export default function App(): JSX.Element {
                     : {}),
                   kept: choiceKept,
                 },
-                onChooseLanguage: chooseLanguage,
-                browserLanguages: navigator.languages ?? [],
               }
             : {})}
         />
