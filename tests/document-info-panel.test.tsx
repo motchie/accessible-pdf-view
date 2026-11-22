@@ -95,3 +95,46 @@ describe('the other two cases', () => {
     expect(notes()[0]).toContain('構造タグが含まれていない');
   });
 });
+
+/**
+ * The "Language" row is the catalog's own /Lang. When the Reader reads the
+ * document in the language every passage in its tags declares instead (#49),
+ * the panel says so and why, or a reader hearing English from a PDF the panel
+ * calls Japanese has no explanation.
+ */
+describe('the language the Reader reads in', () => {
+  function mountWith(languageFromTags: string | undefined, locale: Locale): void {
+    act(() =>
+      root.render(
+        inLocale(
+          locale,
+          <DocumentInfoPanel
+            info={{ ...DECLARED, language: 'ja' }}
+            structureSource="tagged-pdf"
+            pageCount={1}
+            {...(languageFromTags ? { languageFromTags } : {})}
+          />,
+        ),
+      ),
+    );
+  }
+
+  it('is shown beside the catalog’s, with the reason, when the tags decided it', () => {
+    mountWith('en', 'ja');
+    expect(row('言語')).toBe('日本語 (ja)');
+    expect(row('読み上げの言語')).toBe(
+      '英語 (en)（構造タグで、本文のすべての部分がこの言語を宣言しているため）',
+    );
+
+    mountWith('en', 'en');
+    expect(row('Language')).toBe('Japanese (ja)');
+    expect(row('Read as')).toBe(
+      'English (en): every passage the structure tags cover declares this language',
+    );
+  });
+
+  it('is not shown when the Reader uses the catalog’s', () => {
+    mountWith(undefined, 'ja');
+    expect(row('読み上げの言語')).toBeUndefined();
+  });
+});

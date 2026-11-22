@@ -19,12 +19,20 @@ export interface DocumentInfoPanelProps {
   info: PdfFileInfo | null;
   structureSource: DocumentOrigin | null;
   pageCount: number;
+  /**
+   * The language the Reader reads the document in, when the structure tags
+   * declared it over the catalog's (`DocumentMetadata.languageFromTags`).
+   * The "Language" row is the catalog's own value, so without this a reader
+   * hearing English from a PDF the panel calls Japanese has no explanation.
+   */
+  languageFromTags?: string;
 }
 
 export function DocumentInfoPanel({
   info,
   structureSource,
   pageCount,
+  languageFromTags,
 }: DocumentInfoPanelProps): JSX.Element | null {
   const m = useMessages();
   const headingId = useId();
@@ -41,6 +49,12 @@ export function DocumentInfoPanel({
   add(m.documentInfo.subject, info.subject);
   add(m.documentInfo.keywords, info.keywords);
   add(m.documentInfo.language, info.language ? languageLabel(info.language, m) : undefined);
+  add(
+    m.documentInfo.readingLanguage,
+    languageFromTags
+      ? m.documentInfo.readingLanguageFromTags(languageLabel(languageFromTags, m))
+      : undefined,
+  );
   add(m.documentInfo.pageCount, m.documentInfo.pages(pageCount));
   add(m.documentInfo.created, formatDate(info.createdAt, m));
   add(m.documentInfo.modified, formatDate(info.modifiedAt, m));

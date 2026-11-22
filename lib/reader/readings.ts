@@ -182,7 +182,7 @@ export function declaredDocumentLanguages(
   raw: ReadonlyMap<DocumentOrigin, AccessibleDocument>,
   info: PdfFileInfo,
   language: string | undefined,
-): { language: string | undefined; titleLanguage?: string } {
+): { language: string | undefined; titleLanguage?: string; languageFromTags?: boolean } {
   const tagged = raw.get('tagged-pdf');
   if (!tagged) return { language };
   const content = unanimousDeclaredLanguage(settleDeclaredLanguages(tagged, language), language);
@@ -191,7 +191,11 @@ export function declaredDocumentLanguages(
   const titleLanguage = title
     ? settleDeclaredLanguages(tagged, settledLanguage, title).metadata.titleLanguage
     : undefined;
-  return { language: settledLanguage, ...(titleLanguage ? { titleLanguage } : {}) };
+  return {
+    language: settledLanguage,
+    ...(titleLanguage ? { titleLanguage } : {}),
+    ...(content ? { languageFromTags: true } : {}),
+  };
 }
 
 /**
@@ -218,6 +222,8 @@ export interface DocumentFacts {
    * no declared languages of its own (the inferred one) could not work it out.
    */
   titleLanguage?: string;
+  /** `language` came from the structure tags, not the catalog or detection. */
+  languageFromTags?: boolean;
   kinds: Map<number, PageContentKind>;
 }
 
@@ -249,6 +255,7 @@ export function decorate(document: AccessibleDocument, facts: DocumentFacts): Ac
       title: facts.info.title ?? document.metadata.title,
       ...(facts.language ? { language: facts.language } : {}),
       ...(facts.titleLanguage ? { titleLanguage: facts.titleLanguage } : {}),
+      ...(facts.languageFromTags ? { languageFromTags: true as const } : {}),
       info: facts.info,
     },
     pages:

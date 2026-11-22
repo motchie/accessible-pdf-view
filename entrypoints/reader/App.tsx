@@ -202,6 +202,9 @@ export default function App(): JSX.Element {
           info={analysis.info}
           structureSource={analysis.structureSource}
           pageCount={analysis.document?.metadata.pageCount ?? 0}
+          {...(analysis.document?.metadata.languageFromTags && analysis.document.metadata.language
+            ? { languageFromTags: analysis.document.metadata.language }
+            : {})}
         />
 
         {/* Statements about the whole document, and the controls that change

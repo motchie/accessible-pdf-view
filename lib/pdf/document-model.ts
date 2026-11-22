@@ -111,6 +111,12 @@ export interface DocumentMetadata {
    * which declares no language of its own; see `settleDeclaredLanguages`.
    */
   titleLanguage?: string;
+  /**
+   * Set when `language` is not the catalog's `/Lang` but the one every passage
+   * in the structure tags declares (`declaredDocumentLanguages`). The document
+   * information panel says so, since its "Language" row shows the catalog's.
+   */
+  languageFromTags?: true;
   /** The document's own description of itself. */
   info?: PdfFileInfo;
 }
