@@ -396,10 +396,27 @@ describe("the title's language", () => {
 /** The document's own language, for every reading (#49). */
 describe("the document's language", () => {
   async function languages(catalog: string | undefined, title: string | undefined, ...kids: El[]) {
+    return languagesCovering(true, catalog, title, ...kids);
+  }
+
+  async function languagesCovering(
+    covers: boolean,
+    catalog: string | undefined,
+    title: string | undefined,
+    ...kids: El[]
+  ) {
     const tagged = await read(catalog, ...kids);
     const info = { isTagged: true, hasStructureTree: true, ...(title ? { title } : {}) } as PdfDocumentInfo;
-    return declaredDocumentLanguages(new Map([['tagged-pdf', tagged]]), info, catalog);
+    return declaredDocumentLanguages(new Map([['tagged-pdf', tagged]]), info, catalog, covers);
   }
+
+  it("is the catalog's when the tags carry too little of the page text", async () => {
+    // A declared Tagged PDF whose tree holds one English logo line, its
+    // Japanese body untagged.
+    expect(
+      await languagesCovering(false, 'ja', undefined, el('P', span('en', 'ACME Corporation'))),
+    ).toEqual({ language: 'ja' });
+  });
 
   it('is the one every run declares, over the catalog', async () => {
     expect(
@@ -418,7 +435,7 @@ describe("the document's language", () => {
   });
 
   it("is the catalog's without a tagged reading", () => {
-    expect(declaredDocumentLanguages(new Map(), { isTagged: false, hasStructureTree: false } as PdfDocumentInfo, 'ja')).toEqual({
+    expect(declaredDocumentLanguages(new Map(), { isTagged: false, hasStructureTree: false } as PdfDocumentInfo, 'ja', false)).toEqual({
       language: 'ja',
     });
   });
@@ -427,5 +444,46 @@ describe("the document's language", () => {
     expect(
       await languages('ja', 'Annual Report', el('H1', span('en', 'Annual Report')), el('P', span('ja', '本文です。'))),
     ).toEqual({ language: 'ja', titleLanguage: 'en' });
+  });
+});
+
+/**
+ * Switching readings re-renders the same positions with other blocks. A block
+ * whose language changes must be a new element, not the old one with its
+ * `lang` changed: Firefox keeps the language an element was created with (#40).
+ */
+describe('a change of language between readings', () => {
+  it('creates a new element rather than changing lang on the old one', async () => {
+    const { act } = await import('react');
+    const { createRoot } = await import('react-dom/client');
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+    const tagged = await read('ja', el('P', span('en', 'Hello.')), el('P', span('ja', '本文。')));
+    const inferred: AccessibleDocument = {
+      ...tagged,
+      pages: tagged.pages.map((page) => ({
+        ...page,
+        nodes: page.nodes.map((node) => {
+          if (node.type !== 'paragraph') return node;
+          const { language: _dropped, ...rest } = node;
+          return rest;
+        }),
+      })),
+    };
+
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    act(() => root.render(inLocale('ja', <DocumentView document={tagged} />)));
+    const [englishBefore, japaneseBefore] = container.querySelectorAll('p');
+    expect(englishBefore!.getAttribute('lang')).toBe('en');
+
+    act(() => root.render(inLocale('ja', <DocumentView document={inferred} />)));
+    const [englishAfter, japaneseAfter] = container.querySelectorAll('p');
+    expect(englishAfter!.hasAttribute('lang')).toBe(false);
+    expect(englishAfter).not.toBe(englishBefore);
+    // A block whose language did not change keeps its element.
+    expect(japaneseAfter).toBe(japaneseBefore);
+
+    act(() => root.unmount());
   });
 });
