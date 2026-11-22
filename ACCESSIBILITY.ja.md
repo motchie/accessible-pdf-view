@@ -165,19 +165,22 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
 ラベル](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Aopen+label%3Aaccessibility)
 で追えます。
 
-- **Firefox では、Reader の静的な内容がまだクリック可能として公開されている可能
-  性があります**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)）。
+- **Firefox では、バージョン 0.3.2 までは、Reader の静的な内容がクリック可能とし
+  て公開されます**（[#33](https://github.com/motchie/accessible-pdf-view/issues/33)）。
   TalkBack では、状況を伝える行、見出し、段落、ツールバーの行が「ダブルタップする
-  もの」として読み上げられ、ダブルタップしても何も起きませんでした。原因は React
-  がルート要素に付けるイベントの受け口と `onclick` でした。Reader と設定パネルは、
-  クリックの受け口を document に置き、ルート要素に `onclick` を付けないマウントの
-  しかたに変えました（[#67](https://github.com/motchie/accessible-pdf-view/pull/67)）。
-  確かめたのは jsdom でのテストだけで、ブラウザー上の TalkBack・NVDA・VoiceOver で
-  は**まだ確かめていません**。確かめるまでの間、まだ起きる場合の**回避策は Chrome
-  155 以降**です。Chrome 側の同じ問題（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）はそこでなくなりました。
+  もの」として読み上げられ、ダブルタップしても何も起きませんでした。原因は React がルート
+  要素に付けるイベントの受け口と `onclick` でした。Reader と設定パネルは、クリック
+  の受け口を document に置き、ルート要素に `onclick` を付けないマウントのしかたに変
+  えました（[#67](https://github.com/motchie/accessible-pdf-view/pull/67)）。これは
+  0.3.2 ではなく、次のリリースに入ります。**Android の Firefox と TalkBack では確か
+  めました**（端末 1 台）。見出し、リーダーの領域、構造の読み取り方のグループ、ツー
+  ルバーの入れ物はクリック可能として公開されなくなり、残るのは操作できるものだけで、
+  TalkBack も「ダブルタップするもの」と読み上げなくなりました。デスクトップの
+  Firefox と NVDA、VoiceOver では**まだ確かめていません**。それまでの間と、0.3.2 で
+  の**回避策は Chrome 155 以降**です。Chrome 側の同じ問題（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）はそこでなくなりました。
   Chrome 147〜154 は回避先になりません。#19 が閉じたのは Chrome が変わったからなの
-  で、この変更を確かめるまでは、VoiceOver では同じ原因が今も読み上げられる可能性が
-  あります。
+  で、この変更がリリースされてそこで確かめるまでは、VoiceOver では同じ原因が今も
+  読み上げられる可能性があります。
 - **タグに見出しがないタグ付き PDF では、アウトラインが平らになります。** 組み合わ
   せた読み取りは、ページ上で裏づけが取れる見出しは復元しますが、レベルを創作する
   ことはできません。これはビジネス文書では例外ではなく、ごく普通の場合です。

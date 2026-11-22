@@ -179,21 +179,25 @@ Described as what a reader runs into. The full lists are
 [`accessibility`
 label](https://github.com/motchie/accessible-pdf-view/issues?q=is%3Aissue+is%3Aopen+label%3Aaccessibility).
 
-- **In Firefox, the Reader's static content may still be exposed as
-  clickable** ([#33](https://github.com/motchie/accessible-pdf-view/issues/33)).
+- **In Firefox, the Reader's static content is exposed as clickable, up to
+  version 0.3.2** ([#33](https://github.com/motchie/accessible-pdf-view/issues/33)).
   With TalkBack, the status line, headings, paragraphs and the toolbar rows
-  were announced as something to double-tap, and double-tapping did nothing.
-  The cause was React's listeners and `onclick` on the root element. The Reader
-  and the settings panel are now mounted so that the click listeners are on the
+  were announced as something to double-tap, and double-tapping did nothing. The cause was
+  React's listeners and `onclick` on the root element. The Reader and the
+  settings panel are now mounted so that the click listeners are on the
   document and the root element has no `onclick`
-  ([#67](https://github.com/motchie/accessible-pdf-view/pull/67)). That is
-  checked by tests in jsdom only: it has **not yet been checked** with TalkBack,
-  NVDA or VoiceOver in a browser. Until it is, if it still happens:
-  **workaround: Chrome 155 or later**, where the counterpart problem
+  ([#67](https://github.com/motchie/accessible-pdf-view/pull/67)), which is
+  in the next release, not in 0.3.2. **Checked on Android** in Firefox with
+  TalkBack, on one device: the headings, the Reader region, the structure
+  picker's group and the toolbar container are no longer exposed as clickable,
+  only the controls are, and TalkBack no longer announces them as something to
+  double-tap. **Not yet checked** in desktop Firefox with NVDA, or with
+  VoiceOver. Until then, and in 0.3.2: **workaround: Chrome 155 or later**,
+  where the counterpart problem
   ([#19](https://github.com/motchie/accessible-pdf-view/issues/19)) went away.
   Chrome 147 to 154 is not a way round it: #19 was closed because Chrome
   changed, so with VoiceOver the same cause may still be announced there until
-  this change is checked.
+  this change is released and checked there.
 - **A tagged PDF whose tags carry no headings gives a flat outline.** The
   combined reading recovers headings where it can verify them against the page,
   but it cannot invent a level. This is the common case in business documents,
