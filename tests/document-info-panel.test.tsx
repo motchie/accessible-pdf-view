@@ -104,7 +104,7 @@ describe('the other two cases', () => {
  */
 describe('the language the Reader reads in', () => {
   function mountWith(
-    readingLanguage: { language?: string; source?: LanguageSource },
+    readingLanguage: { language?: string; source?: LanguageSource; kept?: boolean },
     locale: Locale,
     onChooseLanguage?: (language: string | null) => void,
   ): void {
@@ -141,8 +141,14 @@ describe('the language the Reader reads in', () => {
       'ルーマニア語 (ro)（設定の「よく読む文書の言語」による。PDF には、文書全体の宣言のほかに言語の手がかりがありません）',
     );
 
-    mountWith({ language: 'ro', source: 'chosen' }, 'en');
+    mountWith({ language: 'ro', source: 'chosen', kept: true }, 'en');
     expect(reason()).toBe('Romanian (ro), chosen for this document. Kept until this tab is closed.');
+
+    // Not kept — a document with no source address — and not said to be.
+    mountWith({ language: 'ro', source: 'chosen', kept: false }, 'en');
+    expect(reason()).toBe('Romanian (ro), chosen for this document.');
+    mountWith({ language: 'ro', source: 'chosen' }, 'ja');
+    expect(reason()).toBe('ルーマニア語 (ro)（この文書について選んだ言語）');
 
     mountWith({}, 'ja');
     expect(reason()).toBe('なし（PDF に言語の宣言がなく、推定もできませんでした）');

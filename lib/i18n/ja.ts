@@ -126,8 +126,10 @@ export const ja: Messages = {
         `${language}（構造タグで、本文のすべての部分がこの言語を宣言しているため）`,
       usual: (language: string) =>
         `${language}（設定の「よく読む文書の言語」による。PDF には、文書全体の宣言のほかに言語の手がかりがありません）`,
-      chosen: (language: string) =>
-        `${language}（この文書について選んだ言語。このタブを閉じるまで使います）`,
+      chosen: (language: string, kept: boolean) =>
+        kept
+          ? `${language}（この文書について選んだ言語。このタブを閉じるまで使います）`
+          : `${language}（この文書について選んだ言語）`,
       none: 'なし（PDF に言語の宣言がなく、推定もできませんでした）',
     },
     readingLanguageChoose: 'この文書を読む言語',

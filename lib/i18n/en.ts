@@ -168,8 +168,10 @@ export const en = {
         `${language}: every passage the structure tags cover declares this language`,
       usual: (language: string) =>
         `${language}, your usual document language: the PDF gives no language beyond the one declared for the whole file`,
-      chosen: (language: string) =>
-        `${language}, chosen for this document. Kept until this tab is closed.`,
+      chosen: (language: string, kept: boolean) =>
+        kept
+          ? `${language}, chosen for this document. Kept until this tab is closed.`
+          : `${language}, chosen for this document.`,
       none: 'No language: the PDF declares none, and none could be detected',
     },
     /** The control that chooses it. */

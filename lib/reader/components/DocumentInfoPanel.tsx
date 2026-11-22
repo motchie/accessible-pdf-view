@@ -27,7 +27,13 @@ export interface DocumentInfoPanelProps {
    * value, so without this a reader hearing English from a PDF the panel calls
    * Japanese has no explanation (#50).
    */
-  readingLanguage?: { language?: string; source?: LanguageSource };
+  readingLanguage?: {
+    language?: string;
+    source?: LanguageSource;
+    /** A chosen language is kept for the tab (session storage). False when it
+     * could not be — no source address, or storage refused. */
+    kept?: boolean;
+  };
   /**
    * Chooses the language this document is read in; null goes back to the
    * automatic one (#57). Without it the row only reports.
@@ -66,6 +72,7 @@ export function DocumentInfoPanel({
       <ReadingLanguage
         language={readingLanguage.language}
         source={readingLanguage.source}
+        kept={readingLanguage.kept ?? false}
         browserLanguages={browserLanguages}
         {...(onChooseLanguage ? { onChoose: onChooseLanguage } : {})}
       />,
@@ -145,20 +152,24 @@ function structureLabel(source: DocumentOrigin | null, m: Messages): string | un
 function ReadingLanguage({
   language,
   source,
+  kept,
   browserLanguages,
   onChoose,
 }: {
   language: string | undefined;
   source: LanguageSource | undefined;
+  kept: boolean;
   browserLanguages: readonly string[];
   onChoose?: (language: string | null) => void;
 }): JSX.Element {
   const m = useMessages();
   const selectId = useId();
-  const reason =
-    language && source
-      ? m.documentInfo.readingLanguageReason[source](languageLabel(language, m))
-      : m.documentInfo.readingLanguageReason.none;
+  const reasons = m.documentInfo.readingLanguageReason;
+  const reason = !language || !source
+    ? reasons.none
+    : source === 'chosen'
+      ? reasons.chosen(languageLabel(language, m), kept)
+      : reasons[source](languageLabel(language, m));
   const choices = documentLanguageChoices(m.app.locale, browserLanguages, [language]);
   const chosen = source === 'chosen' && language ? language.split('-')[0]!.toLowerCase() : '';
 

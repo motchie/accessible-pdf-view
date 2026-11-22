@@ -189,10 +189,12 @@ export function usePdfAnalysis(
   const shownRef = useRef<DocumentOrigin | null>(null);
   const preferredRef = useRef<StructureSource>(options.preferred ?? 'tagged-pdf');
   preferredRef.current = options.preferred ?? 'tagged-pdf';
-  const preferencesRef = useRef<LanguagePreferences>({});
-  if (preferencesRef.current.chosen === undefined && options.chosenLanguage) {
-    preferencesRef.current = { ...preferencesRef.current, chosen: options.chosenLanguage };
-  }
+  // Seeded once, from the choice remembered for this document. Not on later
+  // renders: the remembered value stays in the caller's props after the
+  // reader goes back to Automatic, and re-adding it would undo that.
+  const preferencesRef = useRef<LanguagePreferences>(
+    options.chosenLanguage ? { chosen: options.chosenLanguage } : {},
+  );
   const usualLanguage = options.usualLanguage;
   // Read when the language is decided, not captured when the analysis starts:
   // the setting arrives from storage after that, and the effect below updates

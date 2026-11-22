@@ -133,8 +133,11 @@ export default function App(): JSX.Element {
       ? { usualLanguage: settings.usualDocumentLanguage }
       : {}),
   });
+  // Whether the choice on screen is kept for the tab: the panel says so only
+  // when it is.
+  const [choiceKept, setChoiceKept] = useState(initialChosenLanguage !== undefined);
   const chooseLanguage = (language: string | null) => {
-    writeSession(chosenLanguageKey, language);
+    setChoiceKept(writeSession(chosenLanguageKey, language));
     analysis.chooseLanguage(language);
   };
   const error = sourceError ?? analysis.error;
@@ -225,6 +228,7 @@ export default function App(): JSX.Element {
                   ...(analysis.document.metadata.languageSource
                     ? { source: analysis.document.metadata.languageSource }
                     : {}),
+                  kept: choiceKept,
                 },
                 onChooseLanguage: chooseLanguage,
                 browserLanguages: navigator.languages ?? [],
@@ -514,12 +518,15 @@ function readSession(key: string | null): string | undefined {
   }
 }
 
-function writeSession(key: string | null, value: string | null): void {
-  if (!key) return;
+/** True when the value is now what the tab keeps. */
+function writeSession(key: string | null, value: string | null): boolean {
+  if (!key) return false;
   try {
     if (value) sessionStorage.setItem(key, value);
     else sessionStorage.removeItem(key);
+    return true;
   } catch {
     // Not remembered; the choice still applies to the document on screen.
+    return false;
   }
 }
