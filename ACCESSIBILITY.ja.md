@@ -175,9 +175,11 @@ Accessible PDF View は、ひとつの障壁を取り除くために存在しま
   0.3.2 ではなく、次のリリースに入ります。**Android の Firefox と TalkBack では確か
   めました**（端末 1 台）。見出し、リーダーの領域、構造の読み取り方のグループ、ツー
   ルバーの入れ物はクリック可能として公開されなくなり、残るのは操作できるものだけで、
-  TalkBack も「ダブルタップするもの」と読み上げなくなりました。デスクトップの
-  Firefox と NVDA、VoiceOver では**まだ確かめていません**。それまでの間と、0.3.2 で
-  の**回避策は Chrome 155 以降**です。Chrome 側の同じ問題（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）はそこでなくなりました。
+  TalkBack も「ダブルタップするもの」と読み上げなくなりました。**Windows のデスク
+  トップの Firefox と NVDA でも確かめました。** 本文の文字が「クリックできるものの
+  中」として伝わらなくなり、NVDA もページに入ったときに「クリック可能」と言わなく
+  なりました。VoiceOver では**まだ確かめていません**。0.3.2 での**回避策は Chrome
+  155 以降**です。Chrome 側の同じ問題（[#19](https://github.com/motchie/accessible-pdf-view/issues/19)）はそこでなくなりました。
   Chrome 147〜154 は回避先になりません。#19 が閉じたのは Chrome が変わったからなの
   で、この変更がリリースされてそこで確かめるまでは、VoiceOver では同じ原因が今も
   読み上げられる可能性があります。
