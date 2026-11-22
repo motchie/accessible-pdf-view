@@ -63,15 +63,50 @@ export function settingsSurface(): SettingsSurface | null {
   return apis()?.runtime?.openOptionsPage ? 'options-page' : null;
 }
 
-/** Opens the settings where `settingsSurface` says they are. */
+/**
+ * Opens the settings where `settingsSurface` says they are.
+ *
+ * The options page is opened as a tab that knows which Reader tab opened it
+ * (`?returnTo=`), so it can offer a way back: on Firefox for Android the page
+ * fills the screen, and the only other way back is the tab switcher (#68).
+ * `openOptionsPage()` cannot carry that, so it is the fallback when the
+ * calling tab is unknown.
+ */
 export async function openSettings(): Promise<void> {
   if (isSidePanelSupported()) {
     await openSidePanel();
     return;
   }
-  const open = apis()?.runtime?.openOptionsPage;
-  if (!open) throw new Error('The settings cannot be opened in this environment.');
-  await open();
+  if (!apis()?.runtime?.openOptionsPage) {
+    throw new Error('The settings cannot be opened in this environment.');
+  }
+  const current = await browser.tabs.getCurrent();
+  if (current?.id == null) {
+    await apis()!.runtime!.openOptionsPage!();
+    return;
+  }
+  await browser.tabs.create({ url: settingsPageUrl(current.id) });
+}
+
+/** The options page, told which tab to return to. */
+export function settingsPageUrl(returnTo: number): string {
+  return `${browser.runtime.getURL('/options.html')}?returnTo=${returnTo}`;
+}
+
+/** The tab the options page should return to, from its own address. */
+export function returnToTab(search: string): number | null {
+  const value = new URLSearchParams(search).get('returnTo');
+  return value !== null && /^\d+$/.test(value) ? Number(value) : null;
+}
+
+/**
+ * Brings the Reader tab back and closes the settings tab. Rejects, leaving
+ * the settings open, when the Reader tab is gone.
+ */
+export async function returnToReader(readerTab: number): Promise<void> {
+  const current = await browser.tabs.getCurrent();
+  await browser.tabs.update(readerTab, { active: true });
+  if (current?.id != null) await browser.tabs.remove(current.id);
 }
 
 /**

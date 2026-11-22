@@ -471,9 +471,12 @@ export const en = {
     aiLanguageInterface: 'Use the interface language',
     aiLanguageInterfaceNote: (language: string) =>
       `The language set at the top of this panel, which is ${language} right now.`,
+    /** On the options page, opened from a Reader tab (#68). */
+    backToReader: 'Back to the Reader',
+    backToReaderFailed: 'The Reader tab is no longer open.',
     usualLanguage: 'Usual document language',
     usualLanguageHint:
-      "Used for a PDF that gives no language beyond the one declared for the whole file — often wrong in documents from older versions of Word — or none at all, and only when its text is written in this language's alphabet. A PDF that declares languages for its parts keeps them. Any one document can be read in another language from its Document information.",
+      "Used for a PDF that gives no language beyond the one declared for the whole file — often wrong in documents from older versions of Word — or none at all, and only when its text is written in this language's alphabet. A PDF that declares languages for its parts keeps them. Any one document can be read in another language from Document language in the Reader's toolbar.",
     usualLanguageAutomatic: 'Automatic (as the PDF declares)',
     pdfHandler: 'Opening PDFs',
     pdfHandlerHint:

@@ -382,9 +382,11 @@ export const ja: Messages = {
     aiLanguageInterface: '表示言語を使う',
     aiLanguageInterfaceNote: (language: string) =>
       `このパネルの先頭で設定した表示言語（現在は${language}）。`,
+    backToReader: 'リーダーに戻る',
+    backToReaderFailed: 'リーダーのタブはもう開いていません。',
     usualLanguage: 'よく読む文書の言語',
     usualLanguageHint:
-      'PDF 全体の宣言のほかに言語の手がかりがない文書（古い Word で作った文書では、この宣言が誤っていることがよくあります）や、言語の宣言がない文書を、この言語で読みます。本文がこの言語の文字で書かれている場合に限ります。部分ごとに言語を宣言している文書は、その宣言に従います。文書ごとの言語は、その文書の「文書情報」で変えられます。',
+      'PDF 全体の宣言のほかに言語の手がかりがない文書（古い Word で作った文書では、この宣言が誤っていることがよくあります）や、言語の宣言がない文書を、この言語で読みます。本文がこの言語の文字で書かれている場合に限ります。部分ごとに言語を宣言している文書は、その宣言に従います。文書ごとの言語は、リーダーのツールバーの「文書の言語」で変えられます。',
     usualLanguageAutomatic: '自動（PDF の宣言に従う）',
     pdfHandler: 'PDF を開くビューアー',
     pdfHandlerHint:
