@@ -13,6 +13,7 @@ import {
   isPdfHandlerEnabled,
   isPdfHandlerSupported,
 } from '../../browser/pdf-handler';
+import { useIsAndroid } from '../../browser/platform';
 
 /**
  * The settings, as shown in the extension's side panel.
@@ -55,6 +56,8 @@ export function SettingsPanel({
   // setting and the hint's pointer to it go. See `canGenerateText` for why
   // presence rather than availability.
   const canGenerate = canGenerateText();
+  // What is true on Firefox for Android differs in three places (#70).
+  const android = useIsAndroid();
 
   return (
     <div className="apv-settings">
@@ -93,7 +96,7 @@ export function SettingsPanel({
 
       <fieldset>
         <legend>{m.settings.textAndSpacing}</legend>
-        <p className="apv-settings__hint">{m.settings.zoomHint}</p>
+        <p className="apv-settings__hint">{android ? m.settings.zoomHintAndroid : m.settings.zoomHint}</p>
         <RadioGroup
           label={m.settings.fontSize}
           value={settings.fontScale}
@@ -222,7 +225,7 @@ export function SettingsPanel({
 
       <fieldset>
         <legend>{m.settings.storage}</legend>
-        <p className="apv-settings__hint">{m.settings.storageHint}</p>
+        <p className="apv-settings__hint">{android ? m.settings.storageHintAndroid : m.settings.storageHint}</p>
         <p>
           <button type="button" onClick={onReset}>
             {m.settings.reset}
@@ -255,6 +258,7 @@ export function SettingsPanel({
  */
 function PdfHandlerSection(): JSX.Element | null {
   const m = useMessages();
+  const android = useIsAndroid();
   const [handler, setHandler] = useState<PdfHandler | null>(null);
   const [busy, setBusy] = useState(false);
   const [refused, setRefused] = useState(false);
@@ -310,7 +314,7 @@ function PdfHandlerSection(): JSX.Element | null {
           {
             value: 'browser',
             label: m.settings.pdfHandlerBrowser,
-            note: m.settings.pdfHandlerBrowserNote,
+            note: android ? m.settings.pdfHandlerBrowserNoteAndroid : m.settings.pdfHandlerBrowserNote,
           },
           {
             value: 'reader',
@@ -321,7 +325,7 @@ function PdfHandlerSection(): JSX.Element | null {
       />
       {/* What it will not catch, said before it is tried rather than left to be
           discovered on the first local file. */}
-      <p className="apv-settings__hint">{m.settings.pdfHandlerLimits}</p>
+      <p className="apv-settings__hint">{android ? m.settings.pdfHandlerLimitsAndroid : m.settings.pdfHandlerLimits}</p>
 
       {/* Declining the prompt is an answer, not a failure — but it has to be
           said, because the control snapping back is the only other evidence. */}

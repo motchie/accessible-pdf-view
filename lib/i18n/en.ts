@@ -433,6 +433,9 @@ export const en = {
     title: 'Settings',
     textAndSpacing: 'Text and spacing',
     zoomHint: 'Works alongside the browser’s own zoom (Ctrl and +).',
+    // Firefox for Android (#70): there is no Ctrl, and how the page zooms is
+    // the browser's own business.
+    zoomHintAndroid: 'Works alongside the browser’s own zoom.',
     fontSize: 'Text size',
     fontSizes: { small: 'Small', normal: 'Normal', large: 'Large', xlarge: 'Extra large' },
     lineHeight: 'Line spacing',
@@ -480,16 +483,26 @@ export const en = {
       'Which viewer opens a PDF you click. Switching to the Reader makes the browser ask for permission to read data on all sites: this extension has to recognise a PDF’s address before the page loads, and no browser allows that for sites it cannot already reach. Switching back hands it in again.',
     pdfHandlerBrowser: 'The browser’s own viewer',
     pdfHandlerBrowserNote: 'This extension opens when you press its toolbar button.',
+    // Firefox for Android has no toolbar button for an extension: it is in the
+    // browser's menu.
+    pdfHandlerBrowserNoteAndroid:
+      'This extension opens when you choose it from the browser’s menu, under Extensions.',
     pdfHandlerReader: 'This Reader',
     pdfHandlerReaderNote: 'Addresses ending in .pdf, over http and https.',
     pdfHandlerLimits:
       'A PDF on your own computer still opens in the browser’s viewer: reading local files needs a switch on the browser’s extensions page that no extension can ask for. So does a PDF served from an address that does not end in .pdf, because what it is cannot be known before it is opened — the toolbar button opens both.',
+    pdfHandlerLimitsAndroid:
+      'A PDF downloaded to this device still opens in the browser’s viewer, at an address only the browser can read; the Reader can open it if you choose the file. A PDF served from an address that does not end in .pdf opens in the browser’s viewer too, because what it is cannot be known before it is opened — choosing this extension from the browser’s menu opens it.',
     pdfHandlerRefused:
       'The browser did not grant that access, so PDFs still open in its own viewer.',
     pdfHandlerFailed: (detail: string) => `This could not be changed. ${detail}`,
     storage: 'Storage',
     storageHint:
       'Settings are stored on this device, and synced to your other devices if you are signed in to the browser.',
+    // Measured by MDN, not assumed: `storage.sync` does not sync on Firefox for
+    // Android (#70).
+    storageHintAndroid:
+      'Settings are stored on this device. Firefox for Android does not sync them to your other devices.',
     reset: 'Reset to defaults',
     model: 'On-device AI',
     modelHint:
@@ -551,7 +564,7 @@ export const en = {
     'handoff-expired': {
       title: 'This PDF has already been loaded, and could not be fetched again.',
       explanation:
-        'That happens when the Reader tab is reloaded. Go back to the original PDF tab and click the extension icon again.',
+        'That happens when the Reader tab is reloaded. Go back to the original PDF tab and open Accessible PDF View again: from its toolbar button, or on Android from the browser’s menu, under Extensions.',
     },
     'no-source': {
       title: 'No PDF was given to open.',
@@ -561,7 +574,7 @@ export const en = {
     'tab-url-unavailable': {
       title: "This tab's URL could not be read.",
       explanation:
-        'The extension can read a tab’s URL only at the moment its toolbar icon is clicked. Please try again.',
+        'The extension can read a tab’s URL only at the moment it is opened from that tab. Please try again.',
     },
     'unsupported-page': {
       title: 'This page cannot be opened in Accessible PDF View.',

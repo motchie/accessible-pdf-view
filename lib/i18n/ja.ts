@@ -347,6 +347,7 @@ export const ja: Messages = {
     title: '設定',
     textAndSpacing: '文字と余白',
     zoomHint: 'ブラウザのズーム（Ctrl と ＋）と併用できます。',
+    zoomHintAndroid: 'ブラウザのズームと併用できます。',
     fontSize: '文字サイズ',
     fontSizes: { small: '小', normal: '標準', large: '大', xlarge: '特大' },
     lineHeight: '行間',
@@ -391,16 +392,22 @@ export const ja: Messages = {
       'クリックした PDF をどのビューアーで開くかです。リーダーに切り替えると、すべてのサイトのデータを読み取る権限をブラウザが確認します。ページが読み込まれる前に PDF のアドレスを判別する必要があり、アクセスできないサイトではそれが許可されないためです。元に戻すと、この権限は返却されます。',
     pdfHandlerBrowser: 'ブラウザ標準のビューアー',
     pdfHandlerBrowserNote: 'この拡張機能は、ツールバーのボタンを押したときに開きます。',
+    pdfHandlerBrowserNoteAndroid:
+      'この拡張機能は、ブラウザのメニューの「拡張機能」から選んだときに開きます。',
     pdfHandlerReader: 'このリーダー',
     pdfHandlerReaderNote: '.pdf で終わるアドレスの、http と https のみ。',
     pdfHandlerLimits:
       '端末内にある PDF は、これまでどおりブラウザ標準のビューアーで開きます。ローカルファイルの読み取りには、拡張機能側からは要求できないブラウザ側の設定が必要なためです。.pdf で終わらないアドレスで配信される PDF も、開く前には判別できないため同様です。どちらもツールバーのボタンから開けます。',
+    pdfHandlerLimitsAndroid:
+      'この端末にダウンロードした PDF は、これまでどおりブラウザ標準のビューアーで開きます。そのアドレスはブラウザ本体しか読めないためで、リーダーではファイルを選べば開けます。.pdf で終わらないアドレスから配信される PDF も、開くまで PDF かどうか分からないため、ブラウザ標準のビューアーで開きます。こちらは、ブラウザのメニューの「拡張機能」からこの拡張機能を選ぶと開けます。',
     pdfHandlerRefused:
       '権限が許可されなかったため、PDF はこれまでどおりブラウザ標準のビューアーで開きます。',
     pdfHandlerFailed: (detail: string) => `変更できませんでした。${detail}`,
     storage: '保存',
     storageHint:
       '設定はこの端末に保存され、ブラウザにサインインしていれば他の端末にも同期されます。',
+    storageHintAndroid:
+      '設定はこの端末に保存されます。Android 版 Firefox では、他の端末には同期されません。',
     reset: '初期状態に戻す',
     model: '端末内 AI',
     modelHint:
@@ -443,7 +450,7 @@ export const ja: Messages = {
     'handoff-expired': {
       title: 'この PDF のデータは読み込み済みのため、再取得できませんでした。',
       explanation:
-        'リーダーのタブを再読み込みした場合に起こります。元の PDF のタブに戻り、もう一度拡張機能のアイコンをクリックしてください。',
+        'リーダーのタブを再読み込みした場合に起こります。元の PDF のタブに戻り、もう一度 Accessible PDF View を開いてください（ツールバーのボタンから。Android ではブラウザのメニューの「拡張機能」から）。',
     },
     'no-source': {
       title: '開く PDF が指定されていません。',
@@ -453,7 +460,7 @@ export const ja: Messages = {
     'tab-url-unavailable': {
       title: 'このタブの URL を取得できませんでした。',
       explanation:
-        'ツールバーのアイコンをクリックした時点でのみ、拡張機能はタブの URL を読み取れます。もう一度お試しください。',
+        '拡張機能がタブの URL を読み取れるのは、そのタブから拡張機能を開いた時点だけです。もう一度お試しください。',
     },
     'unsupported-page': {
       title: 'このページは Accessible PDF View で開けません。',

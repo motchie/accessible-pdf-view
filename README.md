@@ -511,7 +511,7 @@ permission — and **none of them is a host permission**:
 | Permission | Why |
 | --- | --- |
 | `activeTab` | Grants a temporary permission for the tab you invoked the extension on, so it can read that tab's URL and fetch the PDF. It expires when you navigate away. |
-| `storage` | Holds your display settings — font size, line height, measure, typeface, theme — and your language choices. No document content is ever stored, which is why it can sync across your devices. |
+| `storage` | Holds your display settings — font size, line height, measure, typeface, theme — and your language choices. No document content is ever stored, which is why it can sync across your devices (Firefox for Android does not sync it: [#70](https://github.com/motchie/accessible-pdf-view/issues/70)). |
 | `contextMenus` | Adds **Open in Accessible PDF View** when you right-click a link to a PDF. |
 | `sidePanel` | Opens the settings panel. Added automatically for the side-panel page. |
 | `declarativeNetRequestWithHostAccess` | Lets the **Opening PDFs** setting register its redirect rule — and only for sites you have granted access to, which is what the `WithHostAccess` half means. |
