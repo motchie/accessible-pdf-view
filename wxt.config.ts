@@ -1,6 +1,10 @@
 import { createRequire } from 'node:module';
 import { defineConfig } from 'wxt';
-import { MINIMUM_CHROME_VERSION, MINIMUM_FIREFOX_VERSION } from './lib/browser/minimum-versions';
+import {
+  MINIMUM_CHROME_VERSION,
+  MINIMUM_FIREFOX_ANDROID_VERSION,
+  MINIMUM_FIREFOX_VERSION,
+} from './lib/browser/minimum-versions';
 
 /**
  * `decode-named-character-reference` decodes `&amp;` and friends for the
@@ -177,6 +181,19 @@ export default defineConfig({
               // transmits nothing. If hosted OCR is ever added, this has to
               // change with it.
               data_collection_permissions: { required: ['none'] },
+            },
+            /**
+             * Firefox for Android (#72). Firefox Add-ons offers a version to
+             * Android only when the manifest has this key, and takes the
+             * version's Android compatibility from it when it is uploaded.
+             *
+             * Its own floor, from the `firefoxAndroid` versions in
+             * `lib/browser/minimum-versions.ts`. Today it is the desktop's:
+             * what holds it up is the APIs PDF.js calls without checking, and
+             * Android has those at the same versions.
+             */
+            gecko_android: {
+              strict_min_version: `${MINIMUM_FIREFOX_ANDROID_VERSION}.0`,
             },
           },
         }
