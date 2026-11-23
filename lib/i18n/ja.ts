@@ -325,6 +325,12 @@ export const ja: Messages = {
       `${line} — ${label}：${detail}`,
   },
 
+  localFile: {
+    label: 'PDF ファイルを選ぶ',
+    hint: 'ファイルはこのブラウザの中で読み込まれ、どこにも送信されません。',
+    readFailed: (detail: string) => `ファイルを読み込めませんでした。${detail}`,
+  },
+
   siteAccess: {
     offer: (host: string) =>
       `この拡張機能は ${host} へのアクセス権を持っていません。そのサイトにあるファイルを読むには、この権限が必要です。`,
@@ -426,12 +432,17 @@ export const ja: Messages = {
     'file-scheme': {
       title: 'ローカルファイル (file://) の PDF は、この拡張機能ではまだ開けません。',
       explanation:
-        'Chrome の拡張機能設定で「ファイルの URL へのアクセスを許可する」が必要になるため、このバージョンでは要求していません。PDF をダウンロードして Web 上の URL で開くか、ブラウザの PDF ビューアーで開いた状態で拡張機能のアイコンをクリックしてください。',
+        'Chrome の拡張機能設定で「ファイルの URL へのアクセスを許可する」が必要になるため、このバージョンでは要求していません。PDF をダウンロードして Web 上の URL で開くか、ブラウザの PDF ビューアーで開いた状態で拡張機能のアイコンをクリックしてください。下でファイルを選んで開くこともできます。',
     },
     'blob-scheme': {
       title: 'この PDF は blob: URL で表示されているため、リーダーから取得できません。',
       explanation:
-        'blob: URL は生成元のページ内でのみ有効です。元のページから PDF を保存し、保存したファイルの URL で開いてください。',
+        'blob: URL は生成元のページ内でのみ有効です。元のページから PDF を保存し、保存したファイルを下で選んでください。',
+    },
+    'content-scheme': {
+      title: 'この PDF は端末内のファイルのため、リーダーはそのアドレスから開けません。',
+      explanation:
+        'Android 版 Firefox は、ダウンロードした PDF を content:// のアドレスで表示します。このアドレスはブラウザ本体しか読めません。代わりに下でファイルを選んでください。',
     },
     'fetch-failed': {
       title: 'PDF を取得できませんでした。',
@@ -448,17 +459,17 @@ export const ja: Messages = {
     'no-source': {
       title: '開く PDF が指定されていません。',
       explanation:
-        'PDF を表示しているタブでツールバーの「Accessible PDF View」をクリックすると、その PDF をリーダーで開けます。',
+        'PDF を表示しているタブでツールバーの「Accessible PDF View」をクリックすると、その PDF をリーダーで開けます。または、下で PDF ファイルを選んでください。',
     },
     'tab-url-unavailable': {
       title: 'このタブの URL を取得できませんでした。',
       explanation:
-        'ツールバーのアイコンをクリックした時点でのみ、拡張機能はタブの URL を読み取れます。もう一度お試しください。',
+        'ツールバーのアイコンをクリックした時点でのみ、拡張機能はタブの URL を読み取れます。もう一度お試しいただくか、下で PDF ファイルを選んでください。',
     },
     'unsupported-page': {
       title: 'このページは Accessible PDF View で開けません。',
       explanation:
-        'ブラウザの内部ページや拡張機能のページからは PDF を読み取れません。PDF を表示しているタブで実行してください。',
+        'ブラウザの内部ページや拡張機能のページからは PDF を読み取れません。PDF を表示しているタブで実行するか、下で PDF ファイルを選んでください。',
     },
     'parse-failed': { title: 'この PDF を解析できませんでした。', explanation: '' },
     'load-failed': { title: 'PDF を読み込めませんでした。', explanation: '' },

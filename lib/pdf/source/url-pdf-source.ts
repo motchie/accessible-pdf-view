@@ -18,7 +18,9 @@ import type { PdfSource } from './pdf-source';
  * Cases it deliberately rejects with a clear message rather than a network
  * error: `file:` (needs "Allow access to file URLs", which the MVP does not
  * request) and `blob:` (blob URLs are scoped to the document that created
- * them, so the Reader tab can never resolve one from another tab).
+ * them, so the Reader tab can never resolve one from another tab), and
+ * `content:` (Firefox for Android's address for a downloaded file). For all
+ * three the Reader offers to choose the file instead.
  */
 export class UrlPdfSource implements PdfSource {
   readonly id = 'url';
@@ -38,6 +40,14 @@ export class UrlPdfSource implements PdfSource {
 
     if (scheme === 'blob:') {
       throw new PdfError('unsupported-scheme', 'blob-scheme');
+    }
+
+    // Firefox for Android shows a downloaded PDF at a `content:` address
+    // (#69). Only the browser can read one; a fetch fails as a network error,
+    // which used to send the reader looking for a site to grant. There is
+    // none, and the file can be chosen instead.
+    if (scheme === 'content:') {
+      throw new PdfError('unsupported-scheme', 'content-scheme');
     }
 
     let response: Response;
