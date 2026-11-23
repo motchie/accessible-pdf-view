@@ -178,6 +178,19 @@ export default defineConfig({
               // change with it.
               data_collection_permissions: { required: ['none'] },
             },
+            /**
+             * Firefox for Android (#72). Firefox Add-ons offers a version to
+             * Android only when the manifest has this key, and takes the
+             * version's Android compatibility from it when it is uploaded.
+             *
+             * The same floor as the desktop: Firefox for Android is the same
+             * Gecko at the same version numbers, and what holds the floor up —
+             * the APIs PDF.js calls without checking — is the engine's, not
+             * the desktop's.
+             */
+            gecko_android: {
+              strict_min_version: `${MINIMUM_FIREFOX_VERSION}.0`,
+            },
           },
         }
       : {
