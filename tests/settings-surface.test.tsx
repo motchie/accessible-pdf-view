@@ -21,6 +21,7 @@ import { openSettings, settingsSurface } from '../lib/browser/side-panel';
 import { ReaderToolbar } from '../lib/reader/components/ReaderToolbar';
 import { createRoot } from '../lib/reader/create-root';
 import { inLocale } from './helpers/messages';
+import { settingsPageTitle } from '../entrypoints/sidepanel/title';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -139,5 +140,13 @@ describe('the Settings button', () => {
   it('still says side panel on desktop', () => {
     desktopFirefox();
     expect(mount('ja')!.textContent).toContain('サイドパネル');
+  });
+});
+
+describe('the settings page’s own title', () => {
+  /** The options page is a tab (#68), and its title is what the tab list reads. */
+  it('follows the interface language', () => {
+    expect(settingsPageTitle('ja')).toBe('設定 — Accessible PDF View');
+    expect(settingsPageTitle('en')).toBe('Settings — Accessible PDF View');
   });
 });
