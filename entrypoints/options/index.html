@@ -1,0 +1,20 @@
+<!doctype html>
+<!-- Replaced with the interface language by /document-language.js before the
+     body is parsed; see the Reader's index.html (#40). -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- First, and not a module: it has to run before the body exists. -->
+    <script src="/document-language.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- A tab of its own rather than a frame inside the browser's add-ons
+         page: a whole page is one the reader can zoom, leave with Back, and
+         find again among their tabs. See main.tsx. -->
+    <meta name="manifest.open_in_tab" content="true" />
+    <title>Accessible PDF View settings</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>

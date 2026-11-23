@@ -19,6 +19,9 @@ interface SidePanelApi {
 interface SidebarActionApi {
   open(): Promise<void>;
 }
+interface RuntimeApi {
+  openOptionsPage?(): Promise<void>;
+}
 
 /**
  * `browser` itself is absent outside an extension context — in a unit test, and
@@ -26,7 +29,9 @@ interface SidebarActionApi {
  * crash, not a missing feature, so both accessors treat "no API" and "no
  * browser" as the same answer.
  */
-type MaybeApis = { sidePanel?: SidePanelApi; sidebarAction?: SidebarActionApi } | undefined;
+type MaybeApis =
+  | { sidePanel?: SidePanelApi; sidebarAction?: SidebarActionApi; runtime?: RuntimeApi }
+  | undefined;
 
 function apis(): MaybeApis {
   return browser as unknown as MaybeApis;
@@ -42,6 +47,38 @@ function firefox(): SidebarActionApi | undefined {
 
 export function isSidePanelSupported(): boolean {
   return Boolean(chromium()?.open ?? firefox()?.open);
+}
+
+/**
+ * Where the Reader's Settings button takes the reader, or null for nowhere.
+ *
+ * The side panel wherever there is one. Where there is not — Firefox for
+ * Android, which has no sidebar (#68) — the options page, which shows the same
+ * panel in a tab of its own. The Reader says which, because the two arrive in
+ * different places and someone who cannot see the screen has to be told where
+ * to look.
+ */
+export type SettingsSurface = 'side-panel' | 'options-page';
+
+export function settingsSurface(): SettingsSurface | null {
+  if (isSidePanelSupported()) return 'side-panel';
+  if (apis()?.runtime?.openOptionsPage) return 'options-page';
+  return null;
+}
+
+/**
+ * Opens the settings wherever `settingsSurface` says they are. Called straight
+ * from the click, for the side panel's sake; the options page does not need a
+ * gesture, and does not mind having one.
+ */
+export async function openSettings(): Promise<void> {
+  if (isSidePanelSupported()) {
+    await openSidePanel();
+    return;
+  }
+  const open = apis()?.runtime?.openOptionsPage;
+  if (!open) throw new Error('The settings cannot be opened in this environment.');
+  await open.call(apis()!.runtime);
 }
 
 /**
