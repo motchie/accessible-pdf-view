@@ -105,9 +105,9 @@ interface PdfSource {
 | --- | --- | --- |
 | `HandoffPdfSource` | shipped | Bytes the background worker already fetched. Primary path. |
 | `UrlPdfSource` | shipped | Direct fetch; same-origin and CORS-enabled URLs. Fallback. |
-| `BytesPdfSource` | shipped | In-memory bytes (tests, future file picker). |
+| `BytesPdfSource` | shipped | In-memory bytes: tests, and a file the reader chose (`LocalFileChooser`, #69). |
 | `MimeHandlerPdfSource` | planned | Chrome `application/pdf` MIME handler stream. |
-| `FilePdfSource` | planned | File picker / drag and drop. |
+| `FilePdfSource` | planned | Drag and drop, or streaming a large chosen file. |
 | `BlobPdfSource` | planned | `blob:` URLs, once reachable. |
 
 **Why the handoff exists.** `activeTab` grants a temporary host permission to

@@ -403,6 +403,18 @@ export const en = {
    * to grant an extension access to a site: it names the site, says what the
    * access is for, says it covers nothing else, and says how to take it back.
    */
+  /**
+   * Choosing a PDF on the device (#69). The one way to read a downloaded file
+   * on Firefox for Android, and a local file anywhere: the Reader cannot fetch
+   * a `file:`, `blob:` or `content:` address, but it can read a file the reader
+   * hands it.
+   */
+  localFile: {
+    label: 'Choose a PDF file',
+    hint: 'The file is read here, in this browser. It is not sent anywhere.',
+    readFailed: (detail: string) => `The file could not be read. ${detail}`,
+  },
+
   siteAccess: {
     offer: (host: string) =>
       `This extension has no access to ${host}, which is what it needs in order to read a file kept there.`,
@@ -525,12 +537,20 @@ export const en = {
     'file-scheme': {
       title: 'A local file (file://) cannot be opened by this extension yet.',
       explanation:
-        'Reading one would require the "Allow access to file URLs" permission in Chrome’s extension settings, which this version does not ask for. Download the PDF and open it from a web URL, or open it in the browser’s own PDF viewer and click the extension icon there.',
+        'Reading one would require the "Allow access to file URLs" permission in Chrome’s extension settings, which this version does not ask for. Download the PDF and open it from a web URL, or open it in the browser’s own PDF viewer and click the extension icon there. You can also choose the file below.',
     },
     'blob-scheme': {
       title: 'This PDF is displayed from a blob: URL, so the Reader cannot fetch it.',
       explanation:
-        'A blob: URL is valid only inside the page that created it. Save the PDF from that page and open the saved file’s URL.',
+        'A blob: URL is valid only inside the page that created it. Save the PDF from that page, then choose the saved file below.',
+    },
+    'content-scheme': {
+      title: 'This PDF is a file on this device, and the Reader cannot open it by its address.',
+      // Not a network error and not a missing permission, which is what the
+      // fetch used to be reported as (#69): a content:// address is one only
+      // the browser itself can read, and there is no site to grant.
+      explanation:
+        'Firefox for Android shows a downloaded PDF at a content:// address, which only the browser itself can read. Choose the file below instead.',
     },
     'fetch-failed': {
       title: 'The PDF could not be fetched.',
@@ -556,7 +576,7 @@ export const en = {
     'no-source': {
       title: 'No PDF was given to open.',
       explanation:
-        'In a tab showing a PDF, click “Accessible PDF View” in the toolbar to open that PDF in the Reader.',
+        'In a tab showing a PDF, click “Accessible PDF View” in the toolbar to open that PDF in the Reader. Or choose a PDF file below.',
     },
     'tab-url-unavailable': {
       title: "This tab's URL could not be read.",
@@ -566,7 +586,7 @@ export const en = {
     'unsupported-page': {
       title: 'This page cannot be opened in Accessible PDF View.',
       explanation:
-        'PDFs cannot be read from a browser-internal page or an extension page. Run it in a tab that is showing a PDF.',
+        'PDFs cannot be read from a browser-internal page or an extension page. Run it in a tab that is showing a PDF, or choose a PDF file below.',
     },
     'parse-failed': {
       title: 'This PDF could not be analysed.',
