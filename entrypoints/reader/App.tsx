@@ -1,7 +1,12 @@
-import { Suspense, lazy, useEffect, useMemo, useState, type JSX } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { PdfError } from "../../lib/pdf/errors";
 import { createPdfSource } from "../../lib/pdf/source/handoff-pdf-source";
-import type { PdfSource } from "../../lib/pdf/source/pdf-source";
+import { BytesPdfSource, type PdfSource } from "../../lib/pdf/source/pdf-source";
+import {
+  LocalFileChooser,
+  isAnsweredByAFile,
+  type ChosenFile,
+} from "../../lib/reader/components/LocalFileChooser";
 import { DocumentInfoPanel } from "../../lib/reader/components/DocumentInfoPanel";
 import {
   ReaderToolbar,
@@ -89,17 +94,40 @@ export default function App(): JSX.Element {
   const [markdownSource, setMarkdownSource] =
     useState<MarkdownSource>("document");
 
+  // A PDF the reader chose on the device (#69), which replaces whatever the
+  // address said: it is the answer to an address the Reader could not open.
+  const [chosenFile, setChosenFile] = useState<ChosenFile | null>(null);
+  const mainRef = useRef<HTMLElement>(null);
+
+  /**
+   * Choosing a file takes away the alert the chooser was in, and the chooser
+   * with it — which would drop focus to the body, and leave someone using a
+   * screen reader nowhere. Focus goes to the main region instead, which stays,
+   * and where the progress and then the document appear.
+   */
+  function chooseFile(file: ChosenFile) {
+    setChosenFile(file);
+    requestAnimationFrame(() => mainRef.current?.focus());
+  }
+
   const [source, sourceError] = useMemo((): [
     PdfSource | null,
     PdfError | null,
   ] => {
+    if (chosenFile) return [new BytesPdfSource(chosenFile.bytes), null];
     if (params.error) return [null, params.error];
     try {
       return [createPdfSource(params), null];
     } catch (cause) {
       return [null, cause instanceof PdfError ? cause : null];
     }
-  }, [params]);
+  }, [params, chosenFile]);
+
+  // Where the document came from, as the toolbar and the title see it. A
+  // chosen file has a name and no address: the `content:` or `file:` address
+  // the tab was opened with is exactly the one that could not be opened.
+  const sourceUrl = chosenFile ? null : params.sourceUrl;
+  const fileName = chosenFile ? chosenFile.name : fileNameFromUrl(params.sourceUrl);
 
   // Written by the side panel, which is a different document — storage is the
   // seam, and the hook is watching it.
@@ -123,7 +151,7 @@ export default function App(): JSX.Element {
   // A language the reader chose for this document earlier in this tab (#57).
   // Session storage only: kept across a reload, gone when the tab closes, and
   // never synced or kept on disk past that.
-  const chosenLanguageKey = params.sourceUrl ? `apv-document-language:${params.sourceUrl}` : null;
+  const chosenLanguageKey = sourceUrl ? `apv-document-language:${sourceUrl}` : null;
   const [initialChosenLanguage] = useState(() => readSession(chosenLanguageKey));
 
   const analysis = usePdfAnalysis(source, {
@@ -146,7 +174,7 @@ export default function App(): JSX.Element {
   // name if not, and nothing at all if neither. The heading falls back to the
   // extension's name; the tab title leaves the part out instead.
   const documentName =
-    analysis.document?.metadata.title?.trim() || fileNameFromUrl(params.sourceUrl) || null;
+    analysis.document?.metadata.title?.trim() || fileName || null;
   const title = documentName ?? m.app.name;
   const titleLanguage = titleHeadingLanguage(analysis.document?.metadata);
 
@@ -202,8 +230,8 @@ export default function App(): JSX.Element {
         views={views}
         active={mode}
         onChange={setMode}
-        fileName={fileNameFromUrl(params.sourceUrl)}
-        sourceUrl={params.sourceUrl}
+        fileName={fileName}
+        sourceUrl={sourceUrl}
         opensInReader={opensInReader}
         {...(analysis.document
           ? {
@@ -321,19 +349,29 @@ export default function App(): JSX.Element {
         ) : null}
       </header>
 
-      <main id="apv-main" className="apv-main">
+      {/* Focusable from script only: the skip link's target, and where focus
+          goes when a chosen file replaces the error it answered (#69). */}
+      <main id="apv-main" className="apv-main" ref={mainRef} tabIndex={-1}>
         {error ? (
           <ErrorNotice
             error={error}
-            onRetry={source ? analysis.retry : undefined}
+            // Not for an address the Reader cannot open: trying it again
+            // cannot work, and the button would be one more thing to try.
+            // Nor for a chosen file: the same bytes give the same answer, and
+            // what helps is choosing another.
+            onRetry={
+              source && !chosenFile && !isAnsweredByAFile(error.messageKey)
+                ? analysis.retry
+                : undefined
+            }
           >
             {/* Only a fetch that was refused can be answered by granting the
                 site. Every other error here means something else, and offering
                 a permission for it would be a wrong diagnosis in the one place
                 a reader is looking for the right one. */}
-            {error.messageKey === "fetch-failed" && params.sourceUrl ? (
+            {error.messageKey === "fetch-failed" && sourceUrl ? (
               <SiteAccessNotice
-                sourceUrl={params.sourceUrl}
+                sourceUrl={sourceUrl}
                 // Retried in place, not reloaded. Whether a permission granted
                 // at runtime reaches an extension page that is already open is
                 // the browser's own business and was the open question here;
@@ -342,6 +380,12 @@ export default function App(): JSX.Element {
                 // with it, so this keeps the smaller of the two.
                 onGranted={analysis.retry}
               />
+            ) : null}
+            {/* An address the Reader cannot open, or none at all: the file
+                itself can still be chosen (#69). In the alert, so it is
+                announced with the problem it answers. */}
+            {isAnsweredByAFile(error.messageKey) || chosenFile ? (
+              <LocalFileChooser onChoose={chooseFile} />
             ) : null}
           </ErrorNotice>
         ) : null}

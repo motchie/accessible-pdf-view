@@ -9,11 +9,11 @@
  * Implemented today:
  *   - UrlPdfSource       — direct fetch, for same-origin and CORS-enabled URLs
  *   - HandoffPdfSource   — bytes the background worker already fetched
- *   - BytesPdfSource     — in-memory bytes (tests, future file picker)
+ *   - BytesPdfSource     — in-memory bytes (tests, and a chosen file: #69)
  *
  * Planned:
  *   - MimeHandlerPdfSource — Chrome PDF MIME handler stream
- *   - FilePdfSource        — <input type="file"> / drag and drop
+ *   - FilePdfSource        — drag and drop, or streaming a large file
  *   - BlobPdfSource        — blob: URL created by the page being viewed
  */
 export interface PdfSource {

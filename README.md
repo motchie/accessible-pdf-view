@@ -848,10 +848,16 @@ document would leave undescribed if its tags were lost.
 
 ## Current limitations
 
-- Local (`file://`) PDFs cannot be opened. That needs "Allow access to file
-  URLs", which this version does not request. A clear message is shown instead.
-- PDFs displayed from a `blob:` URL cannot be read, because a blob URL is only
-  valid inside the document that created it.
+- Local (`file://`) PDFs cannot be opened by their address. That needs "Allow
+  access to file URLs", which this version does not request. The Reader says
+  so and offers to **choose the file** instead, which reads it without any
+  permission ([#69](https://github.com/motchie/accessible-pdf-view/issues/69)).
+- PDFs displayed from a `blob:` URL cannot be read by their address, because a
+  blob URL is only valid inside the document that created it. Saving the file
+  and choosing it works.
+- On Firefox for Android a downloaded PDF is shown at a `content://` address,
+  which only the browser can read. The Reader says that, and offers to choose
+  the file (#69).
 - No OCR engine is bundled. Chrome's on-device model can read pages where it is
   available, but its accuracy on Japanese scans is unmeasured — treat it as
   experimental. Elsewhere, image-only PDFs can be viewed (Original) but not read

@@ -241,6 +241,12 @@ body {
   overflow-wrap: anywhere;
 }
 
+.apv-main:focus:not(:focus-visible) {
+  /* Focused from script when a chosen file replaces its error (#69): the
+     region is where the reader is, not a control to show a ring around. */
+  outline: none;
+}
+
 .apv-main {
   padding-bottom: 3rem;
 }
