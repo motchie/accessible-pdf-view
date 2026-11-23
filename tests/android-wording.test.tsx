@@ -32,7 +32,12 @@ declare global {
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 function onPlatform(os: string): void {
-  stub.browser = { runtime: { getPlatformInfo: async () => ({ os }) } };
+  stub.browser = {
+    runtime: { getPlatformInfo: async () => ({ os }) },
+    // Enough of the redirect's APIs for "Opening PDFs" to be offered.
+    declarativeNetRequest: { updateDynamicRules: async () => {}, getDynamicRules: async () => [] },
+    permissions: { request: async () => false, contains: async () => false },
+  };
 }
 
 afterEach(() => {
@@ -97,8 +102,14 @@ describe('the settings panel', () => {
     expect(ja).not.toContain('Ctrl');
     expect(ja).not.toContain('他の端末にも同期されます');
 
+    // Opening PDFs: tapped, not clicked, and the menu rather than a toolbar.
+    expect(ja).toContain('タップした PDF');
+    expect(ja).not.toContain('クリック');
+    expect(ja).toContain('「拡張機能」から選んだとき');
+
     const en = await mount('en');
     expect(en).toContain('does not sync them');
+    expect(en).toContain('a PDF you tap');
     expect(en).not.toContain('Ctrl');
   });
 
@@ -107,6 +118,7 @@ describe('the settings panel', () => {
     const ja = await mount('ja');
     expect(ja).toContain('他の端末にも同期されます');
     expect(ja).toContain('Ctrl');
+    expect(ja).toContain('クリックした PDF');
   });
 });
 

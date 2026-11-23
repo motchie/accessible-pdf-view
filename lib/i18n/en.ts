@@ -493,6 +493,9 @@ export const en = {
     pdfHandler: 'Opening PDFs',
     pdfHandlerHint:
       'Which viewer opens a PDF you click. Switching to the Reader makes the browser ask for permission to read data on all sites: this extension has to recognise a PDF’s address before the page loads, and no browser allows that for sites it cannot already reach. Switching back hands it in again.',
+    // A touch screen is tapped, not clicked (#70).
+    pdfHandlerHintAndroid:
+      'Which viewer opens a PDF you tap. Switching to the Reader makes the browser ask for permission to read data on all sites: this extension has to recognise a PDF’s address before the page loads, and no browser allows that for sites it cannot already reach. Switching back hands it in again.',
     pdfHandlerBrowser: 'The browser’s own viewer',
     pdfHandlerBrowserNote: 'This extension opens when you press its toolbar button.',
     // Firefox for Android has no toolbar button for an extension: it is in the

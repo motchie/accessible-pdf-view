@@ -303,7 +303,9 @@ function PdfHandlerSection(): JSX.Element | null {
   return (
     <fieldset>
       <legend>{m.settings.pdfHandler}</legend>
-      <p className="apv-settings__hint">{m.settings.pdfHandlerHint}</p>
+      <p className="apv-settings__hint">
+        {android ? m.settings.pdfHandlerHintAndroid : m.settings.pdfHandlerHint}
+      </p>
       <RadioGroup
         label={m.settings.pdfHandler}
         labelHidden
