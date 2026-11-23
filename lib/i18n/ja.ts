@@ -497,4 +497,16 @@ export const ja: Messages = {
     },
     unknown: { title: 'PDF を開けませんでした。', explanation: '' },
   },
+
+  errorsAndroid: {
+    'file-scheme': {
+      title: 'ローカルファイル (file://) の PDF は、アドレスからは開けません。',
+      explanation: '代わりに下でファイルを選んでください。',
+    },
+    'no-source': {
+      title: '開く PDF が指定されていません。',
+      explanation:
+        'PDF を表示しているタブで、ブラウザのメニューの「拡張機能」から「Accessible PDF View」を選ぶと、その PDF をリーダーで開けます。または、下で PDF ファイルを選んでください。',
+    },
+  },
 };

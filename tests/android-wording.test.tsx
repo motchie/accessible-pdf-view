@@ -18,6 +18,8 @@ vi.mock('wxt/browser', () => ({
 }));
 
 import { SettingsPanel } from '../lib/reader/components/SettingsPanel';
+import { ErrorNotice } from '../lib/reader/components/Notices';
+import { PdfError, type PdfErrorMessage } from '../lib/pdf/errors';
 import { createRoot } from '../lib/reader/create-root';
 import { DEFAULT_SETTINGS } from '../lib/reader/settings';
 import { forgetPlatform, guessAndroidFromUserAgent, isAndroid } from '../lib/browser/platform';
@@ -105,5 +107,53 @@ describe('the settings panel', () => {
     const ja = await mount('ja');
     expect(ja).toContain('他の端末にも同期されます');
     expect(ja).toContain('Ctrl');
+  });
+});
+
+describe('the error messages', () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  async function mount(key: PdfErrorMessage, locale: 'en' | 'ja'): Promise<string> {
+    await act(async () => {
+      root.render(inLocale(locale, <ErrorNotice error={new PdfError('no-source', key)} />));
+    });
+    await act(async () => {
+      await isAndroid();
+    });
+    return container.textContent ?? '';
+  }
+
+  /** No toolbar button and no Chrome setting on Android: the menu, and the file. */
+  it('on Android, name the browser’s menu and not a toolbar or Chrome', async () => {
+    onPlatform('android');
+    const noSource = await mount('no-source', 'ja');
+    expect(noSource).toContain('「拡張機能」');
+    expect(noSource).not.toContain('ツールバー');
+
+    const fileScheme = await mount('file-scheme', 'ja');
+    expect(fileScheme).not.toContain('Chrome');
+    expect(fileScheme).toContain('ファイルを選んで');
+
+    const english = await mount('no-source', 'en');
+    expect(english).toContain('under Extensions');
+    expect(english).not.toContain('toolbar');
+  });
+
+  it('on the desktop, keep the desktop wording', async () => {
+    onPlatform('win');
+    expect(await mount('no-source', 'ja')).toContain('ツールバー');
+    expect(await mount('file-scheme', 'en')).toContain('Chrome');
   });
 });

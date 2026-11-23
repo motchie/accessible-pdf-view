@@ -626,4 +626,21 @@ export const en = {
     },
     unknown: { title: 'The PDF could not be opened.', explanation: '' },
   },
+
+  /**
+   * The errors whose desktop wording is not true on Firefox for Android (#70):
+   * there is no toolbar button and no Chrome setting to point at. Used in
+   * place of `errors` on Android, where a key is here.
+   */
+  errorsAndroid: {
+    'file-scheme': {
+      title: 'A local file (file://) cannot be opened by its address.',
+      explanation: 'Choose the file below instead.',
+    },
+    'no-source': {
+      title: 'No PDF was given to open.',
+      explanation:
+        'In a tab showing a PDF, choose “Accessible PDF View” from the browser’s menu, under Extensions, to open that PDF in the Reader. Or choose a PDF file below.',
+    },
+  },
 } as const;

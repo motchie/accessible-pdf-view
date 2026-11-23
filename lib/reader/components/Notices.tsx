@@ -8,6 +8,7 @@ import {
 import type { PageContentKind, PageOcrCause, PdfCapabilities } from '../../pdf/document-model';
 import type { PdfError } from '../../pdf/errors';
 import { useMessages, type Messages } from '../../i18n';
+import { useIsAndroid } from '../../browser/platform';
 
 /**
  * Status and error messaging.
@@ -41,13 +42,20 @@ export function ErrorNotice({
   children?: ReactNode;
 }): JSX.Element {
   const m = useMessages();
+  // A few errors point at a toolbar button or a Chrome setting, which Firefox
+  // for Android does not have; there they say what is true there (#70).
+  const android = useIsAndroid();
+  const androidText = android
+    ? (m.errorsAndroid as Partial<Record<string, { title: string; explanation: string }>>)[
+        error.messageKey
+      ]
+    : undefined;
+  const text = androidText ?? m.errors[error.messageKey];
 
   return (
     <div role="alert" className="apv-notice apv-notice--error">
-      <p className="apv-notice__title">{m.errors[error.messageKey].title}</p>
-      {m.errors[error.messageKey].explanation ? (
-        <p>{m.errors[error.messageKey].explanation}</p>
-      ) : null}
+      <p className="apv-notice__title">{text.title}</p>
+      {text.explanation ? <p>{text.explanation}</p> : null}
       {/* Whatever the browser said — a status code, an exception. Not
           translated, because it is not ours to translate. */}
       {error.detail ? <p className="apv-notice__detail">{error.detail}</p> : null}
