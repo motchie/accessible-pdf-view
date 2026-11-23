@@ -1,6 +1,10 @@
 import { createRequire } from 'node:module';
 import { defineConfig } from 'wxt';
-import { MINIMUM_CHROME_VERSION, MINIMUM_FIREFOX_VERSION } from './lib/browser/minimum-versions';
+import {
+  MINIMUM_CHROME_VERSION,
+  MINIMUM_FIREFOX_ANDROID_VERSION,
+  MINIMUM_FIREFOX_VERSION,
+} from './lib/browser/minimum-versions';
 
 /**
  * `decode-named-character-reference` decodes `&amp;` and friends for the
@@ -183,13 +187,13 @@ export default defineConfig({
              * Android only when the manifest has this key, and takes the
              * version's Android compatibility from it when it is uploaded.
              *
-             * The same floor as the desktop: Firefox for Android is the same
-             * Gecko at the same version numbers, and what holds the floor up —
-             * the APIs PDF.js calls without checking — is the engine's, not
-             * the desktop's.
+             * Its own floor, from the `firefoxAndroid` versions in
+             * `lib/browser/minimum-versions.ts`. Today it is the desktop's:
+             * what holds it up is the APIs PDF.js calls without checking, and
+             * Android has those at the same versions.
              */
             gecko_android: {
-              strict_min_version: `${MINIMUM_FIREFOX_VERSION}.0`,
+              strict_min_version: `${MINIMUM_FIREFOX_ANDROID_VERSION}.0`,
             },
           },
         }
