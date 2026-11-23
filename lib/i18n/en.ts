@@ -403,6 +403,18 @@ export const en = {
    * to grant an extension access to a site: it names the site, says what the
    * access is for, says it covers nothing else, and says how to take it back.
    */
+  /**
+   * Choosing a PDF on the device (#69). The one way to read a downloaded file
+   * on Firefox for Android, and a local file anywhere: the Reader cannot fetch
+   * a `file:`, `blob:` or `content:` address, but it can read a file the reader
+   * hands it.
+   */
+  localFile: {
+    label: 'Choose a PDF file',
+    hint: 'The file is read here, in this browser. It is not sent anywhere.',
+    readFailed: (detail: string) => `The file could not be read. ${detail}`,
+  },
+
   siteAccess: {
     offer: (host: string) =>
       `This extension has no access to ${host}, which is what it needs in order to read a file kept there.`,
@@ -433,6 +445,9 @@ export const en = {
     title: 'Settings',
     textAndSpacing: 'Text and spacing',
     zoomHint: 'Works alongside the browser’s own zoom (Ctrl and +).',
+    // Firefox for Android (#70): there is no Ctrl, and how the page zooms is
+    // the browser's own business.
+    zoomHintAndroid: 'Works alongside the browser’s own zoom.',
     fontSize: 'Text size',
     fontSizes: { small: 'Small', normal: 'Normal', large: 'Large', xlarge: 'Extra large' },
     lineHeight: 'Line spacing',
@@ -478,18 +493,31 @@ export const en = {
     pdfHandler: 'Opening PDFs',
     pdfHandlerHint:
       'Which viewer opens a PDF you click. Switching to the Reader makes the browser ask for permission to read data on all sites: this extension has to recognise a PDF’s address before the page loads, and no browser allows that for sites it cannot already reach. Switching back hands it in again.',
+    // A touch screen is tapped, not clicked (#70).
+    pdfHandlerHintAndroid:
+      'Which viewer opens a PDF you tap. Switching to the Reader makes the browser ask for permission to read data on all sites: this extension has to recognise a PDF’s address before the page loads, and no browser allows that for sites it cannot already reach. Switching back hands it in again.',
     pdfHandlerBrowser: 'The browser’s own viewer',
     pdfHandlerBrowserNote: 'This extension opens when you press its toolbar button.',
+    // Firefox for Android has no toolbar button for an extension: it is in the
+    // browser's menu.
+    pdfHandlerBrowserNoteAndroid:
+      'This extension opens when you choose it from the browser’s menu, under Extensions.',
     pdfHandlerReader: 'This Reader',
     pdfHandlerReaderNote: 'Addresses ending in .pdf, over http and https.',
     pdfHandlerLimits:
       'A PDF on your own computer still opens in the browser’s viewer: reading local files needs a switch on the browser’s extensions page that no extension can ask for. So does a PDF served from an address that does not end in .pdf, because what it is cannot be known before it is opened — the toolbar button opens both.',
+    pdfHandlerLimitsAndroid:
+      'A PDF downloaded to this device still opens in the browser’s viewer, at an address only the browser can read; the Reader can open it if you choose the file. A PDF served from an address that does not end in .pdf opens in the browser’s viewer too, because what it is cannot be known before it is opened — choosing this extension from the browser’s menu opens it.',
     pdfHandlerRefused:
       'The browser did not grant that access, so PDFs still open in its own viewer.',
     pdfHandlerFailed: (detail: string) => `This could not be changed. ${detail}`,
     storage: 'Storage',
     storageHint:
       'Settings are stored on this device, and synced to your other devices if you are signed in to the browser.',
+    // Measured by MDN, not assumed: `storage.sync` does not sync on Firefox for
+    // Android (#70).
+    storageHintAndroid:
+      'Settings are stored on this device. Firefox for Android does not sync them to your other devices.',
     reset: 'Reset to defaults',
     model: 'On-device AI',
     modelHint:
@@ -525,12 +553,20 @@ export const en = {
     'file-scheme': {
       title: 'A local file (file://) cannot be opened by this extension yet.',
       explanation:
-        'Reading one would require the "Allow access to file URLs" permission in Chrome’s extension settings, which this version does not ask for. Download the PDF and open it from a web URL, or open it in the browser’s own PDF viewer and click the extension icon there.',
+        'Reading one would require the "Allow access to file URLs" permission in Chrome’s extension settings, which this version does not ask for. Download the PDF and open it from a web URL, or open it in the browser’s own PDF viewer and click the extension icon there. You can also choose the file below.',
     },
     'blob-scheme': {
       title: 'This PDF is displayed from a blob: URL, so the Reader cannot fetch it.',
       explanation:
-        'A blob: URL is valid only inside the page that created it. Save the PDF from that page and open the saved file’s URL.',
+        'A blob: URL is valid only inside the page that created it. Save the PDF from that page, then choose the saved file below.',
+    },
+    'content-scheme': {
+      title: 'This PDF is a file on this device, and the Reader cannot open it by its address.',
+      // Not a network error and not a missing permission, which is what the
+      // fetch used to be reported as (#69): a content:// address is one only
+      // the browser itself can read, and there is no site to grant.
+      explanation:
+        'Firefox for Android shows a downloaded PDF at a content:// address, which only the browser itself can read. Choose the file below instead.',
     },
     'fetch-failed': {
       title: 'The PDF could not be fetched.',
@@ -551,22 +587,22 @@ export const en = {
     'handoff-expired': {
       title: 'This PDF has already been loaded, and could not be fetched again.',
       explanation:
-        'That happens when the Reader tab is reloaded. Go back to the original PDF tab and click the extension icon again.',
+        'That happens when the Reader tab is reloaded. Go back to the original PDF tab and open Accessible PDF View again: from its toolbar button, or on Android from the browser’s menu, under Extensions.',
     },
     'no-source': {
       title: 'No PDF was given to open.',
       explanation:
-        'In a tab showing a PDF, click “Accessible PDF View” in the toolbar to open that PDF in the Reader.',
+        'In a tab showing a PDF, click “Accessible PDF View” in the toolbar to open that PDF in the Reader. Or choose a PDF file below.',
     },
     'tab-url-unavailable': {
       title: "This tab's URL could not be read.",
       explanation:
-        'The extension can read a tab’s URL only at the moment its toolbar icon is clicked. Please try again.',
+        'The extension can read a tab’s URL only at the moment it is opened from that tab. Please try again, or choose a PDF file below.',
     },
     'unsupported-page': {
       title: 'This page cannot be opened in Accessible PDF View.',
       explanation:
-        'PDFs cannot be read from a browser-internal page or an extension page. Run it in a tab that is showing a PDF.',
+        'PDFs cannot be read from a browser-internal page or an extension page. Run it in a tab that is showing a PDF, or choose a PDF file below.',
     },
     'parse-failed': {
       title: 'This PDF could not be analysed.',
@@ -592,5 +628,22 @@ export const en = {
         'This version ships no OCR engine. The Original view can still show you the pages.',
     },
     unknown: { title: 'The PDF could not be opened.', explanation: '' },
+  },
+
+  /**
+   * The errors whose desktop wording is not true on Firefox for Android (#70):
+   * there is no toolbar button and no Chrome setting to point at. Used in
+   * place of `errors` on Android, where a key is here.
+   */
+  errorsAndroid: {
+    'file-scheme': {
+      title: 'A local file (file://) cannot be opened by its address.',
+      explanation: 'Choose the file below instead.',
+    },
+    'no-source': {
+      title: 'No PDF was given to open.',
+      explanation:
+        'In a tab showing a PDF, choose “Accessible PDF View” from the browser’s menu, under Extensions, to open that PDF in the Reader. Or choose a PDF file below.',
+    },
   },
 } as const;
