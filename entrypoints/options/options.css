@@ -1,0 +1,9 @@
+/*
+ * The options page is a whole tab, not a 320px panel: keep the panel's single
+ * column, and stop it at a readable measure on a wide screen. On a phone the
+ * column is simply the screen.
+ */
+.apv-sidepanel {
+  max-width: 40rem;
+  margin: 0 auto;
+}

@@ -251,6 +251,11 @@ the Japanese strings are the originals.
 **a popup closes when it loses focus**, and for anyone reading with a screen
 reader, a keyboard or a magnifier, moving focus is how you read.
 
+The same panel is also the extension's **options page**, which is the settings
+entry in the browser's own extensions page. Firefox for Android has no sidebar,
+so there the Reader's **Settings** button opens the options page in a new tab
+instead ([#68](https://github.com/motchie/accessible-pdf-view/issues/68)).
+
 In order: the interface language; text size, line spacing and column width;
 typeface; theme; the on-device AI and whether to get its download out of the
 way; which language AI-generated text is written in (not in Firefox, which has
@@ -301,6 +306,7 @@ entrypoints/
   background.ts          action click -> Reader tab
   reader/                the Reader page (React)
   sidepanel/             the settings panel
+  options/               the same panel as the options page (Android has no sidebar)
 lib/
   ai/                    Chrome built-in model session lifecycle (shared)
   browser/               extension-facing glue: the tab, the handoff, the

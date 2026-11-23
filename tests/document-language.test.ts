@@ -85,8 +85,12 @@ describe('public/document-language.js', () => {
     expect(script).toContain(`'${UI_LANGUAGE_KEY}'`);
   });
 
-  it('is the first script in the head of both pages, and not a module', () => {
-    for (const page of ['entrypoints/reader/index.html', 'entrypoints/sidepanel/index.html']) {
+  it('is the first script in the head of every page, and not a module', () => {
+    for (const page of [
+      'entrypoints/reader/index.html',
+      'entrypoints/sidepanel/index.html',
+      'entrypoints/options/index.html',
+    ]) {
       const html = readFileSync(resolve(root, page), 'utf8');
       const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
       const scripts = [...head.matchAll(/<script\b[^>]*>/g)].map((match) => match[0]);

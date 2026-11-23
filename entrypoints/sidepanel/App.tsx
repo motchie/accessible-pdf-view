@@ -1,5 +1,6 @@
 import { useEffect, type JSX } from 'react';
 import { MessagesProvider, resolveLocale } from '../../lib/i18n';
+import { settingsPageTitle } from './title';
 import { SettingsPanel } from '../../lib/reader/components/SettingsPanel';
 import { useAppliedSettings, useReaderSettings } from '../../lib/reader/use-settings';
 
@@ -22,6 +23,10 @@ export default function App(): JSX.Element {
   const locale = resolveLocale(settings.uiLanguage);
   useEffect(() => {
     document.documentElement.lang = locale;
+    // In the interface's language too. As the options page this is a tab of
+    // its own (#68), and a tab's title is what a screen reader reads out in
+    // the list of tabs; the HTML's English title is only the fallback.
+    document.title = settingsPageTitle(locale);
   }, [locale]);
 
   return (

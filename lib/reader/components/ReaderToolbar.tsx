@@ -5,7 +5,7 @@ import {
   type JSX,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
-import { isSidePanelSupported, openSidePanel } from '../../browser/side-panel';
+import { openSettings, settingsSurface } from '../../browser/side-panel';
 import { sanitizeHref } from '../../pdf/sanitize-url';
 import { useMessages } from '../../i18n';
 import { documentLanguageChoices, languageLabel } from '../../i18n/language-choices';
@@ -130,6 +130,7 @@ export function ReaderToolbar({
   const m = useMessages();
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
+  const surface = settingsSurface();
 
   /**
    * The address arrives in this page's own URL, and since the Reader became a
@@ -151,7 +152,7 @@ export function ReaderToolbar({
   // user gesture, and awaiting anything first spends it.
   function handleSettings() {
     setSettingsError(null);
-    void openSidePanel().catch((cause: unknown) => {
+    void openSettings().catch((cause: unknown) => {
       setSettingsError(cause instanceof Error ? cause.message : String(cause));
     });
   }
@@ -241,14 +242,19 @@ export function ReaderToolbar({
             </span>
           </a>
         ) : null}
-        {isSidePanelSupported() ? (
+        {surface ? (
           <button
             type="button"
             onClick={handleSettings}
             data-apv-toolbar-item="settings"
           >
             {m.toolbar.settings}
-            <span className="apv-visually-hidden">{m.app.openInSidePanel}</span>
+            {/* Where it opens, for the one person who cannot see it open: the
+                side panel beside this page, or — on Firefox for Android, which
+                has no sidebar (#68) — the options page in a tab of its own. */}
+            <span className="apv-visually-hidden">
+              {surface === 'side-panel' ? m.app.openInSidePanel : m.app.openInNewTab}
+            </span>
           </button>
         ) : null}
       </div>
