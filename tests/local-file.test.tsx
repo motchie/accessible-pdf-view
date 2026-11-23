@@ -45,7 +45,14 @@ describe('a content: address', () => {
   });
 
   it('is one of the errors a chosen file answers; a refused fetch is not', () => {
-    for (const key of ['content-scheme', 'file-scheme', 'blob-scheme', 'no-source'] as const) {
+    for (const key of [
+      'content-scheme',
+      'file-scheme',
+      'blob-scheme',
+      'no-source',
+      'unsupported-page',
+      'tab-url-unavailable',
+    ] as const) {
       expect(isAnsweredByAFile(key), key).toBe(true);
     }
     expect(isAnsweredByAFile('fetch-failed')).toBe(false);

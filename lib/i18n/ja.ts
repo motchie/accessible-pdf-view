@@ -464,7 +464,7 @@ export const ja: Messages = {
     'tab-url-unavailable': {
       title: 'このタブの URL を取得できませんでした。',
       explanation:
-        'ツールバーのアイコンをクリックした時点でのみ、拡張機能はタブの URL を読み取れます。もう一度お試しください。',
+        'ツールバーのアイコンをクリックした時点でのみ、拡張機能はタブの URL を読み取れます。もう一度お試しいただくか、下で PDF ファイルを選んでください。',
     },
     'unsupported-page': {
       title: 'このページは Accessible PDF View で開けません。',

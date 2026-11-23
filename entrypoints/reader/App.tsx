@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState, type JSX } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { PdfError } from "../../lib/pdf/errors";
 import { createPdfSource } from "../../lib/pdf/source/handoff-pdf-source";
 import { BytesPdfSource, type PdfSource } from "../../lib/pdf/source/pdf-source";
@@ -97,6 +97,18 @@ export default function App(): JSX.Element {
   // A PDF the reader chose on the device (#69), which replaces whatever the
   // address said: it is the answer to an address the Reader could not open.
   const [chosenFile, setChosenFile] = useState<ChosenFile | null>(null);
+  const mainRef = useRef<HTMLElement>(null);
+
+  /**
+   * Choosing a file takes away the alert the chooser was in, and the chooser
+   * with it — which would drop focus to the body, and leave someone using a
+   * screen reader nowhere. Focus goes to the main region instead, which stays,
+   * and where the progress and then the document appear.
+   */
+  function chooseFile(file: ChosenFile) {
+    setChosenFile(file);
+    requestAnimationFrame(() => mainRef.current?.focus());
+  }
 
   const [source, sourceError] = useMemo((): [
     PdfSource | null,
@@ -337,14 +349,20 @@ export default function App(): JSX.Element {
         ) : null}
       </header>
 
-      <main id="apv-main" className="apv-main">
+      {/* Focusable from script only: the skip link's target, and where focus
+          goes when a chosen file replaces the error it answered (#69). */}
+      <main id="apv-main" className="apv-main" ref={mainRef} tabIndex={-1}>
         {error ? (
           <ErrorNotice
             error={error}
             // Not for an address the Reader cannot open: trying it again
             // cannot work, and the button would be one more thing to try.
+            // Nor for a chosen file: the same bytes give the same answer, and
+            // what helps is choosing another.
             onRetry={
-              source && !isAnsweredByAFile(error.messageKey) ? analysis.retry : undefined
+              source && !chosenFile && !isAnsweredByAFile(error.messageKey)
+                ? analysis.retry
+                : undefined
             }
           >
             {/* Only a fetch that was refused can be answered by granting the
@@ -366,8 +384,8 @@ export default function App(): JSX.Element {
             {/* An address the Reader cannot open, or none at all: the file
                 itself can still be chosen (#69). In the alert, so it is
                 announced with the problem it answers. */}
-            {isAnsweredByAFile(error.messageKey) ? (
-              <LocalFileChooser onChoose={setChosenFile} />
+            {isAnsweredByAFile(error.messageKey) || chosenFile ? (
+              <LocalFileChooser onChoose={chooseFile} />
             ) : null}
           </ErrorNotice>
         ) : null}

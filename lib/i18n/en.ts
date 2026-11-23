@@ -581,7 +581,7 @@ export const en = {
     'tab-url-unavailable': {
       title: "This tab's URL could not be read.",
       explanation:
-        'The extension can read a tab’s URL only at the moment its toolbar icon is clicked. Please try again.',
+        'The extension can read a tab’s URL only at the moment its toolbar icon is clicked. Please try again, or choose a PDF file below.',
     },
     'unsupported-page': {
       title: 'This page cannot be opened in Accessible PDF View.',

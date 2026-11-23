@@ -23,6 +23,7 @@ const ANSWERED_BY_A_FILE: ReadonlySet<PdfErrorMessage> = new Set([
   'content-scheme',
   'no-source',
   'unsupported-page',
+  'tab-url-unavailable',
 ]);
 
 export function isAnsweredByAFile(messageKey: PdfErrorMessage): boolean {
