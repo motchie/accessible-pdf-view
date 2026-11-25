@@ -28,3 +28,10 @@ public/pdf-inspector/
 
 # Word's lock file beside an open document, such as a fixture's .docx.
 ~$*
+
+# OCR evaluation (tests/ocr-eval/README.md): downloaded fonts and models,
+# third-party datasets fetched by the scripts, and your own scans.
+tests/ocr-eval/.cache/
+tests/ocr-eval/external/
+tests/ocr-eval/local/
+__pycache__/

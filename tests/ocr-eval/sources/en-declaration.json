@@ -1,0 +1,11 @@
+{
+  "lang": "en",
+  "title": "Public-domain text (Declaration of Independence, excerpt)",
+  "font": "serif",
+  "license_note": "Public domain (1776)",
+  "blocks": [
+    {"h": "In Congress, July 4, 1776", "size": 14, "align": "center"},
+    {"p": "When in the Course of human events, it becomes necessary for one people to dissolve the political bands which have connected them with another, and to assume among the powers of the earth, the separate and equal station to which the Laws of Nature and of Nature's God entitle them, a decent respect to the opinions of mankind requires that they should declare the causes which impel them to the separation."},
+    {"p": "We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable Rights, that among these are Life, Liberty and the pursuit of Happiness. That to secure these rights, Governments are instituted among Men, deriving their just powers from the consent of the governed."}
+  ]
+}

@@ -1,0 +1,11 @@
+設定手順メモ v1.2
+本書は社内ネットワークで PDF Viewer を利用するための設定手順をまとめたものです。
+1. ブラウザの設定画面を開き、Extensions の一覧から accessible-pdf-view を有効にします。
+2. Proxy を使う場合は、http://proxy.example.com:8080 を指定してください。
+3. エラーコード E-1024 が表示されたら、キャッシュを削除してから再起動します。
+4. 問い合わせ先: support@example.com (平日 10:00〜18:00)
+項目 設定値 備考
+Timeout 30 sec 既定値
+Max pages 500 大きいPDFは分割
+Language ja, en OCR用
+注意: 0(ゼロ)とO(オー)、1(イチ)とl(エル)とI(アイ)は特に誤認識しやすい文字です。

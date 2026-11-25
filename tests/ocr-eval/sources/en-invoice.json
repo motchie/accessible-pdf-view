@@ -1,0 +1,24 @@
+{
+  "lang": "en",
+  "title": "Invoice (table)",
+  "font": "sans",
+  "blocks": [
+    {"h": "INVOICE", "size": 24},
+    {"right": "Invoice No. 2026-0412"},
+    {"right": "Date: 11/20/2026"},
+    {"p": "Bill to: Example Supply Co., 42 Sample Street, Anytown"},
+    {"table": [
+      ["Description", "Qty", "Unit price", "Amount"],
+      ["Copy paper, A4, 500 sheets", "10", "$4.20", "$42.00"],
+      ["Toner cartridge, black", "2", "$125.00", "$250.00"],
+      ["Clear folders, pack of 100", "5", "$9.10", "$45.50"],
+      ["Shipping", "1", "$30.00", "$30.00"],
+      ["Maintenance visit (half day)", "1", "$180.00", "$180.00"]
+    ], "widths": [0.48, 0.1, 0.2, 0.22], "align": ["left", "right", "right", "right"]},
+    {"right": "Subtotal $547.50"},
+    {"right": "Tax (8.25%) $45.17"},
+    {"right": "Total due $592.67"},
+    {"space": 4},
+    {"p": "Payment due within 30 days. Wire to Fictional Bank, routing 000000000, account 0012345678."}
+  ]
+}

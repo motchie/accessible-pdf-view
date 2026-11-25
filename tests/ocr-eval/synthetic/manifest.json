@@ -1,0 +1,300 @@
+{
+  "samples": {
+    "en-declaration": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/en-declaration.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/en-declaration.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/en-declaration.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/en-declaration.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/en-declaration.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/en-declaration.png",
+          "dpi": 204
+        }
+      },
+      "lang": "en",
+      "title": "Public-domain text (Declaration of Independence, excerpt)",
+      "vertical": false,
+      "ground_truth": "en-declaration.gt.txt"
+    },
+    "en-fax-cover": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/en-fax-cover.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/en-fax-cover.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/en-fax-cover.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/en-fax-cover.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/en-fax-cover.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/en-fax-cover.png",
+          "dpi": 204
+        }
+      },
+      "lang": "en",
+      "title": "Fax cover sheet",
+      "vertical": false,
+      "ground_truth": "en-fax-cover.gt.txt"
+    },
+    "en-invoice": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/en-invoice.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/en-invoice.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/en-invoice.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/en-invoice.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/en-invoice.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/en-invoice.png",
+          "dpi": 204
+        }
+      },
+      "lang": "en",
+      "title": "Invoice (table)",
+      "vertical": false,
+      "ground_truth": "en-invoice.gt.txt"
+    },
+    "en-letter": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/en-letter.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/en-letter.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/en-letter.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/en-letter.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/en-letter.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/en-letter.png",
+          "dpi": 204
+        }
+      },
+      "lang": "en",
+      "title": "Business letter (serif)",
+      "vertical": false,
+      "ground_truth": "en-letter.gt.txt"
+    },
+    "ja-fax-cover": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/ja-fax-cover.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/ja-fax-cover.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/ja-fax-cover.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/ja-fax-cover.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/ja-fax-cover.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/ja-fax-cover.png",
+          "dpi": 204
+        }
+      },
+      "lang": "ja",
+      "title": "FAX送付状",
+      "vertical": false,
+      "ground_truth": "ja-fax-cover.gt.txt"
+    },
+    "ja-invoice": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/ja-invoice.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/ja-invoice.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/ja-invoice.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/ja-invoice.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/ja-invoice.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/ja-invoice.png",
+          "dpi": 204
+        }
+      },
+      "lang": "ja",
+      "title": "請求書(表)",
+      "vertical": false,
+      "ground_truth": "ja-invoice.gt.txt"
+    },
+    "ja-notice": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/ja-notice.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/ja-notice.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/ja-notice.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/ja-notice.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/ja-notice.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/ja-notice.png",
+          "dpi": 204
+        }
+      },
+      "lang": "ja",
+      "title": "お知らせ文書(明朝)",
+      "vertical": false,
+      "ground_truth": "ja-notice.gt.txt"
+    },
+    "ja-vertical": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/ja-vertical.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/ja-vertical.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/ja-vertical.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/ja-vertical.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/ja-vertical.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/ja-vertical.png",
+          "dpi": 204
+        }
+      },
+      "lang": "ja",
+      "title": "縦書き(日本国憲法前文の一部)",
+      "vertical": true,
+      "ground_truth": "ja-vertical.gt.txt"
+    },
+    "mixed-tech": {
+      "images": {
+        "clean-300": {
+          "image": "clean-300/mixed-tech.png",
+          "dpi": 300
+        },
+        "scan-300-gray": {
+          "image": "scan-300-gray/mixed-tech.jpg",
+          "dpi": 300
+        },
+        "scan-200-skew": {
+          "image": "scan-200-skew/mixed-tech.jpg",
+          "dpi": 200
+        },
+        "photocopy-300-bw": {
+          "image": "photocopy-300-bw/mixed-tech.png",
+          "dpi": 300
+        },
+        "fax-fine": {
+          "image": "fax-fine/mixed-tech.png",
+          "dpi": 204
+        },
+        "fax-standard": {
+          "image": "fax-standard/mixed-tech.png",
+          "dpi": 204
+        }
+      },
+      "lang": "ja+en",
+      "title": "日英混在の技術メモ",
+      "vertical": false,
+      "ground_truth": "mixed-tech.gt.txt"
+    }
+  },
+  "profiles": {
+    "clean-300": "Rendered page, no degradation (upper bound).",
+    "scan-300-gray": "Flatbed scan, 300 dpi grey, slight skew, JPEG.",
+    "scan-200-skew": "200 dpi grey, 2-3 degree skew, blur, uneven light.",
+    "photocopy-300-bw": "Photocopy scanned bilevel at 300 dpi, toner specks.",
+    "fax-fine": "G3 fax fine mode, 204x196 dpi bilevel, line noise.",
+    "fax-standard": "G3 fax standard mode, 204x98 dpi bilevel, line noise."
+  }
+}
