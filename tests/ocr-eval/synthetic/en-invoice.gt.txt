@@ -1,0 +1,14 @@
+INVOICE
+Invoice No. 2026-0412
+Date: 11/20/2026
+Bill to: Example Supply Co., 42 Sample Street, Anytown
+Description Qty Unit price Amount
+Copy paper, A4, 500 sheets 10 $4.20 $42.00
+Toner cartridge, black 2 $125.00 $250.00
+Clear folders, pack of 100 5 $9.10 $45.50
+Shipping 1 $30.00 $30.00
+Maintenance visit (half day) 1 $180.00 $180.00
+Subtotal $547.50
+Tax (8.25%) $45.17
+Total due $592.67
+Payment due within 30 days. Wire to Fictional Bank, routing 000000000, account 0012345678.
